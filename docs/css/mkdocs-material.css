@@ -1,7 +1,25 @@
-.md-typeset__table {
-    min-width: 100%;
+@font-face {
+    font-family: "Gunplay";
+    src:url(../static/gunplay.regular.otf) ;
 }
- 
+
+:root {
+    --md-primary-fg-color: #FF69B4;
+    --md-primary-fg-color--light: #FF8CC6;
+    --md-primary-fg-color--dark: #FF369B;
+}
+
+.md-typeset h1, h2, h3 {
+    font-family: "Gunplay";
+    color: #BD4D86;
+}
 .md-typeset table:not([class]) {
     display: table;
+}
+
+.md-footer {
+    background-color: #FF8CC6;
+}
+.md-footer-meta {
+    background-color: #BD4D86
 }

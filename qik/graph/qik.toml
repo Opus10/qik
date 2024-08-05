@@ -1,0 +1,5 @@
+[commands.build]
+factory = "qik.graph.cmd.build_cmd_factory"
+
+[commands.analyze]
+factory = "qik.graph.cmd.analyze_cmd_factory"
