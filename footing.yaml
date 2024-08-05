@@ -6,4 +6,4 @@ check_types_in_ci: 'False'
 is_django: 'False'
 module_name: qik
 repo_name: qik
-short_description: Cached command runner for modular monorepos.
+short_description: Run cached commands in your modular monorepo.

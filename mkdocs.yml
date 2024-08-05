@@ -1,4 +1,4 @@
-site_name: qik
+site_name: Qik
 docs_dir: docs
 
 repo_name: Opus10/qik
@@ -32,15 +32,15 @@ markdown_extensions:
   # For admonitions
   - admonition
   - pymdownx.details
-  - pymdownx.superfences
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
       pygments_lang_class: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
-  - pymdownx.superfences
   - tables
+  - pymdownx.tabbed:
+      alternate_style: true
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
@@ -49,7 +49,8 @@ markdown_extensions:
 
 theme:
   name: material
-  logo: static/logo.svg
+  logo: static/icon.png
+  favicon: static/icon.png
   features:
     - navigation.footer
     - navigation.path
@@ -58,16 +59,17 @@ theme:
     - search.suggest
     - search.highlight
     - toc.follow
+    - content.code.copy
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: #6658ea
+      primary: custom
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: #6658ea
+      primary: custom
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
@@ -78,6 +80,12 @@ extra_css:
 
 nav:
   - Overview: index.md
-  - Installation: installation.md
+  - Commands: commands.md
+  - Dependencies: dependencies.md
+  - Selectors: selectors.md
+  - Context: context.md
+  - Caching: caching.md
+  - Continuous Integration: ci.md
+  - Plugins: plugins.md
   - Release Notes: release_notes.md
   - Contributing Guide: contributing.md

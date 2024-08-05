@@ -28,14 +28,12 @@ exclude = [
   "*/tests/"
 ]
 version = "0.0.0"
-description = "Cached command runner for modular monorepos."
+description = "Run cached commands in your modular monorepo."
 authors = ["Opus 10 Engineering"]
 classifiers = [
   "Intended Audience :: Developers",
   "Operating System :: OS Independent",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -47,8 +45,25 @@ homepage = "https://github.com/Opus10/qik"
 repository = "https://github.com/Opus10/qik"
 documentation = "https://qik.readthedocs.io"
 
+[tool.poetry.scripts]
+qik = "qik.cli:main"
+
 [tool.poetry.dependencies]
-python = ">=3.8.0,<4"
+python = ">=3.10.0,<4"
+msgspec = ">=0.18.6"
+xxhash = ">=3.4.1"
+typing-extensions = ">=4.11.0"
+rich = { version = ">=13" }
+watchdog = { version = ">=4", optional = true }
+grimp = { version = ">=3.4.1", optional = true }
+rustworkx = { version = ">=0.15.1", optional = true }
+boto3 = { version = ">=1", optional = true }
+
+[tool.poetry.extras]
+watch = ["watchdog"]
+graph = ["grimp", "rustworkx"]
+dev = ["watchdog", "grimp", "rustworkx"]
+s3 = ["boto3"]
 
 [tool.poetry.dev-dependencies]
 git-tidy = "1.2.0"
@@ -57,7 +72,7 @@ pytest-cov = "4.1.0"
 pytest-dotenv = "0.5.2"
 tox = "4.11.3"
 ruff = "0.3.7"
-pyright = "1.1.358"
+pyright = "1.1.360"
 mkdocs = "1.5.3"
 black = "24.4.0"
 mkdocs-material = "9.5.18"
@@ -65,17 +80,18 @@ mkdocstrings-python = "1.9.2"
 footing = "*"
 setuptools = "*"
 poetry-core = "*"
-typing-extensions = "4.11.0"
+pytest-mock = "3.14.0"
 
 [tool.pytest.ini_options]
 xfail_strict = true
-testpaths = "qik/tests"
+testpaths = ["qik/tests"]
 norecursedirs = ".venv"
 
 [tool.ruff]
 lint.select = ["E", "F", "B", "I", "G", "C4"]
+lint.ignore = ["E501"]
 line-length = 99
-target-version = "py38"
+target-version = "py310"
 
 [tool.pyright]
 exclude = [
@@ -86,5 +102,5 @@ exclude = [
     "**/migrations/**",
     "**/tests/**",
 ]
-pythonVersion = "3.8"
+pythonVersion = "3.10"
 typeCheckingMode = "standard"
