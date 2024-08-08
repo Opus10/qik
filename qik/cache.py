@@ -134,6 +134,25 @@ class Uncached(Cache):
         pass
 
 
+@functools.cache
+def _add_cache_dir_to_git_attributes():
+    """Add .qik to .gitattributes so that it appears differently in diff.
+
+    https://docs.github.com/en/repositories/working-with-files/managing-files/customizing-how-changed-files-appear-on-github
+    """
+    git_root_dir = pathlib.Path(qik.shell.exec("git rev-parse --git-dir").stdout.strip()).parent
+    attrs_path = git_root_dir / ".gitattributes"
+    ignore_glob = qik.conf.root().relative_to(git_root_dir) / ".qik/**/*"
+    attrs_line = f"{ignore_glob} linguist-generated=true\n"
+    try:
+        gitattributes = attrs_path.read_text()
+        if attrs_line not in gitattributes:
+            attrs_path.write_text(f"{attrs_line}{gitattributes}")
+    except FileNotFoundError:
+        attrs_path.write_text(attrs_line)
+        qik.shell.exec(f"git add -N {attrs_path}")
+
+
 class Repo(Cache):
     """A cache in the local git repository."""
 
@@ -151,8 +170,8 @@ class Repo(Cache):
 
         git_add_files = " ".join(git_add)
         with _LOCK:
-            # TODO: move git operations to a module
             qik.shell.exec(f"git add -N {git_add_files}")
+            _add_cache_dir_to_git_attributes()
 
 
 class Local(Cache):

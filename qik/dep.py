@@ -79,7 +79,7 @@ class BaseDep(msgspec.Struct, frozen=True, tag=True, dict=True):
         need to react to as many files in the git repo, such as
         reacting based on a lock file change.
         """
-        return []
+        return self.globs
 
     @functools.cached_property
     def since(self) -> list[str]:
@@ -124,14 +124,6 @@ class Glob(BaseDep, frozen=True):
     @functools.cached_property
     def globs(self) -> list[str]:
         return [self.val]
-
-    @functools.cached_property
-    def since(self) -> list[str]:
-        return self.globs
-
-    @functools.cached_property
-    def watch(self) -> list[str]:
-        return self.globs
 
 
 class Val(BaseDep, frozen=True):

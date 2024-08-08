@@ -69,6 +69,15 @@ def main() -> None:
         default=qik.unset.UNSET,
         choices=["warm", "cold"],
     )
+    parser.add_argument(
+        "-v",
+        "--verbosity",
+        nargs="?",
+        const=2,
+        default=qik.unset.UNSET,
+        type=int,
+        help="Set verbosity (1 by default, 2 if -v is present, or specify level)",
+    )
 
     args = parser.parse_args()
     with (
@@ -85,6 +94,7 @@ def main() -> None:
             fail=args.fail,
             cache_status=args.cache_status,
             cache_when=args.cache_when,
+            verbosity=args.verbosity,
             commands=args.commands or qik.unset.UNSET,
             modules=args.modules or qik.unset.UNSET,
             cache_types=args.cache_types or qik.unset.UNSET,
