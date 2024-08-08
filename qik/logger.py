@@ -9,6 +9,7 @@ import msgspec
 
 import qik.conf
 import qik.console
+import qik.ctx
 import qik.file
 
 if TYPE_CHECKING:
@@ -44,47 +45,78 @@ def out_dir() -> pathlib.Path:
 
 
 class Manifest(msgspec.Struct):
+    cmd_status: dict[str, RunStatus]
     runnables: list[str]
-    status: dict[str, RunStatus]
+    runnable_status: dict[str, RunStatus]
+    cached_runnables: list[str]
 
 
-class CmdStats:
+class Stats:
     def __init__(self, graph: Graph):
         self.manifest_path = out_dir() / "manifest.json"
-        self.runnables = [runnable.name for runnable in graph]
-        self.running: dict[str, bool] = collections.defaultdict(bool)
-        self.total: dict[str, int] = collections.defaultdict(int)
-        for runnable in graph:
-            self.total[runnable.cmd] += 1
 
-        self.finished: dict[str, int] = collections.defaultdict(int)
-        self.status: dict[str, RunStatus] = collections.defaultdict(lambda: "pending")
+        # Command-level status information
+        self.cmd_finished: dict[str, int] = collections.defaultdict(int)
+        self.cmd_running: dict[str, bool] = collections.defaultdict(bool)
+        self.cmd_total: dict[str, int] = collections.defaultdict(int)
+        for runnable in graph:
+            self.cmd_total[runnable.cmd] += 1
+
+        self.cmd_status: dict[str, RunStatus] = collections.defaultdict(lambda: "pending")
+
+        # Runnable-level status information
+        self.runnables = [runnable.name for runnable in graph]
+        self.runnable_status: dict[str, RunStatus] = {
+            runnable.name: "pending" for runnable in graph
+        }
+        self.cached_runnables = []
 
     @property
-    def failed(self) -> bool:
-        return any(status == "failed" for status in self.status.values())
+    def run_failed(self) -> bool:
+        return any(status == "failed" for status in self.cmd_status.values())
 
     def start(self, runnable: Runnable) -> None:
-        self.running[runnable.cmd] = True
+        self.cmd_running[runnable.cmd] = True
 
-    def finish(self, runnable: Runnable, result: Result | None) -> None:
-        self.finished[runnable.cmd] += 1
+    def finish(
+        self, runnable: Runnable, *, result: Result | None, cache_entry: Entry | None
+    ) -> None:
+        # Track runnable status
+        if not result:
+            self.runnable_status[runnable.name] = "skipped"
+        elif result.code != 0:
+            self.runnable_status[runnable.name] = "failed"
+        else:
+            self.runnable_status[runnable.name] = "success"
 
-        if self.finished[runnable.cmd] >= self.total[runnable.cmd]:
-            self.running[runnable.cmd] = False
+        if cache_entry:
+            self.cached_runnables.append(runnable.name)
 
-        if self.status[runnable.cmd] == "pending":
+        # Track command status
+        self.cmd_finished[runnable.cmd] += 1
+
+        if self.cmd_finished[runnable.cmd] >= self.cmd_total[runnable.cmd]:
+            self.cmd_running[runnable.cmd] = False
+
+        if self.cmd_status[runnable.cmd] == "pending":
             if not result:
-                self.status[runnable.cmd] = "skipped"
+                self.cmd_status[runnable.cmd] = "skipped"
             elif result.code != 0:
-                self.status[runnable.cmd] = "failed"
-            elif self.finished[runnable.cmd] >= self.total[runnable.cmd]:
-                self.status[runnable.cmd] = "success"
+                self.cmd_status[runnable.cmd] = "failed"
+            elif self.cmd_finished[runnable.cmd] >= self.cmd_total[runnable.cmd]:
+                self.cmd_status[runnable.cmd] = "success"
 
     def write(self) -> None:
         qik.file.write(
             self.manifest_path,
-            msgspec.json.encode(Manifest(runnables=self.runnables, status=self.status)),
+            msgspec.json.encode(
+                Manifest(
+                    runnables=self.runnables,
+                    cmd_status=self.cmd_status,
+                    cached_runnables=self.cached_runnables,
+                    runnable_status=self.runnable_status,
+                )
+            ),
         )
 
 
@@ -98,7 +130,7 @@ class Logger:
         for file in log_files.values():
             file.close()
         self._log_files = {}
-        self.cmd_stats: CmdStats | None = None
+        self.stats: Stats | None = None
 
     def _get_log_file(self, runnable: Runnable) -> IO[str]:
         if runnable.name not in self._log_files:
@@ -110,14 +142,14 @@ class Logger:
     @contextlib.contextmanager
     def run(self, graph: Graph) -> Iterator[None]:
         self.graph = graph
-        self.cmd_stats = CmdStats(graph)
-        self.cmd_stats.write()
+        self.stats = Stats(graph)
+        self.stats.write()
         self.handle_run_started()
         try:
             yield
         finally:
             self.handle_run_finished()
-            self.cmd_stats.write()
+            self.stats.write()
             self._reset_state()
 
     def print(
@@ -134,9 +166,9 @@ class Logger:
             if event == "output":
                 self._get_log_file(runnable).write(msg)
             elif event == "start":
-                self.cmd_stats.start(runnable)
+                self.stats.start(runnable)
             elif event == "finish":
-                self.cmd_stats.finish(runnable, result)
+                self.stats.finish(runnable, result=result, cache_entry=cache_entry)
 
         self.handle_output(
             msg,
@@ -217,11 +249,22 @@ class HideableSpinnerColumn(rich_progress.SpinnerColumn):
 
 
 class Progress(Logger):
-    """Logs live progress bars while storing results in the .qik/run folder."""
+    """Logs live progress bars and prints output at end."""
 
     def __init__(self):
         super().__init__()
         self.status: RunStatus = "pending"
+
+    def get_status_text(self) -> str:
+        status_text = f"Output in [bold]{out_dir()}"
+        if self.status == "pending":
+            status_text = f":heavy_minus_sign-emoji: [cyan]{status_text}"
+        elif self.status == "success":
+            status_text = f":white_check_mark-emoji: [green]{status_text}"
+        elif self.status == "failed":
+            status_text = f":broken_heart-emoji: [red]{status_text}"
+
+        return status_text
 
     def generate_table(self):
         table = rich_table.Table.grid(padding=(0, 1))
@@ -234,7 +277,10 @@ class Progress(Logger):
             status_text = f":white_check_mark-emoji: [green]{status_text}"
         elif self.status == "failed":
             status_text = f":broken_heart-emoji: [red]{status_text}"
-        table.add_row(status_text)
+
+        if self.status == "pending":
+            table.add_row(self.get_status_text())
+
         return table
 
     def handle_run_started(self) -> None:
@@ -248,10 +294,13 @@ class Progress(Logger):
 
         self.cmds = {
             cmd: self.progress.add_task(
-                f":heavy_minus_sign-emoji: [dim]{cmd}", total=count, show_progress=False
+                f":heavy_minus_sign-emoji: [dim]{cmd}",
+                total=self.stats.cmd_total[cmd],
+                show_progress=False,
             )
-            for cmd, count in self.cmd_stats.total.items()
+            for cmd in sorted(self.stats.cmd_total)
         }
+        self.captured: dict[str, list[str]] = collections.defaultdict(list)
 
         self.live = rich_live.Live(
             self.generate_table(), refresh_per_second=10, console=qik.console.get()
@@ -276,7 +325,7 @@ class Progress(Logger):
                 show_progress=True,
             )
         elif event == "finish" and runnable:
-            match self.cmd_stats.status[runnable.cmd]:
+            match self.stats.cmd_status[runnable.cmd]:
                 case "skipped":
                     status = ":heavy_minus_sign-emoji:[yellow]"
                 case "failed":
@@ -290,7 +339,7 @@ class Progress(Logger):
                 self.cmds[runnable.cmd],
                 advance=1,
                 description=f"{status} {runnable.cmd}",
-                show_progress=self.cmd_stats.running[runnable.cmd],
+                show_progress=self.stats.cmd_running[runnable.cmd],
             )
             self.live.update(self.generate_table())
         elif event == "exception":
@@ -298,8 +347,45 @@ class Progress(Logger):
             qik.console.print_exception()
         elif event != "output":
             qik.console.print(msg, emoji=emoji, color=color)
+        else:
+            self.captured[runnable.name].append(msg)
 
     def handle_run_finished(self) -> None:
-        self.status = "failed" if self.cmd_stats.failed else "success"
+        self.status = "failed" if self.stats.run_failed else "success"
         self.live.update(self.generate_table())
         self.live.stop()
+
+        verbosity = qik.ctx.module("qik").verbosity
+        if verbosity:
+            cached_runnables = self.stats.cached_runnables
+
+            for name in sorted(self.stats.runnables):
+                match self.stats.runnable_status[name]:
+                    case "success":
+                        emoji = (
+                            "fast-forward_button"
+                            if name in cached_runnables
+                            else "white_check_mark"
+                        )
+                        color = "green"
+                        show = True if verbosity > 1 else False
+                        output = "".join(self.captured[name])
+                    case "failed":
+                        emoji = (
+                            "fast-forward_button" if name in cached_runnables else "broken_heart"
+                        )
+                        color = "red"
+                        show = True if verbosity > 0 else False
+                        output = "".join(self.captured[name])
+                    case _:
+                        emoji = "heavy_minus_sign"
+                        color = "yellow"
+                        show = True if verbosity > 1 else False
+                        output = "[dim][italic]Skipped\n"
+
+                if show:
+                    qik.console.rule(f":{emoji}-emoji: [{color}]{name}", style=color)
+                    output = output or "[dim][italic]No output"
+                    qik.console.print(output.strip())
+
+        qik.console.print(self.get_status_text())

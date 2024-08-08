@@ -123,7 +123,7 @@ def analyze_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
         globs=sorted(_gen_upstream_globs()),
         dists=sorted(_gen_upstream_dists()),
     )
-    return 0, f"Ran {runnable.name}\n"
+    return 0, ""
 
 
 def build_cmd_factory(cmd: str, conf: qik.conf.CmdConf) -> dict[str, qik.runnable.Runnable]:

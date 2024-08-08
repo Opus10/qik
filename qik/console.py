@@ -36,8 +36,13 @@ def print_exception() -> None:
     get().print_exception()
 
 
-def rule() -> None:
-    get().rule()
+def rule(
+    title: str = "",
+    *,
+    style: str = "rule.line",
+    align: Literal["left", "center", "right"] = "left",
+) -> None:
+    get().rule(title, align=align, style=style)
 
 
 @contextlib.contextmanager

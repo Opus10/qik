@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import contextlib
+import contextvars
 import functools
 import os
+import threading
 from typing import TYPE_CHECKING, Any, Iterator, Literal, TypeVar, overload
 
 import msgspec
@@ -15,11 +17,19 @@ import qik.conf
 import qik.unset
 
 if TYPE_CHECKING:
+    from qik.runnable import Runnable
     from qik.runner import Runner
 
 
 _RUNNER: Runner | None = None
 _PROFILE: str = "default"
+_RUNNABLE: contextvars.ContextVar[Runnable | None] = contextvars.ContextVar(
+    "_RUNNABLE", default=None
+)
+_CURR_WORKER_ID: int = 0
+_WORKER_IDS: dict[str, int] = {}
+_WORKER_LOCK = threading.Lock()
+_WORKER_ID: contextvars.ContextVar[int | None] = contextvars.ContextVar("_WORKER_ID", default=None)
 
 
 def profile() -> str:
@@ -61,6 +71,50 @@ def set_runner(runner: Runner) -> Iterator[None]:
         _RUNNER = old_runner
 
 
+def runnable() -> Runnable:
+    """Get the current runnable."""
+    if runnable := _RUNNABLE.get():
+        return runnable
+    else:
+        raise RuntimeError("No runnable set in context.")
+
+
+@contextlib.contextmanager
+def set_runnable(runnable: Runnable) -> Iterator[None]:
+    """Set the current runnable."""
+    old_runnable = _RUNNABLE.set(runnable)
+    try:
+        yield
+    finally:
+        _RUNNABLE.reset(old_runnable)
+
+
+def worker_id() -> int:
+    """Get the current worker ID."""
+    if worker_id := _WORKER_ID.get():
+        return worker_id
+    else:
+        raise RuntimeError("No worker ID set in context.")
+
+
+@contextlib.contextmanager
+def set_worker_id() -> Iterator[None]:
+    """Set the current worker ID."""
+    global _CURR_WORKER_ID, _WORKER_IDS
+    thread_ident = threading.get_ident()
+
+    if not _WORKER_IDS.get(thread_ident):
+        with _WORKER_LOCK:
+            _CURR_WORKER_ID += 1
+            _WORKER_IDS[thread_ident] = _CURR_WORKER_ID
+
+    old_worker_id = _WORKER_ID.set(_WORKER_IDS[thread_ident])
+    try:
+        yield
+    finally:
+        _WORKER_ID.reset(old_worker_id)
+
+
 class QikCtx(msgspec.Struct, forbid_unknown_fields=True, rename="kebab", dict=True):
     # Runtime behavior
     isolated: bool = False
@@ -71,6 +125,7 @@ class QikCtx(msgspec.Struct, forbid_unknown_fields=True, rename="kebab", dict=Tr
     workers: int = msgspec.field(default_factory=lambda: psutil.cpu_count(logical=True))
     fail: bool = False
     cache_when: qik.conf.CacheWhen = "success"
+    verbosity: int = 1
 
     # Selectors
     since: str | None = None

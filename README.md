@@ -19,7 +19,7 @@ pip install qik
 For local development, we recommend installing most optional dependencies with:
 
 ```bash
-pip install qik[dev]
+pip install "qik[dev]"
 ```
 
 Qik is compatible with Python 3.10 - 3.12, Linux, OSX, and WSL.
