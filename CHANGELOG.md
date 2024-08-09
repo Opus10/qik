@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.4 (2024-08-09)
+
+### Trivial
+
+  - Misc doc additions [Wesley Kendall, 2736c18]
+
 ## 0.0.3 (2024-08-08)
 
 ### Trivial
