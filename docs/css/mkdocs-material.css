@@ -23,3 +23,7 @@
 .md-footer-meta {
     background-color: #BD4D86
 }
+
+readthedocs-flyout {
+    display: none;
+}
