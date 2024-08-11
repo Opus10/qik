@@ -17,7 +17,7 @@ exec = 'exit 1'
 
 [commands.dep_fail]
 exec = 'echo "hi"; exit 1'
-deps = [{type = "command", name = "fail"}]
+deps = [{type = "command", name = "fail"}, {type = "const", val = "hi"}]
 
 [commands.lock]
 exec = "pip-compile > requirements.txt"

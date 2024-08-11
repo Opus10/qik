@@ -1,5 +1,5 @@
 site_name: Qik
-site_description: The cached command runner.
+site_description: A cached command runner for Python monorepos.
 docs_dir: docs
 
 repo_name: Opus10/qik
@@ -87,9 +87,9 @@ extra_css:
   - css/mkdocs-material.css
 
 nav:
-  - Home: home.md
+  - Home: index.md
   - Guide:
-    - Intro: index.md
+    - Intro: guide.md
     - Commands: commands.md
     - Context: context.md
     - Caching: caching.md

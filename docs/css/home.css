@@ -6,7 +6,6 @@
 
 /* Hero section */
 .mdx-container {
-
   display: flex;
   align-items: center;
   justify-content: center;
@@ -15,6 +14,7 @@
   z-index: 1;
   flex-grow: 1;
   overflow: hidden;
+  padding: 1rem;
 }
 
 .mdx-hero {

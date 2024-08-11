@@ -189,6 +189,10 @@ class Dist(BaseDep, frozen=True):
 class Const(BaseDep, frozen=True):
     """A constant value."""
 
+    @functools.cached_property
+    def since(self) -> list[str]:
+        return ["*qik.toml"]
+
 
 class Module(BaseCmd, frozen=True):
     """A python module and its associated imports."""
