@@ -82,7 +82,7 @@ modules = ["a_module", "b_module", "c_module"]
 plugins = ["qik.graph"]
 
 [commands.check_types]
-exec = "pyright {module.path}"
+exec = "pyright {module.dir}"
 deps = [{type = "module", name = "{module.name}"}]
 cache = "repo"
 ```
@@ -104,14 +104,14 @@ modules = ["a_module", "b_module", "c_module"]
 plugins = ["qik.graph"]
 
 [commands.format]
-exec = "ruff format {module.path}"
-deps = ["{module.path}/**.py"]
+exec = "ruff format {module.dir}"
+deps = ["{module.dir}/**.py"]
 cache = "repo"
 
 [commands.check_types]
-exec = "pyright {module.path}"
+exec = "pyright {module.dir}"
 deps = [
-    {type = "module", name = "{module.imp}"},
+    {type = "module", name = "{module.name}"},
     {type = "command", name = "format"}
 ]
 cache = "repo"
@@ -253,7 +253,7 @@ modules = ["a_module", "b_module", "c_module"]
 plugins = ["qik.graph"]
 
 [commands.test]
-exec = "pytest {module.path}"
+exec = "pytest {module.dir}"
 deps = [{type = "module", name = "{module.name}"}]
 
 [commands.coverage]

@@ -54,8 +54,8 @@ Parametrize commands over modules, for example, running the [ruff](https://docs.
 modules = ["a_module", "b_module", "c_module"]
 
 [commands.format]
-exec = "ruff format {module.path}"
-deps = ["{module.path}/**.py"]
+exec = "ruff format {module.dir}"
+deps = ["{module.dir}/**.py"]
 cache = "repo"
 ```
 
@@ -74,7 +74,7 @@ modules = ["a_module", "b_module", "c_module"]
 plugins = ["qik.graph"]
 
 [commands.check_types]
-exec = "pyright {module.path}"
+exec = "pyright {module.dir}"
 deps = [{type = "module", name = "{module.name}"}]
 cache = "repo"
 ```
