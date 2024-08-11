@@ -68,13 +68,13 @@ class Cache:
     def on_miss(self, *, runnable: Runnable, hash: str) -> None:
         raise NotImplementedError
 
-    def get_artifacts(self, *, runnable: Runnable, hash: str, artifacts: list[str]) -> None:
+    def restore_artifacts(self, *, runnable: Runnable, hash: str, artifacts: list[str]) -> None:
         pass
 
-    def set_artifacts(self, *, runnable: Runnable, hash: str) -> list[str]:
+    def import_artifacts(self, *, runnable: Runnable, hash: str) -> list[str]:
         return []
 
-    def get(self, runnable: Runnable) -> Entry | None:
+    def get(self, runnable: Runnable, artifacts: bool = True) -> Entry | None:
         hash = runnable.hash()
         self.pre_get(runnable=runnable, hash=hash)
 
@@ -87,7 +87,8 @@ class Cache:
                 raise FileNotFoundError("Manifest not found.")
 
             log = pathlib.Path(base_path / manifest.log).read_text() if manifest.log else None
-            self.get_artifacts(runnable=runnable, hash=hash, artifacts=manifest.artifacts)
+            if artifacts:
+                self.restore_artifacts(runnable=runnable, hash=hash, artifacts=manifest.artifacts)
             return Entry(manifest=manifest, log=log)
 
         try:
@@ -107,7 +108,7 @@ class Cache:
         manifest_path = self.manifest_path(runnable=runnable, hash=result.hash)
         log_path = self.log_path(runnable=runnable, hash=result.hash)
 
-        artifacts = self.set_artifacts(runnable=runnable, hash=result.hash)
+        artifacts = self.import_artifacts(runnable=runnable, hash=result.hash)
         manifest = Manifest(
             name=runnable.name,
             code=result.code,
@@ -127,7 +128,7 @@ class Uncached(Cache):
     def type(self) -> str:
         return "none"
 
-    def get(self, runnable: Runnable) -> Entry | None:
+    def get(self, runnable: Runnable, artifacts: bool = True) -> Entry | None:
         pass
 
     def set(self, runnable: Runnable, result: Result) -> None:
@@ -180,13 +181,13 @@ class Local(Cache):
     def base_path(self, *, runnable: Runnable, hash: str) -> pathlib.Path:
         return qik.conf.priv_work_dir() / "cache" / f"{runnable.name}-{hash}"
 
-    def get_artifacts(self, *, runnable: Runnable, hash: str, artifacts: list[str]) -> None:
+    def restore_artifacts(self, *, runnable: Runnable, hash: str, artifacts: list[str]) -> None:
         base_path = self.base_path(runnable=runnable, hash=hash)
         for artifact in set(artifacts):
             name = _artifact_name(artifact)
             qik.file.copy(str(base_path / name), artifact)
 
-    def set_artifacts(self, *, runnable: Runnable, hash: str) -> list[str]:
+    def import_artifacts(self, *, runnable: Runnable, hash: str) -> list[str]:
         base_path = self.base_path(runnable=runnable, hash=hash)
         artifacts = [str(path) for path in _walk_artifacts(runnable)]
         for artifact in artifacts:

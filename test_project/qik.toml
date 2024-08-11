@@ -6,6 +6,9 @@ deps = ["python_version"]
 type = "s3"
 bucket = "qik-cache-test"
 
+[ctx.ci.qik]
+workers = 1
+
 [venvs.default]
 lock-file = "requirements.txt"
 

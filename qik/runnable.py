@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import fnmatch
 import functools
+import os
 import pkgutil
 import re
 from typing import TYPE_CHECKING, Literal, TypeAlias
@@ -24,6 +25,16 @@ if TYPE_CHECKING:
 
     import qik.cache
     import qik.logger
+
+
+def _get_exec_env() -> dict[str, str]:
+    """Get the environment for runnables."""
+    return {
+        **os.environ,
+        "QIK__CMD": qik.ctx.runnable().cmd,
+        "QIK__RUNNABLE": qik.ctx.runnable().name,
+        "QIK__WORKER": str(qik.ctx.worker_id()),
+    }
 
 
 def _make_runnable(
@@ -131,9 +142,9 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
         backend = qik.ctx.module("qik").cache if self.cache is qik.unset.UNSET else self.cache
         return qik.cache.load(backend)
 
-    def get_cache_entry(self) -> qik.cache.Entry | None:
+    def get_cache_entry(self, artifacts: bool = True) -> qik.cache.Entry | None:
         if not qik.ctx.module("qik").force:
-            entry = self.get_cache_backend().get(self)
+            entry = self.get_cache_backend().get(self, artifacts=artifacts)
             if entry and self.should_cache(entry.manifest.code):
                 return entry
 
@@ -144,7 +155,7 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
     def _uncached_exec(self, logger: qik.logger.Logger) -> Result:
         """Run a command without wrapped caching."""
         if self.shell:
-            process = qik.shell.popen(self.val)
+            process = qik.shell.popen(self.val, env=_get_exec_env())
             output = []
             for line in process.stdout if process.stdout is not None else []:
                 logger.print(line, runnable=self, event="output")

@@ -1,0 +1,137 @@
+/* docs/stylesheets/extra.css */
+
+.md-tabs {
+  background-color: #FF69B4;
+}
+
+
+
+/* Hero section */
+.mdx-container {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  background: linear-gradient(to bottom, var(--md-primary-fg-color), hsla(280, 67%, 55%, 1));
+  position: relative;
+  z-index: 1;
+  padding-bottom: 8rem;
+}
+
+.md-grid {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 61rem;
+  margin: 0 auto;
+}
+
+.mdx-hero {
+  color: var(--md-primary-bg-color);
+  width: 50%;
+  text-align: left;
+}
+
+.mdx-hero h1 {
+  font-family: "Gunplay3D";
+  font-size: 5rem !important;
+  margin-bottom: 1rem;
+  color: white !important;
+  font-weight: 700;
+}
+
+.mdx-hero p {
+  margin-bottom: 2rem;
+  font-size: 1.2rem;
+}
+
+.mdx-hero .md-button {
+  margin-top: .5rem;
+  margin-right: .5rem;
+  color: var(--md-primary-bg-color);
+}
+
+.mdx-hero .md-button--primary {
+  background-color: var(--md-primary-bg-color);
+  color: hsla(280, 37%, 48%, 1);
+  border-color: var(--md-primary-bg-color);
+}
+
+.mdx-hero .md-button:focus,
+.mdx-hero .md-button:hover {
+  background-color: var(--md-accent-fg-color);
+  color: var(--md-default-bg-color);
+  border-color: var(--md-accent-fg-color);
+}
+
+/* Carousel section */
+.mdx-carousel {
+  width: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.carousel-placeholder {
+  background-color: rgba(255, 255, 255, 0.2);
+  padding: 2rem;
+  border-radius: 4px;
+  color: var(--md-primary-bg-color);
+}
+
+/* Card section */
+.mdx-card-section {
+  background-color: var(--md-default-bg-color);
+  padding: 4rem 0;
+  position: relative;
+  z-index: 2;
+}
+
+.mdx-card {
+  background-color: var(--md-default-bg-color);
+  border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.mdx-card h2 {
+  margin-top: 0;
+  color: var(--md-primary-fg-color);
+}
+
+/* Responsive grid for cards */
+@media (min-width: 768px) {
+  .mdx-card-section .md-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+  
+  .mdx-card {
+    margin-bottom: 0;
+  }
+}
+
+/* Ensure content below hero is visible */
+.md-content {
+  position: relative;
+  z-index: 2;
+  background-color: var(--md-default-bg-color);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .md-grid {
+    flex-direction: column;
+  }
+
+  .mdx-hero, .mdx-carousel {
+    width: 100%;
+  }
+
+  .mdx-hero {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+}

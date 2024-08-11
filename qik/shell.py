@@ -1,18 +1,8 @@
-import os
 import subprocess
 from typing import Literal, overload
 
 import qik.conf
 import qik.ctx
-
-
-def _get_exec_env() -> dict[str, str]:
-    return {
-        **os.environ,
-        "QIK__CMD": qik.ctx.runnable().cmd,
-        "QIK__RUNNABLE": qik.ctx.runnable().name,
-        "QIK__WORKER": str(qik.ctx.worker_id()),
-    }
 
 
 @overload
@@ -30,7 +20,7 @@ def exec(
 
 
 def exec(
-    cmd: str, /, *, lines: bool = False, check: bool = False
+    cmd: str, /, *, lines: bool = False, check: bool = False, env: dict[str, str] | None = None
 ) -> subprocess.CompletedProcess[str] | list[str]:
     """Run a shell commmand.
 
@@ -42,7 +32,7 @@ def exec(
         text=True,
         capture_output=True,
         check=check,
-        env=_get_exec_env(),
+        env=env,
         cwd=qik.conf.root(),
     )
     if not lines:
@@ -52,7 +42,7 @@ def exec(
         return stdout.split("\n") if stdout else []
 
 
-def popen(cmd: str) -> subprocess.Popen:
+def popen(cmd: str, env: dict[str, str] | None = None) -> subprocess.Popen:
     return subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -61,6 +51,6 @@ def popen(cmd: str) -> subprocess.Popen:
         shell=True,
         bufsize=1,
         universal_newlines=True,
-        env=_get_exec_env(),
+        env=env,
         cwd=qik.conf.root(),
     )

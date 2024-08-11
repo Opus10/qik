@@ -2,7 +2,7 @@
 # qik
 
 <style>
-.md-content .md-typeset h1 { display: none; }
+.md-content .md-typeset h1 { visibility: hidden; height: 0px; margin: 0px; padding: 0px; }
 </style>
 
 <p align="center" style="padding-bottom: 1rem">
@@ -27,7 +27,7 @@ For local development, we recommend installing most optional dependencies with:
 pip install "qik[dev]"
 ```
 
-Qik is compatible with Python 3.10 - 3.12, Linux, OSX, and WSL.
+Qik is compatible with Python 3.10 - 3.12, Linux, OSX, and WSL. It requires [git](https://git-scm.com).
 
 ## Quick Start
 
@@ -104,19 +104,17 @@ deps = [
 
 ### Caching
 
-We've shown examples of the `repo` cache, which stores metadata of the most recent runs in the repo. Qik offers both local and remote caches to store all command runs and their output.
-
-To use these, first ensure commands have `artifacts` configured. For example, the `lock` command generates a `requirements.txt` file:
+We've shown examples of the `repo` cache, which stores metadata of the most recent runs in the repo. Qik also offers local and remote caches. To use a remote cache, define command `artifacts`. For example, the `lock` command generates a `requirements.txt` file:
 
 ```toml
 [commands.lock]
 exec = "pip-compile > requirements.txt"
 deps = ["requirements.in"]
 artifacts = ["requirements.txt"]
-cache = "local"
+cache = "s3"
 ```
 
-Above we're using the `local` cache. Versions of our `requirements.txt` will be stored in the `._qik/cache` folder. Qik supports [AWS S3](https://aws.amazon.com/pm/serv-s3/) as a [remote caching backend](caching.md).
+Above we're using the [AWS S3](https://aws.amazon.com/pm/serv-s3/) cache. See [this section](caching.md) for a deep dive on how caching works, along with how to configure remote caching.
 
 ### Command Line Interface
 
@@ -125,34 +123,19 @@ The core CLI functionality is as follows:
 - `qik` to run all commands.
 - `qik <cmd_name> <cmd_name>` to run specific commands.
 - `--watch` to reactively run selected commands.
+- `--since` to select commands based on changes since a git reference.
 - `-f` to run without the cache.
 - `-m` to run against specific modules.
 - `-n` to set the number of threads.
 - `--ls` to list commands instead of running them.
 
-Some runtime behavior is configurable via the CLI:
-
-- `--cache` to set the default cache.
-- `--cache-when` to configure when to cache. Use `finished` to cache all results. By default only `success` runs are cached.
-- `--isolated` to not run dependent commands.
-
-These options are useful for selecting commands:
-
-- `--since` to select commands based on changes since a git SHA.
-- `--cache-type` to select commands by their cache type.
-- `--cache-status` to select commands by their cache status (`warm` or `cold`).
-- `--fail` to return a non-zero exit code if any commands are selected.
-
-Finally, use `-p` to set the qik [context](context.md).
+See [the command runner section](commands.md#runner) for other advanced options, such as selecting commands based on cache status and setting the default [context profile](context.md).
 
 ## Next Steps
 
 Read the following to become a qik expert:
 
-- [Commands](commands.md): A cookbook of common commands and creating module-specific commands.
-- [Dependencies](dependencies.md): All dependencies, including global dependencies, constants, and file parts.
-- [Selectors](selectors.md): Selecting commands based on properties.
+- [Commands](commands.md): Configuring and running commands. Learn about all the dependencies, selectors, and runtime behavior.
 - [Context](context.md): Using environment-based context and runtime profiles.
 - [Caching](caching.md): How caching works and how to configure all cache types, including S3.
-- [Continuous Integration](ci.md): Patterns for optimizing CI time.
-- [Plugins](plugins.md): How to create qik plugins, such as custom commands and cache backends.
+- [CI/CD](ci.md): Patterns for optimizing CI/CD time.

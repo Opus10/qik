@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 
 import qik.ctx
@@ -55,7 +56,7 @@ def main() -> None:
         help="Fail if any commands are selected.",
         default=qik.unset.UNSET,
     )
-    parser.add_argument("-p", "--profile", help="The context profile to use.", default="default")
+    parser.add_argument("-p", "--profile", help="The context profile to use.")
     parser.add_argument("--since", help="Filter since git SHA.", default=qik.unset.UNSET)
     parser.add_argument(
         "--cache-type",
@@ -80,8 +81,9 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+    profile = args.profile or os.environ.get("QIK__PROFILE", "default")
     with (
-        qik.ctx.set_profile(args.profile),
+        qik.ctx.set_profile(profile),
         qik.ctx.set_vars(
             "qik",
             watch=args.watch,
