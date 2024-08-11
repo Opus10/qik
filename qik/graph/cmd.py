@@ -102,8 +102,8 @@ def analyze_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
     graph = load_graph()  # TODO: Use cached runner graph
     # TODO: Better error if the module doesn't exist
     module = qik.conf.project().modules_by_name[runnable.module]
-    upstream = graph.upstream_modules(module.path, idx=False)
-    root = graph.modules[graph.modules_idx[module.path]]
+    upstream = graph.upstream_modules(module.imp, idx=False)
+    root = graph.modules[graph.modules_idx[module.imp]]
     distributions = packages_distributions()
 
     def _gen_upstream_globs() -> Iterator[str]:

@@ -83,7 +83,7 @@ plugins = ["qik.graph"]
 
 [commands.check_types]
 exec = "pyright {module.path}"
-deps = [{type = "module", name = "{module.imp}"}]
+deps = [{type = "module", name = "{module.name}"}]
 cache = "repo"
 ```
 
@@ -254,7 +254,7 @@ plugins = ["qik.graph"]
 
 [commands.test]
 exec = "pytest {module.path}"
-deps = [{type = "module", name = "{module.imp}"}]
+deps = [{type = "module", name = "{module.name}"}]
 
 [commands.coverage]
 exec = "coverage report"

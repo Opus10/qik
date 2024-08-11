@@ -4,48 +4,30 @@
     <link rel="stylesheet" href="{{ 'css/home.css' | url }}">
 {% endblock %}
 {% block tabs %}
-    {{ super() }}
+{{ super() }}
 
-    <section class="mdx-container">
-        <div class="md-grid md-typeset">
-            <div class="mdx-hero">
-                <div class="mdx-hero__content">
-                    <h1>{{ config.site_name }}</h1>
-                    <p>{{ config.site_description }}</p>
-                    <a href="{{ page.next_page.url | url }}" title="{{ page.next_page.title | e }}" class="md-button md-button--primary">
-                        Get started
-                    </a>
-                    <a href="{{ config.repo_url }}" title="{{ lang.t('source.link.title') }}" class="md-button">
-                        GitHub
-                    </a>
-                </div>
-            </div>
-            <div class="mdx-carousel">
-                <!-- Placeholder for carousel -->
-                <div class="carousel-placeholder">Carousel goes here</div>
-            </div>
-        </div>
-    </section>
-
-    <section class="mdx-card-section">
-        <div class="md-grid">
-            <div class="mdx-card">
-                <h2>Feature 1</h2>
-                <p>Description of feature 1</p>
-            </div>
-            <div class="mdx-card">
-                <h2>Feature 2</h2>
-                <p>Description of feature 2</p>
-            </div>
-            <div class="mdx-card">
-                <h2>Feature 3</h2>
-                <p>Description of feature 3</p>
-            </div>
-        </div>
-    </section>
+<section class="mdx-container">
+  <div class="md-grid md-typeset">
+    <div class="mdx-hero">
+      <div class="mdx-hero__content">
+        <h1>Make CI Fast Again</h1>
+        <p>
+            Qik is a cached command runner for your monorepo.<br/>
+            <small><a href="{{ config.repo_url }}">100% open source.</a></small>
+        </p>
+        <a href="{{ page.next_page.url | url }}" title="{{ page.next_page.title | e }}" class="md-button md-button--primary">
+          Get started
+        </a>
+        <a href="{{ config.repo_url }}" title="{{ lang.t('source.link.title') }}" class="md-button">
+          Why?
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
 
 {% endblock %}
 {% block content %}{% endblock %}
 {% block scripts %}
-    {{ super() }}
+{{ super() }}
 {% endblock %}

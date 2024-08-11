@@ -1,5 +1,5 @@
 site_name: Qik
-site_description: Run cached commands in your Python monorepo.
+site_description: The cached command runner.
 docs_dir: docs
 
 repo_name: Opus10/qik

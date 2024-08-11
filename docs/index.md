@@ -73,9 +73,9 @@ Running `qik format` will parametrize `ruff format` in parallel over all availab
 qik format -n 2 -m b_module -m c_module
 ```
 
-### Import Dependencies
+### Module Dependencies
 
-Some commands, such as [pyright](https://github.com/microsoft/pyright) type checking, should re-run whenever imports change:
+Some commands, such as [pyright](https://github.com/microsoft/pyright) type checking, should re-run whenever module files or dependent imports change:
 
 ```toml
 modules = ["a_module", "b_module", "c_module"]
