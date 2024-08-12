@@ -59,6 +59,10 @@ qik --cache remote_cache_name
 
 ## Common Command Definitions
 
+!!! note
+
+    In all examples we recommend depending on the distribution of the tool. See [depending on distributions]() for how to accomplish this.
+
 ### Linting, Formatting, and Type Checking
 
 #### Pyright Type Checking
@@ -66,10 +70,7 @@ qik --cache remote_cache_name
 ```toml
 [commands.check-types]
 exec = "pyright {module.dir}"
-deps = [
-    {type = "module", name = "{module.name}"},
-    {type = "dist", name = "pyright"}
-]
+deps = [{type = "module", name = "{module.name}"}]
 cache = "repo"
 ```
 
@@ -78,7 +79,7 @@ cache = "repo"
 ```toml
 [commands.format]
 exec = "black {module.dir}"
-deps = ["{module.dir}/**.py", {type = "dist", name = "black"}]
+deps = ["{module.dir}/**.py"]
 cache = "repo"
 ```
 
@@ -87,7 +88,7 @@ cache = "repo"
 ```toml
 [commands.lint]
 exec = "flake8 {module.dir}"
-deps = ["{module.dir}/**.py", {type = "dist", name = "flake8"}]
+deps = ["{module.dir}/**.py"]
 cache = "repo"
 ```
 
@@ -96,14 +97,13 @@ cache = "repo"
 ```toml
 [commands.format]
 exec = "ruff format {module.dir}"
-deps = ["{module.dir}/**.py", {type = "dist", name = "ruff"}]
+deps = ["{module.dir}/**.py"]
 cache = "repo"
 
 [commands.lint]
 exec = "ruff check {module.dir}"
 deps = [
     "{module.dir}/**.py",
-    {type = "dist", name = "ruff"}
     {type = "command", name = "format"},
 ]
 ```
@@ -115,7 +115,7 @@ deps = [
 ```toml
 [commands.lock]
 exec = "pip-compile > requirements.txt"
-deps = ["requirements.in", {type = "dist", name = "pip-tools"}]
+deps = ["requirements.in"]
 artifacts = ["requirements.txt"]
 ```
 
@@ -124,7 +124,7 @@ artifacts = ["requirements.txt"]
 ```toml
 [commands.lock]
 exec = "poetry lock"
-deps = ["pyproject.toml", {type = "dist", name = "poetry"}]
+deps = ["pyproject.toml"]
 artifacts = ["poetry.lock"]
 ```
 
@@ -135,7 +135,7 @@ artifacts = ["poetry.lock"]
 ```toml
 [commands.build-docs]
 exec = "mkdocs build"
-deps = ["docs/**", "mkdocs.yml", {type = "dist", name = "mkdocs"}]
+deps = ["docs/**", "mkdocs.yml"]
 artifacts = ["site/**"]
 ```
 
@@ -144,7 +144,7 @@ artifacts = ["site/**"]
 ```toml
 [commands.build-docs]
 exec = "cd docs && make html"
-deps = ["docs/**", {type = "dist", name = "sphinx"}]
+deps = ["docs/**"]
 artifacts = ["docs/build/**"]
 ```
 
@@ -155,10 +155,7 @@ artifacts = ["docs/build/**"]
 ```toml
 [commands.test]
 exec = "pytest {module.dir}"
-deps = [
-    {type = "module", name = "{module.name}"},
-    {type = "dist", name = "pytest"}
-]
+deps = [{type = "module", name = "{module.name}"}]
 ```
 
 #### Pytest with Coverage
@@ -166,11 +163,7 @@ deps = [
 ```toml
 [commands.test]
 exec = "pytest {module.dir} --cov-report xml:{module.name}-coverage.xml"
-deps = [
-    {type = "module", name = "{module.name}"},
-    {type = "dist", name = "pytest"},
-    {type = "dist", name = "pytest-cov"}
-]
+deps = [{type = "module", name = "{module.name}"}]
 artifacts = ["{module.name}-coverage.xml"]
 ```
 
@@ -195,11 +188,7 @@ DATABASES = {
 ```toml
 [commands.test]
 exec = "pytest {module.dir}"
-deps = [
-    {type = "module", name = "{module.name}"},
-    {type = "dist", name = "pytest"},
-    {type = "dist", name = "pytest-django"}
-]
+deps = [{type = "module", name = "{module.name}"}]
 ```
 
 ### Generating API Clients
@@ -211,4 +200,13 @@ deps = [
 exec = "python manage.py generate_openapi_spec > openapi.json && npm run orval"
 deps = ["backend/**/api/**.py"]
 cache = "repo"
+```
+
+### Database Schemas
+
+#### Cache Django Postgres Database
+
+```toml
+[commands.migrate-db]
+exec = "python manage.py migrate && pg_dump"
 ```

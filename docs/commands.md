@@ -62,6 +62,8 @@ Glob patterns are specified as strings in `deps` and relative to the location of
 deps = ["dir/**/*.py"]
 ```
 
+<a id="distributions"></a>
+
 ### Distributions
 
 Use the `dist` dependency type to depend on an external Python distribution. Qik examines the virtual environment to break the cache if the version changes. Here we depend on the `ruff` distribution:

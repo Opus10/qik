@@ -1,14 +1,13 @@
-<p align="center" style="padding-bottom: 1rem">
-  <a href="https://qik.build"><img src="docs/static/logo.webp" alt="qik" width="40%"></a>
-</p>
 
-Qik (*quick*) is a cached command runner for modular monorepos. Like [make](https://www.gnu.org/software/make/), but with hash-based caching and advanced dependencies such as globs, imports, external packages, and much more.
+# Qik
 
-Qik's command caching ensures you never do redundant work. Parametrize commands across modules, watch and re-run them reactively, or filter commands since a git hash. Qik can dramatically improve CI and local development time.
+Qik (*quick*) is a cached command runner primarily for Python monorepos. Like [make](https://www.gnu.org/software/make/), but with hash-based caching and advanced dependencies such as globs, imports, external packages, and more.
 
-Although qik has special functionality with Python repos, any git-based project can use qik as a command runner.
+Qik's command caching ensures you never do redundant work. Parametrize commands across modules, watch and re-run them reactively, or filter commands since a git hash. Qik can dramatically improve CI and development time.
 
-[Read the docs here](https://qik.build).
+Although qik has special functionality with Python projects, any git-based repo can use qik as a command runner.
+
+[Read the qik docs here](https://qik.build/en/stable/guide/)
 
 ## Installation
 
@@ -22,7 +21,7 @@ For local development, we recommend installing most optional dependencies with:
 pip install "qik[dev]"
 ```
 
-Qik is compatible with Python 3.10 - 3.12, Linux, OSX, and WSL.
+Qik is compatible with Python 3.10 - 3.12, Linux, OSX, and WSL. It requires [git](https://git-scm.com).
 
 ## Quick Start
 
@@ -57,8 +56,8 @@ Parametrize commands over modules, for example, running the [ruff](https://docs.
 modules = ["a_module", "b_module", "c_module"]
 
 [commands.format]
-exec = "ruff format {module.path}"
-deps = ["{module.path}/**.py"]
+exec = "ruff format {module.dir}"
+deps = ["{module.dir}/**.py"]
 cache = "repo"
 ```
 
@@ -68,27 +67,27 @@ Running `qik format` will parametrize `ruff format` in parallel over all availab
 qik format -n 2 -m b_module -m c_module
 ```
 
-### Import Dependencies
+### Module Dependencies
 
-Some commands, such as [pyright](https://github.com/microsoft/pyright) type checking, should re-run whenever imports change:
+Some commands, such as [pyright](https://github.com/microsoft/pyright) type checking, should re-run whenever module files, imported code, or third-party dependencies change:
 
 ```toml
 modules = ["a_module", "b_module", "c_module"]
 plugins = ["qik.graph"]
 
-[commands.check_types]
-exec = "pyright {module.path}"
+[commands.check-types]
+exec = "pyright {module.dir}"
 deps = [{type = "module", name = "{module.name}"}]
 cache = "repo"
 ```
 
-Running `qik check_types` will parametrize `pyright` over all modules. Modular commands will be cached unless the module's files or dependencies change.
+Running `qik check-types` will parametrize `pyright` over all modules. Modular commands will be cached unless the module's files or dependencies change.
 
 We use the `qik.graph` plugin, which provides commands that are automatically used for building and analyzing the import graph.
 
 ### Command Dependencies
 
-Command dependencies help order execution. For example, change `deps` of `command.check_types` to run type checking only after code has been successfully formatted:
+Command dependencies help order execution. For example, change `deps` of `command.check-types` to run type checking only after code has been successfully formatted:
 
 ```toml
 deps = [
@@ -99,19 +98,17 @@ deps = [
 
 ### Caching
 
-We've shown examples of the `repo` cache, which stores metadata of the most recent runs in the repo. Qik offers both local and remote caches to store all command runs and their output.
-
-To use these, first ensure commands have `artifacts` configured. For example, the `lock` command generates a `requirements.txt` file:
+We've shown examples of the `repo` cache, which stores metadata of the most recent runs in the repo. Qik also offers local and remote caches. To use a remote cache, define command `artifacts`. For example, the `lock` command generates a `requirements.txt` file:
 
 ```toml
 [commands.lock]
 exec = "pip-compile > requirements.txt"
 deps = ["requirements.in"]
 artifacts = ["requirements.txt"]
-cache = "local"
+cache = "s3"
 ```
 
-Above we're using the `local` cache. Versions of our `requirements.txt` will be stored in the `._qik/cache` folder. Qik supports [AWS S3](https://aws.amazon.com/pm/serv-s3/) as a [remote caching backend](caching.md).
+Above we're using the [AWS S3](https://aws.amazon.com/pm/serv-s3/) cache. See [this section](https://qik.build/en/stable/caching/) for a deep dive on how caching works, along with how to configure remote caching.
 
 ### Command Line Interface
 
@@ -120,34 +117,31 @@ The core CLI functionality is as follows:
 - `qik` to run all commands.
 - `qik <cmd_name> <cmd_name>` to run specific commands.
 - `--watch` to reactively run selected commands.
+- `--since` to select commands based on changes since a git reference.
 - `-f` to run without the cache.
 - `-m` to run against specific modules.
 - `-n` to set the number of threads.
 - `--ls` to list commands instead of running them.
 
-Some runtime behavior is configurable via the CLI:
+See [the command runner section](https://qik.build/en/stable/commands#runner) for other advanced options, such as selecting commands based on cache status and setting the default [context profile](https://qik.build/en/stable/context).
 
-- `--cache` to set the default cache.
-- `--cache-when` to configure when to cache. Use `finished` to cache all results. By default only `success` runs are cached.
-- `--isolated` to not run dependent commands.
+## Next Steps
 
-These options are useful for selecting commands:
+Read the following guide to become a qik expert:
 
-- `--since` to select commands based on changes since a git SHA.
-- `--cache-type` to select commands by their cache type.
-- `--cache-status` to select commands by their cache status (`warm` or `cold`).
-- `--fail` to return a non-zero exit code if any commands are selected.
+- [Commands](https://qik.build/en/stable/commands): Configuring and running commands. Learn about all the dependencies, selectors, and runtime behavior.
+- [Context](https://qik.build/en/stable/context): Using environment-based context and runtime profiles.
+- [Caching](https://qik.build/en/stable/caching): How caching works and how to configure all cache types, including S3.
+- [CI/CD](https://qik.build/en/stable/ci): Patterns for optimizing CI/CD time.
 
-Finally, use `-p` to set the qik [context](context.md).
+After this, read the:
 
-## Docs
+- [Cookbook](https://qik.build/en/stable/cookbook) for command and CLI snippets.
+- [Roadmap](https://qik.build/en/stable/roadmap) for all the exciting upcoming features.
+- [Blog](https://qik.build/en/stable/blog) for updates, how-tos, and other articles.
 
-[Read the qik docs here](https://qik.build) for more information on:
+## Disclaimer
 
-- Commands: A cookbook of common commands and creating module-specific commands.
-- Dependencies: All dependencies, including global dependencies, constants, and file parts.
-- Selectors: Selecting commands based on properties.
-- Context: Using environment-based context and runtime profiles.
-- Caching: How caching works and how to configure all cache types, including S3.
-- Continuous Integration: Patterns for optimizing CI time.
-- Plugins: How to create qik plugins, such as custom commands and cache backends.
+Qik is currently in beta. Bumping the minor version (e.g. `0.1.0` to `0.2.0`) will indicate an API break until we release version `1.0.0`.
+
+Be diligent when upgrading CI/CD routines. We recommend including a [global dependency](https://qik.build/en/stable/commands#global) in your commands to regularly break the cache. We also recommend [understanding how the import graph is build](https://qik.build/en/stable/commands#module) when using module dependencies.

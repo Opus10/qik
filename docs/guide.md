@@ -125,9 +125,21 @@ See [the command runner section](commands.md#runner) for other advanced options,
 
 ## Next Steps
 
-Read the following to become a qik expert:
+Read the following guide to become a qik expert:
 
 - [Commands](commands.md): Configuring and running commands. Learn about all the dependencies, selectors, and runtime behavior.
 - [Context](context.md): Using environment-based context and runtime profiles.
 - [Caching](caching.md): How caching works and how to configure all cache types, including S3.
 - [CI/CD](ci.md): Patterns for optimizing CI/CD time.
+
+After this, read the:
+
+- [Cookbook](cookbook.md) for command and CLI snippets.
+- [Roadmap](roadmap.md) for all the exciting upcoming features.
+- [Blog](blog/index.md) for updates, how-tos, and other articles.
+
+## Disclaimer
+
+Qik is currently in beta. Bumping the minor version (e.g. `0.1.0` to `0.2.0`) will indicate an API break until we release version `1.0.0`.
+
+Be diligent when upgrading CI/CD routines. We recommend including a [global dependency](commands.md#global) in your commands to regularly break the cache. We also recommend [understanding how the import graph is build](commands.md#module) when using module dependencies.
