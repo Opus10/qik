@@ -59,9 +59,10 @@ qik --cache remote_cache_name
 
 ## Common Command Definitions
 
-!!! note
+Below are common command definitions. Note that we only provide basic dependencies in the examples. We also recommend to:
 
-    In all examples we recommend depending on the distribution of the tool. See [depending on distributions]() for how to accomplish this.
+- Depend on your requirements file or the tool's PyPI distribution. See [depending on distributions](commands.md#distributions).
+- Create a [global dependency](commands.md#global) on the Python version.
 
 ### Linting, Formatting, and Type Checking
 
@@ -204,9 +205,11 @@ cache = "repo"
 
 ### Database Schemas
 
-#### Cache Django Postgres Database
+#### Cache Migrated Django Postgres Database
 
 ```toml
 [commands.migrate-db]
-exec = "python manage.py migrate && pg_dump"
+exec = "python manage.py migrate && pg_dump db_name > dump.sql"
+deps = ["requirements.txt", "**/migrations/**.py"]
+cache = "repo"
 ```
