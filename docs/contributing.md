@@ -1,3 +1,8 @@
+---
+hide:
+  - navigation
+---
+
 # Contributing Guide
 
 This project was created using footing. For more information about footing, go to the [footing docs](https://github.com/Opus10/footing).

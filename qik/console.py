@@ -22,27 +22,26 @@ else:
     rich_console = qik.lazy.module("rich.console")
 
 
-def print(msg: str, emoji: Emoji | None = None, color: Color | None = None, **kwargs: Any) -> None:
+def fmt_msg(msg: str, emoji: Emoji | None = None, color: Color | None = None) -> str:
     if color:
         msg = f"[{color}]{msg}[/{color}]"
 
     if emoji:
         msg = f":{emoji}-emoji: {msg}"
 
-    get().print(msg, **kwargs)
+    return msg
+
+
+def print(msg: str, emoji: Emoji | None = None, color: Color | None = None, **kwargs: Any) -> None:
+    get().print(fmt_msg(msg, emoji=emoji, color=color), **kwargs)
 
 
 def print_exception() -> None:
     get().print_exception()
 
 
-def rule(
-    title: str = "",
-    *,
-    style: str = "rule.line",
-    align: Literal["left", "center", "right"] = "left",
-) -> None:
-    get().rule(title, align=align, style=style)
+def rule(msg: str, emoji: Emoji | None = None, color: Color | None = None, **kwargs: Any) -> None:
+    get().rule(fmt_msg(msg, emoji=emoji, color=color), align="left", style=color)
 
 
 @contextlib.contextmanager

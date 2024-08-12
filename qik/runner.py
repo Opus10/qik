@@ -198,7 +198,9 @@ class Graph:
             return bool(entry) if cache_status == "warm" else not bool(entry)
 
         return self.filter(
-            runnable for runnable in self if _matches_cache_status(runnable.get_cache_entry())
+            runnable
+            for runnable in self
+            if _matches_cache_status(runnable.get_cache_entry(artifacts=False))
         )
 
     def filter_since(self, git_sha: str) -> Self:

@@ -7,8 +7,6 @@ Qik's command caching ensures you never do redundant work. Parametrize commands 
 
 Although qik has special functionality with Python projects, any git-based repo can use qik as a command runner.
 
-[Read the qik docs here](https://qik.build/en/stable/guide/) or [this blog post on why I built Qik](https://qik.build/blog/2024/08/12/why-i-built-qik/).
-
 ## Installation
 
 ```bash
@@ -108,7 +106,7 @@ artifacts = ["requirements.txt"]
 cache = "s3"
 ```
 
-Above we're using the [AWS S3](https://aws.amazon.com/pm/serv-s3/) cache. See [this section](https://qik.build/en/stable/caching/) for a deep dive on how caching works, along with how to configure remote caching.
+Above we're using the [AWS S3](https://aws.amazon.com/pm/serv-s3/) cache. See [this section](caching.md) for a deep dive on how caching works, along with how to configure remote caching.
 
 ### Command Line Interface
 
@@ -123,25 +121,25 @@ The core CLI functionality is as follows:
 - `-n` to set the number of threads.
 - `--ls` to list commands instead of running them.
 
-See [the command runner section](https://qik.build/en/stable/commands#runner) for other advanced options, such as selecting commands based on cache status and setting the default [context profile](https://qik.build/en/stable/context).
+See [the command runner section](commands.md#runner) for other advanced options, such as selecting commands based on cache status and setting the default [context profile](context.md).
 
 ## Next Steps
 
 Read the following guide to become a qik expert:
 
-- [Commands](https://qik.build/en/stable/commands): Configuring and running commands. Learn about all the dependencies, selectors, and runtime behavior.
-- [Context](https://qik.build/en/stable/context): Using environment-based context and runtime profiles.
-- [Caching](https://qik.build/en/stable/caching): How caching works and how to configure all cache types, including S3.
-- [CI/CD](https://qik.build/en/stable/ci): Patterns for optimizing CI/CD time.
+- [Commands](commands.md): Configuring and running commands. Learn about all the dependencies, selectors, and runtime behavior.
+- [Context](context.md): Using environment-based context and runtime profiles.
+- [Caching](caching.md): How caching works and how to configure all cache types, including S3.
+- [CI/CD](ci.md): Patterns for optimizing CI/CD time.
 
 After this, read the:
 
-- [Cookbook](https://qik.build/en/stable/cookbook) for command and CLI snippets.
-- [Roadmap](https://qik.build/en/stable/roadmap) for all the exciting upcoming features.
-- [Blog](https://qik.build/en/stable/blog) for updates, how-tos, and other articles.
+- [Cookbook](cookbook.md) for command and CLI snippets.
+- [Roadmap](roadmap.md) for all the exciting upcoming features.
+- [Blog](blog/index.md) for updates, how-tos, and other articles.
 
 ## Disclaimer
 
 Qik is currently in beta. Bumping the minor version (e.g. `0.1.0` to `0.2.0`) will indicate an API break until we release version `1.0.0`.
 
-Be diligent when using qik in your CI/CD. We recommend including a [global dependency](https://qik.build/en/stable/commands#global) in your commands to regularly break the cache. We also recommend [understanding how the import graph is built](https://qik.build/en/stable/commands#module) when using module dependencies.
+Be diligent when using qik in your CI/CD. We recommend including a [global dependency](commands.md#global) in your commands to regularly break the cache. We also recommend [understanding how the import graph is built](commands.md#module) when using module dependencies.

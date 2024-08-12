@@ -1,30 +1,19 @@
 # Commands
 
-Commands are the core construct of qik. Here we overview configuration, explain how to create module-specific commands, dive into command dependencies, and end with a section on the command runner.
+Commands are the core construct of qik. Here we discuss configuration, modular commands, dependencies, and using the command runner.
 
-!!! warning
+## Configuration
 
-    Qik is still in alpha and these docs are incomplete.
-
-## Basic Configuration
-
-Let's first dive into the anatomy of a command, using an example `qik.toml`:
+Commands are shell strings configured in `qik.toml`, which can live at the root of your project or a subdirectory:
 
 ```toml
 [commands.lock]
 exec = "pip-compile > requirements.txt"
 ```
 
-In its simplest form, a command is just a shell string, executed with the same working directory as your root `qik.toml`. This command has no dependencies specified, so it's unable to be cached. It's named `lock`, so it can be executed with `qik lock`.
+Commands are executed with `qik <cmd> <cmd>` (or `qik` for all commands). Shell strings are executed in the current working directory of your `qik.toml`.
 
-To leverage command caching, specify the following two properties:
-
-1. `deps` - A list of [dependencies](dependencies.md).
-2. `cache` - The [cache](caching.md) to use.
-
-To leverage a remote cache, also specify the `artifacts` created or edited by the command.
-
-In the above example, we're compiling a lock file. We're caching results directly in our repo, so we can update the command to:
+To leverage command caching, add `deps` (dependencies) and a `cache`:
 
 ```toml
 [commands.lock]
@@ -33,117 +22,96 @@ deps = ["requirements.in"]
 cache = "repo"
 ```
 
-!!! note
+Running `qik lock` will cache results of this command in your git repo. The cache is broken if `requirements.in` changes.
 
-    If using a remote cache such as [s3](caching.md), we'd configure this cache in our `qik.toml` and set `artifacts = ["requirements.txt"]` since this command is generating a requirements file.
+Use a `local` cache to cache results locally or specify `artifacts` to leverage a shared remote cache. See the [caching](caching.md) and [CI/CD](ci.md) sections for an in-depth guide on how to best leverage caching to accomplish your goals.
 
 ## Parametrizing Modular Commands
 
-To run commands across modules, first configure them like so:
-
-```toml
-modules = ["my_module_a", "nested_module.b", "module_c"]
-```
-
-Parametrize your command across modules by using the `{module}` variable in your configuration. Here we format our modules:
+Configure modules and parametrize your commands with them like so:
 
 ```toml
 modules = ["my_module_a", "nested_module.b", "module_c"]
 
-[command.lint]
-exec = "ruff format {module.path}"
-deps = ["{module.path}/**.py"]
+[command.format]
+exec = "ruff format {module.dir}"
+deps = ["{module.dir}/**.py"]
 cache = "repo"
 ```
 
-When using the `{module}` variable, one has access to `module.path` (the file system path of the module) and `module.name` (the configured name).
+Qik parametrizes any command with `{module}` across all modules. `qik format` will run three invocations of `ruff format` in parallel. Use `qik format -m my_module_a -m module_c` to run specific modules.
 
-With this configuration, `qik lint` will run three separate commands. By default, subcommands are executed in parallel and cached individually. Use `qik lint -m my_module_a -m module_c` to specify modules.
+We'll cover more advanced module configuration later. For now keep the following in mind:
+
+- `modules` is a list of paths separated with `.` or `/`.
+- Use `modules = [{ name = "name", path = "path"}]` to give the module a different name.
+- Use `{module.dir}` for the directory or `{module.imp}` for the dotted import path.
 
 ## Dependencies
 
-Qik has five flavors of dependencies we'll cover: globs, distributions, modules, commands, and constants. At the end, we'll touch on how one can configure global dependencies across all commands.
+Qik command caching is centered around a rich set of dependencies. Here we'll cover globs, distributions, modules, commands, and constants. At the end, we'll touch on global dependencies across all commands.
+
+For a more in-depth look into how dependency caching works, see [the caching section](caching.md).
 
 ### Globs
 
-Glob patterns are the heart of qik's dependency structure. We recommend [this documentation](https://git-scm.com/docs/gitignore/en#_pattern_format) for an overview of how to write glob patterns.
-
-Glob patterns are specified as strings in `deps`:
+Glob patterns are specified as strings in `deps` and relative to the location of your `qik.toml`. We recommend [this documentation](https://git-scm.com/docs/gitignore/en#_pattern_format) for an overview of acceptable glob patterns:
 
 ```toml
 [command.my_command]
-deps = "glob_pattern/**/*.py"
+deps = ["dir/**/*.py"]
 ```
+
+<a id="distributions"></a>
 
 ### Distributions
 
-Break the cache on a pip distribution change by using the `dist` type of dependency. Here we ensure that we re-run `ruff` linting whenever the `ruff` version changes:
+Use the `dist` dependency type to depend on an external Python distribution. Qik examines the virtual environment to break the cache if the version changes. Here we depend on the `ruff` distribution:
 
 ```toml
 [command.lint]
 exec = "ruff format ."
-deps = ["**.py", { type = "dist", name = "ruff" }]
+deps = ["**.py", {type = "dist", name = "ruff"}]
 cache = "repo"
-```
-
-By default, qik determines the current version of the distribution by examining the activate virtual envirionment. In other words, if you run the command in an environment with a different `ruff` version, the commmand won't be cached.
-
-If using `--watch` mode, qik listens to the actual virtualenv directory for changes, re-invoking the command if the distribution changes. If using `--since`, you must configure where your virtualenv lockfile is located to ensure the command re-runs on changes to the virtualenv:
-
-```toml
-[venvs.default]
-lock-file = "requirements.txt"
 ```
 
 ### Modules
 
-Depend on a module's files, distributions, and imported files with the `module` type of dependency. Here we run [pyright](https://github.com/microsoft/pyright) type checking modularly based on module changes:
+Use the `module` dependency type to depend on a module's files, import graph, and external distributions. Here we run [pyright](https://github.com/microsoft/pyright) type checking modularly based on module changes:
 
 ```toml
 modules = ["a_module", "b_module", "c_module"]
 plugins = ["qik.graph"]
 
-[commands.check_types]
-exec = "pyright {module.path}"
+[commands.check-types]
+exec = "pyright {module.dir}"
 deps = [{type = "module", name = "{module.name}"}]
 cache = "repo"
 ```
 
-If `b_module` imports `a_module`, the cache of both of these will be broken if `a_module` changes.
+If `b_module` imports `a_module`, we'll re-run type checking on both if `a_module` changes.
 
-To use this feature, first ensure you've added `qik.graph` to `plugins`:
+Above we've added `qik.graph` to plugins. Doing `qik --ls` will show two additional graph commands that are automatically used to build and analyze the import graph. See [this section](#module) for more information on how to configure module dependencies.
 
-```toml
-plugins = ["qik.graph"]
-```
+!!! remember
 
-This plugin adds commands that build, analyze, and cache the import graph in the repo. Also remember to install the optional graph dependencies with `pip install "qik[graph]"` (note that these are included with `qik[dev]`).
-
-Imports inside of `TYPE_CHECKING` blocks will be included, along with third-party distributions. To disable this behavior:
-
-```toml
-[graph]
-include-type-checking: false
-include-dists: false
-```
+    Install optional graph dependencies with `pip install "qik[graph]"`. These are automatically included in `qik[dev]`.
 
 ### Commands
 
-Use a command as a dependency to force ordering in parallel runs. For example, code formatters that edit Python files should be considered as dependent commands to avoid race conditions.
-
-Here we run type checking after code formatting:
+Use commands as a dependency to force ordering. For example, code formatters that edit Python files should be ran before other commands that analyze them. Here we run type checking after code formatting:
 
 ```toml
 modules = ["a_module", "b_module", "c_module"]
 plugins = ["qik.graph"]
 
 [commands.format]
-exec = "ruff format {module.path}"
-deps = ["{module.path}/**.py"]
+exec = "ruff format {module.dir}"
+deps = ["{module.dir}/**.py"]
 cache = "repo"
 
-[commands.check_types]
-exec = "pyright {module.path}"
+[commands.check-types]
+exec = "pyright {module.dir}"
 deps = [
     {type = "module", name = "{module.name}"},
     {type = "command", name = "format"}
@@ -151,37 +119,9 @@ deps = [
 cache = "repo"
 ```
 
-When running `qik check_types`, the `format` command will also be selected for runs. This can be disabled by supplying `--isolated` to the command runner.
+There are several ways to configure command dependencies and adjust their runtime behavior that are overviewed in [this section](#command).
 
-#### Strict Command Dependencies
-
-When running commands with `--since` or `--watch`, one can ensure downstream dependent commands are invoked by making a *strict* command dependency.
-
-For example, say that we have a modular test runner and a coverage report command:
-
-```toml
-modules = ["a_module", "b_module", "c_module"]
-plugins = ["qik.graph"]
-
-[commands.test]
-exec = "pytest {module.path}"
-deps = [{ type = "module", name = "{module.name}" }]
-
-[commands.coverage]
-exec = "coverage report"
-deps = [{ type = "command", name = "test", strict = true}]
-```
-
-With `strict = true`, if we `--watch` or use `--since` in the command runner, we ensure that `coverage` is also executed if `test` is executed.
-
-#### Isolated Command Dependencies
-
-By default, qik runs dependent upstream commands. For example, `qik run coverage` will also run the test suite. This can be disabled globally with `qik run coverage --isolated`.
-
-Command dependencies can also specify `isolated` when needed:
-
-- `isolated = false` ensures the dependent command is always selected, even if the user uses `--isolated`.
-- `isolated = true` ensures the user must select the upstream command. For example, `qik coverage` would not run testing, but `qik coverage test` would run both of them and still guarantee execution order.
+<a id="const"></a>
 
 ### Constants
 
@@ -189,14 +129,10 @@ Use a constant value as a dependency and break the cache by changing it:
 
 ```toml
 [commands.my_command]
-deps = [{ type = "const", val = "value" }]
+deps = [{type = "const", val = "value"}]
 ```
 
-As we will show later, using a constant value as a global dependency can aid in manually breaking the cache for everything.
-
-!!! note
-
-    Unless working with dynamic variables such as [qik context](context.md), putting constants in a separate file and dependening on this file is preferred. This ensures a more granular results when using `--since` or `--watch`.
+<a id="global"></a>
 
 ### Global Dependencies
 
@@ -208,3 +144,164 @@ deps = [".python_version"]
 [command.lint]
 ...
 ```
+
+<a id="runner"></a>
+
+## The Command Runner
+
+### Basic Usage
+
+Use `qik` to run all commands or `qik <cmd_name> <cmd_name>` to run a list of commands. For modular commands, use `-m` to pass specific modules.
+
+By default, commands are executed across all threads. Use `-n` to adjust the number of workers.
+
+### Output
+
+When running serially (i.e. `-n 1`) or invoking a single runnable, qik displays all output. The :fast_forward: emoji indicates a cached run while :construction: indicates uncached.
+
+Parallel runs show progress bars for all commands followed by error output. Show no output with `-v 0` or full output with `-v 2`.
+
+In all circumstances, the output of the most recent run is always available in the `._qik/out` directory. Tail the files from this directory to see progress on long-running commands.
+
+### Watching for Changes
+
+Use `--watch` to reactively re-run commands based on file changes. For `dist` dependencies, qik will watch the virtual environment for modifications.
+
+### Isolated Commands
+
+Running a command with a dependent command will also bring it into the executable graph. For example, `qik lint` will also run `format` if `lint` depends on `format`. Use `--isolated` to ignore command dependencies.
+
+!!! note
+
+    Commands can override this by specifying `isolated=True` in their dependency defintion. We explain command dependencies in detail [here](#command).
+
+### Selecting Since a Git Reference
+
+Use `--since` to select commands based on changes since a git SHA, branch, tag, or other reference.
+
+If using `dist` dependencies, be sure to configure the location of the default virtual environment lock file:
+
+```toml
+[venvs.default]
+lock-file = "requirements.txt"
+```
+
+### Setting the Default Cache and Cache Behavior
+
+Use `-f` to break configured caches. Use `--cache` to set a default cache for commands that don't have one. Use `--cache-when` to configure the default behavior of when commands are cached. See the [caching section](caching.md) for more information on what this means.
+
+### Selecting Based on Cache Type or Status
+
+Use `--cache-type` to select commands based on the type of cache, such as `local`, `repo`, or a [custom remote cache you've defined](caching.md#s3).
+
+Select commands that have a warm or cold cache with `--cache-status warm` or `--cache-status cold`.
+
+Combinations of these selectors are beneficial for CI/CD optimizations. See the [CI/CD](ci.md) section for more information.
+
+### Listing and Failing
+
+Use `--ls` with any `qik ...` command to see which runnables are selected without running them. Supplying `--fail` will return a non-zero exit code if any commands are selected.
+
+Similar to the cache selectors, `--fail` can be beneficial for [CI/CD integration](ci.md).
+
+### Setting the Context Profile
+
+Set the context profile with `-p`. More on [qik context here](context.md).
+
+## Advanced Configuration
+
+Some aspects of the command runner and runnable graph have advanced configuration parameters that we discuss here.
+
+<a id="module"></a>
+
+### Module Dependencies
+
+When depending on a module, any import, even inside of a `TYPE_CHECKING` block, will be included in the dependency graph. Similarly, any direct third-party import will be included as a distribution dependency. Disable this behavior with the `graph` config section:
+
+```toml
+[graph]
+include-type-checking: false
+include-dists: false
+```
+
+Qik does not discover dynamic imports such as django's [apps.get_model](https://docs.djangoproject.com/en/5.0/ref/applications/#django.apps.AppConfig.get_models). To ensure accuracy in your import graph, do either of:
+
+- Add a standalone file (such as `qikimports.py`) with the non-dynamic imports.
+- Do dynamic imports outside of `TYPE_CHECKING`. For example:
+
+    ```
+    from typing import TYPE_CHECKING
+
+    from django.apps import apps
+
+    if TYPE_CHECKING:
+        # Qik will discover this import
+        from my_app.models import MyModel
+    else:
+        # Do dynamic or lazy importing in the app
+        MyModel = apps.get_model("my_app", "MyModel")
+    ```
+
+<a id="command"></a>
+
+### Command Dependencies
+
+By default, upstream commands are included in the graph unless using `--isolated`. To ensure a dependenct upstream command is always included, set `isolated = true` in the dependency definition.
+
+Using `--since` or `--watch` will *not* select downstream commands by default if the upstream command is invoked. Change this behavior by configuring the command dependency as *strict*:
+
+```toml
+modules = ["a_module", "b_module", "c_module"]
+plugins = ["qik.graph"]
+
+[commands.test]
+exec = "pytest {module.dir}"
+deps = [{type = "module", name = "{module.name}"}]
+
+[commands.coverage]
+exec = "coverage report"
+deps = [{type = "command", name = "test", strict = true}]
+```
+
+Above, running `qik --watch` or `qik --since` ensures that `coverage` is selected for running if `test` is selected.
+
+As mentioned previously, `--isolated` will ensure `qik coverage` does not select the `test` command. Override this by setting `isolated = false` in the command dependency.
+
+### Using Environment Variables and Machine Architecture
+
+Commands and dependencies can utilize environment variables and machine-specific parameters, providing flexibility in configuring different runtime environments.
+
+See the [qik context section](context.md) for a deep dive on how to do this.
+
+### Commands in Modules
+
+Commands can be defined in `qik.toml` files in project modules. Command names are prefixed by the name of the module.
+
+For example, say we have a root `qik.toml`:
+
+```toml
+modules = ["my.module.path"]
+```
+
+Then in `my/module/path/qik.toml`:
+
+```toml
+[command.my_command]
+exec = "echo 'hello world'"
+```
+
+`qik --ls` will show a `my.module.path.my_command` command.
+
+<a id="alias"></a>
+For deeply-nested paths, consider giving your module an alias:
+
+```toml
+modules = [{name = "my_module", path = "my.module.path"}]
+```
+
+This command can be executed with `my_module.my_command`.
+
+Keep the following in mind when using defining commands inside modules:
+
+- Glob dependency paths are still relative to the root `qik.toml` directory.
+- Use the full aliased name (e.g. `my_module.my_command`) when depending on a module command.
