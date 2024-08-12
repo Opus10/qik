@@ -3,7 +3,17 @@ hide:
   - navigation
 ---
 
+
 # Changelog
+
+## 0.1.0 (2024-08-12)
+
+### Feature
+
+  - Qik beta release. [Wesley Kendall, d56e7ab]
+
+    The qik beta release includes the initial command runner and docs.
+    See https://qik.build for an overview of functionality.
 
 ## 0.0.4 (2024-08-09)
 
