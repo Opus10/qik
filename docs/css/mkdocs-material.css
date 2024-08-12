@@ -9,7 +9,11 @@
     --md-primary-fg-color--dark: #FF369B;
 }
 
-.md-typeset h1, h2, h3 {
+.md-header__title {
+    font-family: "Gunplay", sans-serif;
+}
+
+.md-typeset h1 {
     font-family: "Gunplay";
     color: #BD4D86;
 }

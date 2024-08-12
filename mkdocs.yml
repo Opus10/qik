@@ -1,4 +1,5 @@
 site_name: Qik
+site_description: A cached command runner for Python monorepos.
 docs_dir: docs
 
 repo_name: Opus10/qik
@@ -6,6 +7,7 @@ repo_url: https://github.com/Opus10/qik
 
 plugins:
   - search
+  - blog
   - mkdocstrings:
       handlers:
         python:
@@ -46,8 +48,13 @@ markdown_extensions:
         - name: mermaid
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
+  - attr_list
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
 theme:
+  custom_dir: docs/overrides
   name: material
   logo: static/icon.png
   favicon: static/icon.png
@@ -55,6 +62,7 @@ theme:
     - navigation.footer
     - navigation.path
     - navigation.sections
+    - navigation.tabs
     - navigation.tracking
     - search.suggest
     - search.highlight
@@ -79,13 +87,16 @@ extra_css:
   - css/mkdocs-material.css
 
 nav:
-  - Overview: index.md
-  - Commands: commands.md
-  - Dependencies: dependencies.md
-  - Selectors: selectors.md
-  - Context: context.md
-  - Caching: caching.md
-  - Continuous Integration: ci.md
-  - Plugins: plugins.md
+  - Home: index.md
+  - Guide:
+    - Intro: guide.md
+    - Commands: commands.md
+    - Context: context.md
+    - Caching: caching.md
+    - CI/CD: ci.md
+  - Cookbook: cookbook.md
+  - Blog: blog/index.md
+  - Roadmap: roadmap.md
   - Release Notes: release_notes.md
-  - Contributing Guide: contributing.md
+  - Contributing: contributing.md
+    

@@ -130,7 +130,8 @@ def _generate_changelog_and_tag(old_version: str, new_version: str) -> None:
 
     # Generate the full changelog and copy it to docs/release_notes.md
     _shell("git tidy-log > CHANGELOG.md")
-    _shell("cp CHANGELOG.md docs/release_notes.md")
+    _shell("echo '---\nhide:\n  - navigation\n---\n\n' > docs/release_notes.md")
+    _shell("cat CHANGELOG.md >> docs/release_notes.md")
 
     # Generate a requirements.txt for readthedocs.org
     _shell("poetry export --with dev --without-hashes -f requirements.txt > docs/requirements.txt")

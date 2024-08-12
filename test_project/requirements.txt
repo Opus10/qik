@@ -4,6 +4,8 @@
 #
 #    pip-compile
 #
+asgiref==3.8.1
+    # via django
 build==1.2.1
     # via poetry
 cachecontrol[filecache]==0.14.0
@@ -22,6 +24,8 @@ crashtest==0.4.1
     #   poetry
 distlib==0.3.8
     # via virtualenv
+django==5.1
+    # via -r requirements.in
 dulwich==0.21.7
     # via poetry
 fastjsonschema==2.20.0
@@ -83,6 +87,8 @@ requests-toolbelt==1.0.0
     # via poetry
 shellingham==1.5.4
     # via poetry
+sqlparse==0.5.1
+    # via django
 tomlkit==0.13.0
     # via poetry
 trove-classifiers==2024.7.2

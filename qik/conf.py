@@ -108,14 +108,18 @@ class ModulePath(Base, frozen=True):
     path: str
 
     @functools.cached_property
-    def file_path(self) -> pathlib.Path:
-        return root() / self.path.replace(".", os.path.sep)
+    def dir(self) -> pathlib.Path:
+        return root() / self.path.replace(".", os.path.sep).replace("/", os.path.sep)
+
+    @functools.cached_property
+    def imp(self) -> str:
+        return self.path.replace("/", ".")
 
     @functools.cached_property
     def conf(self) -> ModuleConf:
         try:
             return msgspec.toml.decode(
-                (self.file_path / "qik.toml").read_bytes(),
+                (self.dir / "qik.toml").read_bytes(),
                 type=ModuleConf,
             )
         except FileNotFoundError:
@@ -124,7 +128,7 @@ class ModulePath(Base, frozen=True):
 
 class PluginPath(ModulePath, frozen=True):
     @functools.cached_property
-    def file_path(self) -> pathlib.Path:
+    def dir(self) -> pathlib.Path:
         spec = importlib.util.find_spec(self.path)
         if not spec or not spec.origin:
             raise RuntimeError(f'Could not import plugin "{self.name}"')

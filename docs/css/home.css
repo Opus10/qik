@@ -1,0 +1,78 @@
+/* docs/stylesheets/extra.css */
+
+.md-tabs {
+  background-color: #FF69B4;
+}
+
+/* Hero section */
+.mdx-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to bottom, var(--md-primary-fg-color), hsla(280, 67%, 55%, 1));
+  position: relative;
+  z-index: 1;
+  flex-grow: 1;
+  overflow: hidden;
+  padding: 1rem;
+}
+
+.mdx-hero {
+  color: var(--md-primary-bg-color);
+  text-align: center;
+  z-index: 2;
+  position: relative;
+}
+
+.mdx-hero p a {
+  color: white;
+  text-decoration: underline;
+}
+
+.mdx-hero h1 {
+  font-family: "Gunplay";
+  font-size: 2.5rem !important;
+  margin-bottom: 1rem;
+  color: white !important;
+}
+
+.mdx-hero p {
+  margin-bottom: 2rem;
+  font-size: 1.2rem;
+}
+
+.mdx-hero .md-button {
+  margin-top: .5rem;
+  margin-right: .5rem;
+  color: var(--md-primary-bg-color);
+}
+
+.mdx-hero .md-button--primary {
+  background-color: var(--md-primary-bg-color);
+  color: hsla(280, 37%, 48%, 1);
+  border-color: var(--md-primary-bg-color);
+}
+
+.mdx-hero .md-button:focus,
+.mdx-hero .md-button:hover {
+  background-color: var(--md-accent-fg-color);
+  color: var(--md-default-bg-color);
+  border-color: var(--md-accent-fg-color);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .mdx-hero h1 {
+    font-size: 2rem !important;
+  }
+
+  .mdx-hero p {
+    font-size: 1rem;
+  }
+}
+
+.md-main, .md-main__inner {
+  height: 0px;
+  margin: 0px !important;
+  flex-grow: 0;
+}

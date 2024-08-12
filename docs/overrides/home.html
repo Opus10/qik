@@ -1,0 +1,30 @@
+{% extends "main.html" %}
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ 'css/home.css' | url }}">
+{% endblock %}
+{% block tabs %}
+{{ super() }}
+
+<section class="mdx-container">
+  <div class="md-grid md-typeset">
+    <div class="mdx-hero">
+      <div class="mdx-hero__content">
+        <h1>Make CI Fast Again</h1>
+        <p>
+            Qik is a cached command runner for Python monorepos.<br/>
+            <small><a href="{{ config.repo_url }}">Free and open source</a></small>
+        </p>
+        <a href="{{ page.next_page.url | url }}" title="{{ page.next_page.title | e }}" class="md-button md-button--primary">
+          Get started
+        </a>
+        <a href="blog/2024/08/12/why-i-built-qik/" class="md-button">
+          Why?
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+{% block content %}{% endblock %}
