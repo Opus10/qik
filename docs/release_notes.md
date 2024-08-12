@@ -6,6 +6,12 @@ hide:
 
 # Changelog
 
+## 0.1.1 (2024-08-12)
+
+### Trivial
+
+  - Force a re-build of the docs to remove ads. [Wesley Kendall, 0274fde]
+
 ## 0.1.0 (2024-08-12)
 
 ### Feature
