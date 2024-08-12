@@ -81,7 +81,7 @@ Use the `module` dependency type to depend on a module's files, import graph, an
 modules = ["a_module", "b_module", "c_module"]
 plugins = ["qik.graph"]
 
-[commands.check_types]
+[commands.check-types]
 exec = "pyright {module.dir}"
 deps = [{type = "module", name = "{module.name}"}]
 cache = "repo"
@@ -108,7 +108,7 @@ exec = "ruff format {module.dir}"
 deps = ["{module.dir}/**.py"]
 cache = "repo"
 
-[commands.check_types]
+[commands.check-types]
 exec = "pyright {module.dir}"
 deps = [
     {type = "module", name = "{module.name}"},

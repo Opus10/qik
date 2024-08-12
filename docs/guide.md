@@ -73,19 +73,19 @@ Some commands, such as [pyright](https://github.com/microsoft/pyright) type chec
 modules = ["a_module", "b_module", "c_module"]
 plugins = ["qik.graph"]
 
-[commands.check_types]
+[commands.check-types]
 exec = "pyright {module.dir}"
 deps = [{type = "module", name = "{module.name}"}]
 cache = "repo"
 ```
 
-Running `qik check_types` will parametrize `pyright` over all modules. Modular commands will be cached unless the module's files or dependencies change.
+Running `qik check-types` will parametrize `pyright` over all modules. Modular commands will be cached unless the module's files or dependencies change.
 
 We use the `qik.graph` plugin, which provides commands that are automatically used for building and analyzing the import graph.
 
 ### Command Dependencies
 
-Command dependencies help order execution. For example, change `deps` of `command.check_types` to run type checking only after code has been successfully formatted:
+Command dependencies help order execution. For example, change `deps` of `command.check-types` to run type checking only after code has been successfully formatted:
 
 ```toml
 deps = [

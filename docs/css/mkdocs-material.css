@@ -3,11 +3,6 @@
     src:url(../static/gunplay.regular.otf) ;
 }
 
-@font-face {
-    font-family: "Gunplay3d";
-    src:url(../static/gunplay.3d-regular.otf) ;
-}
-
 :root {
     --md-primary-fg-color: #FF69B4;
     --md-primary-fg-color--light: #FF8CC6;
@@ -18,7 +13,7 @@
     font-family: "Gunplay", sans-serif;
 }
 
-.md-typeset h1, h2, h3 {
+.md-typeset h1 {
     font-family: "Gunplay";
     color: #BD4D86;
 }

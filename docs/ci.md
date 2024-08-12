@@ -65,7 +65,7 @@ To bypass this, use `--isolated` when running the command. Remember, using [modu
 
 ## Dynamic CI/CD Config Generation
 
-Some CI/CD services such as [CircleCI](circleci.com) offer the ability to [dynamically generate configuration](https://circleci.com/docs/dynamic-config/). You can leverage this pattern as follows:
+Some CI/CD services such as [CircleCI](https://circleci.com) offer the ability to [dynamically generate configuration](https://circleci.com/docs/dynamic-config/). You can leverage this pattern as follows:
 
 - In the initial step, run `qik --cache-status warm` to run all warm commands. All artifacts will be available in your repository to store as CI/CD artifacts.
 - Then iterate over `qik --cache-status cold --ls` to configure the remaining jobs for execution.
