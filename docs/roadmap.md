@@ -7,6 +7,20 @@ hide:
 
 Qik has several large upcoming features. If you'd like to suggest other future direction or let us know what you think, [open a discussion here](https://github.com/Opus10/qik/discussions). If you'd like to contribute any of these core changes, [contact Wes first](mailto:wesleykendall@gmail.com).
 
+## Better Import Graph Control
+
+#### Auto-Ignoring Missing Distributions
+
+Some distributions in a project may be optional and not installed, causing the graph builder to fail. Currently one can [globally disable external distributions from the graph](commands.md#module), however, we plan for better control over this.
+
+#### Ignoring Specific Distributions
+
+We intend to allow users to explicitly disable certain distributions from the graph.
+
+#### Adding and Removing Import Import Links
+
+Users must [manually import modules](commands.md#module) in a python file if those imports are dynamic. We are planning to allow for more explicit control over this, along with removing imports from the graph. For example, one will be able to remove imports from their migration files.
+
 ## Better Virtual Environment (Venv) Support
 
 #### Run Commands in Venvs
