@@ -144,4 +144,4 @@ After this, read the:
 
 Qik is currently in beta. Bumping the minor version (e.g. `0.1.0` to `0.2.0`) will indicate an API break until we release version `1.0.0`.
 
-Be diligent when upgrading CI/CD routines. We recommend including a [global dependency](https://qik.build/en/stable/commands#global) in your commands to regularly break the cache. We also recommend [understanding how the import graph is build](https://qik.build/en/stable/commands#module) when using module dependencies.
+Be diligent when using qik in your CI/CD. We recommend including a [global dependency](https://qik.build/en/stable/commands#global) in your commands to regularly break the cache. We also recommend [understanding how the import graph is build](https://qik.build/en/stable/commands#module) when using module dependencies.
