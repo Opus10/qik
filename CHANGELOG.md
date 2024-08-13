@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2 (2024-08-13)
+
+### Trivial
+
+  - Fix README link to blog post [Wesley Kendall, 0b930b5]
+
 ## 0.1.1 (2024-08-12)
 
 ### Trivial
