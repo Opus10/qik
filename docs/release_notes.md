@@ -6,6 +6,12 @@ hide:
 
 # Changelog
 
+## 0.1.3 (2024-08-14)
+
+### Trivial
+
+  - Update blog post and other misc fixes. [Wesley Kendall, 5a300d6]
+
 ## 0.1.2 (2024-08-13)
 
 ### Trivial
