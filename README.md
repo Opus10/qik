@@ -7,7 +7,7 @@ Qik's command caching ensures you never do redundant work. Parametrize commands 
 
 Although qik has special functionality with Python projects, any git-based repo can use qik as a command runner.
 
-[Read the qik docs here](https://qik.build/en/stable/guide/) or [this blog post on why I built Qik](https://qik.build/en/stable/blog/2024/08/12/why-i-built-qik/).
+[Read the qik docs here](https://qik.build/en/stable/guide/) or [this blog post on why I built Qik](https://qik.build/en/stable/blog/2024/08/12/why-im-building-qik/).
 
 ## Installation
 

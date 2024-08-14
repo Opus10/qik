@@ -5,15 +5,19 @@ authors:
   - wes
 ---
 
-# Why I Built Qik
+# Why I'm Building Qik
 
-I'm a fan of monorepos. I like to avoid overly complex infrastructure. Oftentimes the consequences of monorepos are painfully slow CI and a hodgepodge of developer commands.
+I'm a fan of monorepos. I like to avoid overly complex infrastructure. However, the consequences can oftentimes be painfully slow CI and a poor developer experience.
 
-I continually wonder why it's so difficult to *just run the things that matter* in CI. Is this the best we can do, paying to continually re-run things?
+For example, huge Django projects can have seconds of latency to run a command, not to mention minutes of running migrations in CI *just to start your test suite*. Oh, you have a failing test? Have fun *literally re-running everything from scratch on the next commit*.
 
-Although tools like [nx](https://nx.dev) have helped this experience in JavaScript monorepos, I desired an experience similar to [make](https://www.gnu.org/software/make/) that could understand the import graph of Python projects and performantly use file hashes to understand what has changed.
+Although tools like [nx](https://nx.dev) have greatly benefitted JavaScript monorepos, I desired a tool like [make](https://www.gnu.org/software/make/) for large Python projects that could:
 
-I wanted a fully open source tool that could be used with any CI service and caching backend. Enter qik.
+- Understand the import graph, running only the things that matter.
+- Support multiple virtual environments and enforce import boundaries.
+- Use full file hashing to understand what's changed vs. file modification times.
+
+Enter qik (*quick*).
 
 <!-- more -->
 
@@ -30,7 +34,7 @@ Once [installed](../../guide.md#installation), run `qik lock` to compile your lo
 
 ### Caching
 
-Where qik shines is its ability to cache commands results. Here we're caching the results in our repository when `requirements.in` changes:
+Where qik shines is its ability to cache command results. Here we're caching a lock file in our repository when `requirements.in` changes:
 
 ```toml
 [commands.lock]
@@ -39,7 +43,7 @@ deps = ["requirements.in"]
 cache = "repo"
 ```
 
-Running `qik lock` will now cache the latest command results in your repository. Want to use a shared remote S3 cache instead? Configure it and specify the `artifacts` of the command:
+Running `qik lock` will replay the command if nothing has changed. Want to use a shared remote S3 cache instead? Configure it and specify the `artifacts` of the command:
 
 ```toml
 [caches.remote]
@@ -53,7 +57,7 @@ artifacts = ["requirements.txt"]
 cache = "remote"
 ```
 
-When the cache is warm, qik will immediately show the command output, extract the cached `requirements.txt` file, and exit with the cached exit code.
+When the cache is warm, qik will replay the command output, extract the `requirements.txt` file, and exit with the cached exit code.
 
 ### Advanced Dependencies
 
@@ -89,7 +93,7 @@ exec = "ruff check {module.dir}"
 deps = ["{module.dir}/**.py"]
 ```
 
-The qik command line tool runs in parallel by default. Use `-m` to specify individual modules.
+Qik runs commands in parallel by default. Use `-m` to specify individual modules.
 
 ### Depending on the Import Graph
 
@@ -122,14 +126,27 @@ qik command_one command_two --watch
 
 ## CI/CD Optimization
 
-We have a [CI/CD guide here](../../ci.md) for tricks on how to optimize continuous integration and delivery. For example, qik's CLI comes with `--cache-type` and `--cache-status` flags to filter commands by the type and status of cache, allowing you to run your warm commands immediately and generate CI config for the cold commands.
+Qik's command selection and remote caching can help optimize your CI/CD flow:
 
-Even if your CI provider doesn't allow for dynamic configuration, existing CI configurations can leverage a remote cache to dramatically increase performance for some commands.
+- Use the `--cache-status` selector to immediately run warm commands and dynamically schedule the rest (if your CI provider allows it, like [CircleCI dynamic configs](https://circleci.com/docs/dynamic-config/))
+- Use a [remote cache like S3](../../caching.md#s3) with your existing CI config to replay commands that haven't changed, for example, extracting coverage artifacts from a test run
+- Use a [repo cache](../../caching.md#repo) to store command hashes and artifacts directly in the repo, such as lock files, type checking and linting results, auto-generated or formatted code, etc. Qik replaces the need to write custom CI checks to ensure auto-generated files are up to date.
+
+There's a [CI/CD guide in the docs](../../ci.md) for more tips and tricks.
+
+## Spaces, Virtual Envs, and Import Boundaries
+
+Qik's ultimate goal is to help architect large monorepos. Qik *spaces*, an upcoming feature, will support multiple virtual environments (e.g., [uv](https://github.com/astral-sh/uv), [pip-tools](https://github.com/jazzband/pip-tools), [poetry](https://python-poetry.org)) and enable import boundaries in your monorepo. I'm also planning for direct support with [conda](https://conda.io) to enable environments with different Python or Node versions.
+
+See the [roadmap](../../roadmap.md) for a full picture of where qik is headed.
 
 ## Finally
 
-I am very bullish on Python's future, especially with the [Rust](https://www.rust-lang.org)-ification and performance optimizations in so many tools. However, we need better ways to manage Python repo sprawl and to make development an enjoyable and scalable experience for huge projects.
+I am very bullish on Python's future, especially with the [Rust](https://www.rust-lang.org)-ification and performance optimizations in so many tools. We just need better ways to avoid the downsides of the sprawl associated with huge Python projects. Is qik the answer? That is TBD, but I felt compelled to share my approach of first focusing on an extensible and advanced command runner.
 
-I'm confident that the right design and community of plugins can enable this. Is qik the answer? That is TBD, but I felt compelled to solve it in the way I hoped it would work.
+Qik is very much in its infancy. Here's how you can get involved:
 
-Qik is in its infancy. Check the [roadmap here](../../roadmap.md) to better understand where I ultimately want to take this, and please [open a discussion](https://github.com/Opus10/qik/discussions) if you have any thoughts!
+- [Star or follow the project on Github](https://github.com/Opus10/qik) to see updates.
+- [Open a discussion](https://github.com/Opus10/qik/discussions) if you have any ideas for improvement.
+- [Open an issue](https://github.com/Opus10/qik/issues) if you're using it and are having trouble.
+- [Contact me privately](mailto:wesleykendall@gmail.com) for anything else.
