@@ -24,6 +24,8 @@ Other dependency types, such as distributions and modules are still tied to unde
 
 When a command is cached, the exit code and log are stored. Artifacts are also stored when using a remote cache.
 
+<a id="repo"></a>
+
 ## The Repo Cache
 
 The `repo` cache stores the most recent result in `.qik/cache`. It's useful for architecture-agnostic commands, for example, generating lock files, linting, type checking, code formatting, and auto-generating API clients. The `qik.graph` plugin stores metadata here too.
