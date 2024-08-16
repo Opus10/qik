@@ -6,6 +6,12 @@ hide:
 
 # Changelog
 
+## 0.1.4 (2024-08-16)
+
+### Trivial
+
+  - Added basic test suite. [Wesley Kendall, 66a9d16]
+
 ## 0.1.3 (2024-08-14)
 
 ### Trivial
