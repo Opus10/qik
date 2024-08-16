@@ -1,8 +1,14 @@
 import functools
 import importlib
-from typing import Any, Callable, Generic, TypeVar
+from typing import Any, Callable, Final, Generic, TypeVar
 
 T = TypeVar("T")
+_MODULE_TO_OPT_INSTALL: Final = {
+    "watchdog": "watch",
+    "grimp": "graph",
+    "rustworkx": "graph",
+    "boto3": "s3",
+}
 
 
 class object(Generic[T]):
@@ -20,10 +26,7 @@ class object(Generic[T]):
         return self._object.__exit__(*args, **kwargs)  # type: ignore
 
     def __getattr__(self, name: str) -> Any:
-        if not name.startswith("__"):
-            return getattr(self._object, name)
-        else:
-            return object.__getattribute__(self, name)
+        return getattr(self._object, name)
 
 
 class module:
@@ -39,18 +42,13 @@ class module:
                 try:
                     self._mod = importlib.import_module(self._modname)
                 except ModuleNotFoundError as exc:
-                    module_to_opt_install = {
-                        "watchdog": "watch",
-                        "grimp": "graph",
-                        "rustworkx": "graph",
-                        "boto3": "s3",
-                    }
                     err_msg = f"{self._modname} could not be imported."
+                    package = self._modname.split(".", 1)[0]
 
-                    if opt_install := module_to_opt_install.get(self._modname):
-                        err_msg += f' Do "pip install qik[{opt_install}]" or install the {self._modname} package to use qik.'
+                    if opt_install := _MODULE_TO_OPT_INSTALL.get(package):
+                        err_msg += f' Do "pip install qik[{opt_install}]" or install the {package} package to use qik.'
                     else:
-                        err_msg += f" Install the {self._modname} package to use qik."
+                        err_msg += f" Install the {package} package to use qik."
                     raise ModuleNotFoundError(err_msg) from exc
             else:
                 raise

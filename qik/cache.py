@@ -206,6 +206,7 @@ class S3(msgspec.Struct, Local, frozen=True, dict=True):
     aws_secret_access_key: str | None = None
     aws_session_token: str | None = None
     region_name: str | None = None
+    endpoint_url: str | None = None
 
     @functools.cached_property
     def client(self) -> qik.s3.Client:
@@ -214,6 +215,7 @@ class S3(msgspec.Struct, Local, frozen=True, dict=True):
             aws_secret_access_key=self.aws_secret_access_key,
             aws_session_token=self.aws_session_token,
             region_name=self.region_name,
+            endpoint_url=self.endpoint_url,
         )
 
     def on_miss(self, runnable: Runnable, hash: str) -> None:
@@ -238,6 +240,8 @@ class S3(msgspec.Struct, Local, frozen=True, dict=True):
 def factory(conf: qik.conf.Cache) -> Cache:
     match conf:
         case qik.conf.S3Cache():
+            endpoint_url = qik.ctx.format(conf.endpoint_url)
+            endpoint_url = None if endpoint_url == "None" else endpoint_url
             return S3(
                 bucket=qik.ctx.format(conf.bucket),
                 prefix=qik.ctx.format(conf.prefix),
@@ -245,6 +249,7 @@ def factory(conf: qik.conf.Cache) -> Cache:
                 aws_secret_access_key=qik.ctx.format(conf.aws_secret_access_key),
                 aws_session_token=qik.ctx.format(conf.aws_session_token),
                 region_name=qik.ctx.format(conf.region_name),
+                endpoint_url=endpoint_url,
             )
         case other:
             raise ValueError(f'Invalid cache backend - "{other}".')

@@ -1,17 +1,14 @@
 from typing import TYPE_CHECKING
 
-import grimp
 import requests
 
 if TYPE_CHECKING:
-    import textualize
+    import msgspec
 
 
 def my_func():
     print("hi")
 
 
-def hi() -> textualize.textualize:
+def hi() -> msgspec.Struct:
     requests.get()
-    hi = grimp.main()
-    assert hi

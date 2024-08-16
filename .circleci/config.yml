@@ -18,7 +18,7 @@ orbs:
           - restore_cache:
               key: v4-{{ checksum "poetry.lock" }} 
           - run: make dependencies
-          - run: make full-test-suite || true
+          - run: make full-test-suite
           - save_cache:
               key: v4-{{ checksum "poetry.lock" }} 
               paths:

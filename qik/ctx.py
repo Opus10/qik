@@ -10,7 +10,6 @@ import threading
 from typing import TYPE_CHECKING, Any, Iterator, Literal, TypeVar, overload
 
 import msgspec
-import psutil
 
 import qik.arch
 import qik.conf
@@ -122,7 +121,7 @@ class QikCtx(msgspec.Struct, forbid_unknown_fields=True, rename="kebab", dict=Tr
     cache: str | None = None
     force: bool = False
     ls: bool = False
-    workers: int = msgspec.field(default_factory=lambda: psutil.cpu_count(logical=True))
+    workers: int = msgspec.field(default_factory=lambda: os.cpu_count())
     fail: bool = False
     cache_when: qik.conf.CacheWhen = "success"
     verbosity: int = 1
@@ -198,7 +197,9 @@ def _module(
 
     parsed = msgspec.convert(ctx, type=var_struct)
 
-    def _get_val(var_name: str, type_val: str | type) -> qik.conf.VarType | qik.unset.UnsetType:
+    def _get_val(
+        var_name: str, type_val: str | type
+    ) -> qik.conf.VarType | list[str] | qik.unset.UnsetType:
         str_type = type_val.__name__ if isinstance(type_val, type) else str(type_val)
         env_key = f"{env_prefix}{var_name}".upper()
         env_setting = os.environ.get(env_key)
@@ -206,7 +207,7 @@ def _module(
             return getattr(parsed, var_name)
 
         match str_type:
-            case "str" | "str | None":
+            case "str" | "str | None" | "qik.conf.CacheStatus | None":
                 return env_setting
             case "int" | "int | None":
                 try:
@@ -222,6 +223,8 @@ def _module(
                     raise ValueError(
                         f'Unable to cast env ctx {env_key} value "{env_setting}" as bool.'
                     )
+            case "list[str]":
+                return env_setting.split(",")
             case other:
                 raise AssertionError(f"Unexpected ctx var type: {other}")
 
@@ -304,7 +307,7 @@ class Ctx:
             return super().__getattribute__(name)
         except AttributeError as exc:
             raise KeyError(
-                f'Ctx namespace "{name}" is invalid. Use project, qik, modules, or plugings.'
+                f'Ctx namespace "{name}" is invalid. Use project, qik, modules, or plugins.'
             ) from exc
 
     @functools.cached_property

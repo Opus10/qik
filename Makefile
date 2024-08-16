@@ -80,6 +80,7 @@ lock:
 .PHONY: dependencies
 dependencies:
 	$(EXEC_WRAPPER) poetry install --no-ansi
+	$(EXEC_WRAPPER) poetry run --no-ansi pip install -e .[dev]
 
 
 # Set up git configuration
@@ -87,9 +88,6 @@ dependencies:
 git-setup:
 	$(EXEC_WRAPPER) git tidy --template -o .gitcommit.tpl
 	$(EXEC_WRAPPER) git config --local commit.template .gitcommit.tpl
-
-
-
 
 
 # Sets up a conda development environment

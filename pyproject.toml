@@ -81,11 +81,14 @@ footing = "*"
 setuptools = "*"
 poetry-core = "*"
 pytest-mock = "3.14.0"
+pip-tools = "7.4.1"
+moto = {extras = ["s3", "server"], version = "5.0.12"}
 
 [tool.pytest.ini_options]
 xfail_strict = true
 testpaths = ["qik/tests"]
 norecursedirs = ".venv"
+addopts = "--cov-config pyproject.toml"
 
 [tool.ruff]
 lint.select = ["E", "F", "B", "I", "G", "C4"]

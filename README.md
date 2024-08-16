@@ -1,7 +1,7 @@
 
 # Qik
 
-Qik (*quick*) is a cached command runner primarily for Python monorepos. Like [make](https://www.gnu.org/software/make/), but with hash-based caching and advanced dependencies such as globs, imports, external packages, and more.
+Qik (*quick*) is a command runner that understands the import graph. Like [make](https://www.gnu.org/software/make/), but with hash-based caching and advanced dependencies such as globs, imports, external packages, and more.
 
 Qik's command caching ensures you never do redundant work. Parametrize commands across modules, watch and re-run them reactively, or filter commands since a git hash. Qik can dramatically improve CI and development time.
 
