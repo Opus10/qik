@@ -1,1 +1,1 @@
-{"globs":["a/hello.py","a/hello/**.py","b.py","b/**.py","b/bb.py","b/bb/**.py","b/bb/aa.py","b/bb/aa/**.py","b/hello.py","b/hello/**.py"],"dists":["grimp","requests","textualize"],"hash":"319fde1366e9bb5c3e36a38099616c13"}
+{"globs":["a/hello.py","a/hello/**.py","b.py","b/**.py","b/bb.py","b/bb/**.py","b/bb/aa.py","b/bb/aa/**.py","b/hello.py","b/hello/**.py"],"dists":["msgspec","requests"],"hash":"e8faec1911757468e6fede23a69453a9"}

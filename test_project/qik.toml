@@ -1,10 +1,15 @@
 modules = ["a", {name = "b_module", path = "b"}, "nest"]
 plugins = [{name = "graph", path = "qik.graph"}]
 deps = ["python_version"]
+vars = ["aws_access_key_id", "aws_secret_access_key", {name = "aws_endpoint_url", required = false}]
 
 [caches.remote]
 type = "s3"
 bucket = "qik-cache-test"
+aws-access-key-id = "{ctx.project.aws_access_key_id}"
+aws-secret-access-key = "{ctx.project.aws_secret_access_key}"
+region-name = "us-west-2"
+endpoint-url = "{ctx.project.aws_endpoint_url}"
 
 [ctx.ci.qik]
 workers = 1

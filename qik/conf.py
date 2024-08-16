@@ -156,6 +156,7 @@ class S3Cache(Cache, frozen=True, tag="s3"):
     aws_secret_access_key: str | None = None
     aws_session_token: str | None = None
     region_name: str | None = None
+    endpoint_url: str | None = None
 
 
 class ProjectConf(ModuleConf, frozen=True):

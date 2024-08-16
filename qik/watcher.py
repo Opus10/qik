@@ -1,3 +1,9 @@
+"""Core watching functionality.
+
+Note that we have an integration test for this in test_integration.py::test_watch,
+however coverage is not yet instrumented for it (hence pragma: no covers)
+"""
+
 from __future__ import annotations
 
 import fnmatch
@@ -34,7 +40,9 @@ def _parse_dist(path: str) -> None | str:
         return qik.dep._normalize_dist_name(match.group(1))
 
 
-def _make_watchdog_handler(*, runner: Runner) -> watchdog_events.FileSystemEventHandler:
+def _make_watchdog_handler(
+    *, runner: Runner
+) -> watchdog_events.FileSystemEventHandler:  # pragma: no cover
     """Create the watchdog event handler.
 
     Watch for both internal project and virtual env changes.
@@ -71,10 +79,14 @@ def _make_watchdog_handler(*, runner: Runner) -> watchdog_events.FileSystemEvent
             self.timer = threading.Timer(interval, self.handle_events)
             self.timer.start()
 
-        def on_any_event(self, event):
+        def on_modified(self, event):
+            if not isinstance(event, watchdog_events.FileModifiedEvent):
+                return
+
             with self.lock:
+                src_path = pathlib.Path(event.src_path).resolve()
                 try:
-                    path = str(pathlib.Path(event.src_path).relative_to(self.cwd))
+                    path = str(src_path.relative_to(self.cwd))
                     if path.endswith("qik.toml"):
                         self.runner.logger.print(
                             f"{path} config changed. Re-start watcher.",
@@ -85,7 +97,7 @@ def _make_watchdog_handler(*, runner: Runner) -> watchdog_events.FileSystemEvent
                     elif self.qik_file_re.match(path):
                         self.changes.add(qik.dep.Glob(path))
                 except ValueError:
-                    path = str(pathlib.Path(event.src_path).relative_to(self.env.dir))
+                    path = str(src_path.relative_to(self.env.dir))
                     if (dist := _parse_dist(path)) and event.event_type == "created":
                         self.changes.add(qik.dep.Dist(dist))
 
@@ -106,7 +118,7 @@ def _make_watchdog_handler(*, runner: Runner) -> watchdog_events.FileSystemEvent
     return QikEventHandler()
 
 
-def start(runner: Runner):
+def start(runner: Runner):  # pragma: no cover
     observer = watchdog_observers.Observer()
     handler = _make_watchdog_handler(runner=runner)
     observer.schedule(handler, ".", recursive=True)

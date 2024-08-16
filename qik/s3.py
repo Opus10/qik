@@ -43,15 +43,17 @@ class Client(msgspec.Struct, frozen=True, dict=True):
     aws_secret_access_key: str | None = None
     aws_session_token: str | None = None
     region_name: str | None = None
+    endpoint_url: str | None = None
 
     @functools.cached_property
     def s3_session(self) -> boto3.Session:
+        s3_kwargs = {"endpoint_url": self.endpoint_url} if self.endpoint_url else {}
         return boto3.Session(
             aws_access_key_id=self.aws_access_key_id,
             aws_secret_access_key=self.aws_secret_access_key,
             aws_session_token=self.aws_session_token,
             region_name=self.region_name,
-        ).resource("s3")
+        ).resource("s3", **s3_kwargs)
 
     def download_dir(
         self, *, bucket_name: str, prefix: pathlib.Path, dir: pathlib.Path, max_workers: int = 10
