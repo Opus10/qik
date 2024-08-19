@@ -6,6 +6,12 @@ hide:
 
 # Changelog
 
+## 0.1.5 (2024-08-19)
+
+### Trivial
+
+  - Better error handling and references to docs on errors. [Wesley Kendall, 089c132]
+
 ## 0.1.4 (2024-08-16)
 
 ### Trivial

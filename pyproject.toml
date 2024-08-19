@@ -27,7 +27,7 @@ packages = [
 exclude = [
   "*/tests/"
 ]
-version = "0.1.4"
+version = "0.1.5"
 description = "Run cached commands in your modular monorepo."
 authors = ["Opus 10 Engineering"]
 classifiers = [
