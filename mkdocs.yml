@@ -94,6 +94,7 @@ nav:
     - Context: context.md
     - Caching: caching.md
     - CI/CD: ci.md
+    - Troubleshooting: errors.md
   - Cookbook: cookbook.md
   - Blog: blog/index.md
   - Roadmap: roadmap.md

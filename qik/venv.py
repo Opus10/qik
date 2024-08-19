@@ -5,6 +5,7 @@ import sysconfig
 import msgspec
 
 import qik.conf
+import qik.errors
 
 
 class Env(msgspec.Struct, frozen=True, dict=True):
@@ -26,4 +27,4 @@ def load(name: str = "default") -> Env:
     elif name == "default":
         return Env(name="default")
     else:
-        raise KeyError(f'Venv named "{name}" not configured in qik.venvs.')
+        raise qik.errors.VenvNotFound(f'Venv named "{name}" not configured in qik.venvs.')

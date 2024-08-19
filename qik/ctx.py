@@ -13,6 +13,7 @@ import msgspec
 
 import qik.arch
 import qik.conf
+import qik.errors
 import qik.unset
 
 if TYPE_CHECKING:
@@ -182,7 +183,7 @@ def _module(
 
     proj_ctx = {"default": {}, "ci": {}} | proj.ctx
     if profile not in proj_ctx:
-        raise ValueError(f'Context profile "{profile}" is not configured.')
+        raise qik.errors.CtxProfileNotFound(f'Context profile "{profile}" is not configured.')
 
     ctx = proj_ctx[profile].get(namespace, {})
     if name is None:
@@ -213,14 +214,14 @@ def _module(
                 try:
                     return int(env_setting)
                 except ValueError as exc:
-                    raise ValueError(
+                    raise qik.errors.EnvCast(
                         f'Unable to cast env ctx {env_key} value "{env_setting}" as int'
                     ) from exc
             case "bool" | "bool | None":
                 if env_setting.lower().strip() in ("yes", "true", "1", "no", "false", "0"):
                     return env_setting.lower().strip() in ["yes", "true", "1"]
                 else:
-                    raise ValueError(
+                    raise qik.errors.EnvCast(
                         f'Unable to cast env ctx {env_key} value "{env_setting}" as bool.'
                     )
             case "list[str]":
@@ -231,7 +232,9 @@ def _module(
     for var_name, var_type in var_struct.__annotations__.items():
         setattr(parsed, var_name, _get_val(var_name, var_type))
         if getattr(parsed, var_name) is qik.unset.UNSET:
-            raise ValueError(f'No value supplied for "{namespace}.{module_prefix}{var_name}" ctx.')
+            raise qik.errors.CtxValueNotFound(
+                f'No value supplied for "{namespace}.{module_prefix}{var_name}" ctx.'
+            )
 
     return parsed
 
@@ -275,7 +278,7 @@ class _ModuleCtx:
         try:
             return getattr(self._module_ctx, key)
         except AttributeError as exc:
-            raise KeyError(f'Ctx "{self._prefix}.{key}" not configured') from exc
+            raise qik.errors.UnconfiguredCtx(f'Ctx "{self._prefix}.{key}" not configured') from exc
 
 
 class _ModulesCtx:
@@ -306,7 +309,7 @@ class Ctx:
         try:
             return super().__getattribute__(name)
         except AttributeError as exc:
-            raise KeyError(
+            raise qik.errors.InvalidCtxNamespace(
                 f'Ctx namespace "{name}" is invalid. Use project, qik, modules, or plugins.'
             ) from exc
 

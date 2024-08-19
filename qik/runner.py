@@ -15,6 +15,7 @@ import qik.conf
 import qik.console
 import qik.ctx
 import qik.dep
+import qik.errors
 import qik.logger
 import qik.runnable
 import qik.shell
@@ -69,13 +70,7 @@ class DAGPool:
                 result: Result = future.result()
             except Exception:
                 failed.add(name)
-                self.logger.print(
-                    "An unexpected error happened.",
-                    emoji="broken_heart",
-                    color="red",
-                    event="exception",
-                )
-                sys.exit(1)
+                raise
 
             results[name] = result
             if result.code != 0:
@@ -319,8 +314,8 @@ class Runner:
         qik.watcher.start(self)
 
 
-def exec() -> Graph:
-    """Run commands based on the current qik context."""
+def _get_graph() -> Graph:
+    """Get a filtered graph."""
     qik_ctx = qik.ctx.module("qik")
     cmds = qik_ctx.commands
     modules = qik_ctx.modules
@@ -330,9 +325,8 @@ def exec() -> Graph:
 
     try:
         graph = Graph(cmds)
-    except RecursionError:
-        qik.console.print("Cycle detected in DAG.", emoji="broken_heart", color="red")
-        sys.exit(1)
+    except RecursionError as exc:
+        raise qik.errors.GraphCycle("Cycle detected in DAG.") from exc
 
     if qik_ctx.cache_types:
         graph = graph.filter_cache_types(qik_ctx.cache_types)
@@ -346,14 +340,26 @@ def exec() -> Graph:
     if qik_ctx.modules:
         graph = graph.filter_modules(modules)
 
-    if not qik_ctx.ls and not qik_ctx.fail:
-        runner = Runner(graph=graph)
-        with qik.ctx.set_runner(runner):
-            exit_code = runner.exec()
-
-            if qik_ctx.watch:
-                runner.watch()
-            else:
-                sys.exit(exit_code)
-
     return graph
+
+
+def exec() -> Graph:
+    """Run commands based on the current qik context."""
+    try:
+        qik_ctx = qik.ctx.module("qik")
+        graph = _get_graph()
+
+        if not qik_ctx.ls and not qik_ctx.fail:
+            runner = Runner(graph=graph)
+            with qik.ctx.set_runner(runner):
+                exit_code = runner.exec()
+
+                if qik_ctx.watch:
+                    runner.watch()
+                else:
+                    sys.exit(exit_code)
+
+        return graph
+    except Exception as exc:
+        qik.errors.print(exc)
+        sys.exit(1)

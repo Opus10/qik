@@ -12,6 +12,7 @@ from typing import Any, Literal, TypeAlias, TypeVar
 import msgspec.structs
 import msgspec.toml
 
+import qik.errors
 import qik.unset
 
 CtxNamespace: TypeAlias = Literal["qik", "project", "modules", "plugins"]
@@ -131,7 +132,7 @@ class PluginPath(ModulePath, frozen=True):
     def dir(self) -> pathlib.Path:
         spec = importlib.util.find_spec(self.path)
         if not spec or not spec.origin:
-            raise RuntimeError(f'Could not import plugin "{self.name}"')
+            raise qik.errors.PluginImport(f'Could not import plugin "{self.name}"')
 
         return pathlib.Path(spec.origin).parent
 
@@ -224,7 +225,9 @@ def _project_conf() -> tuple[ProjectConf, pathlib.Path]:
 
             break
 
-    raise RuntimeError("Could not locate qik configuration in qik.toml or pyproject.toml.")
+    raise qik.errors.ConfigNotFound(
+        "Could not locate qik configuration in qik.toml or pyproject.toml."
+    )
 
 
 @functools.cache
@@ -243,7 +246,7 @@ def path_to_name(path: str) -> str:
     elif path in proj.plugins_by_path:
         return proj.plugins_by_path[path].name
     else:
-        raise KeyError(f'No configured module or plugin with path "{path}".')
+        raise qik.errors.ModulePathNotFound(f'No configured module or plugin with path "{path}".')
 
 
 @functools.cache
@@ -251,7 +254,7 @@ def module(name: str) -> ModuleConf:
     """Get module configuration."""
     proj = project()
     if name not in proj.modules_by_name:
-        raise KeyError(f'Module "{name}" not configured in {location().name}.')
+        raise qik.errors.ModuleNotFound(f'Module "{name}" not configured in {location().name}.')
 
     return proj.modules_by_name[name].conf
 
@@ -260,7 +263,7 @@ def plugin(name: str) -> ModuleConf:
     """Get plugin configuration."""
     proj = project()
     if name not in proj.plugins_by_name:
-        raise KeyError(f'Plugin "{name}" not configured in {location().name}.')
+        raise qik.errors.PluginNotFound(f'Plugin "{name}" not configured in {location().name}.')
 
     return proj.plugins_by_name[name].conf
 
@@ -273,11 +276,13 @@ def get(name: str | None = None) -> ModuleConf:
     else:
         try:
             return module(name)
-        except KeyError:
+        except qik.errors.ModuleNotFound:
             try:
                 return plugin(name)
-            except KeyError:
-                raise KeyError(f'Module or plugin "{name}" not configured in {location().name}.')  # noqa: B904
+            except qik.errors.PluginNotFound:
+                raise qik.errors.ModuleOrPluginNotFound(
+                    f'Module or plugin "{name}" not configured in {location().name}.'
+                ) from None
 
 
 @functools.cache
@@ -292,7 +297,7 @@ def command(uri: str) -> CmdConf:
     module, name = uri_parts(uri)
     conf = get(module)
     if name not in conf.commands:
-        raise KeyError(f'Command "{uri}" not configured.')
+        raise qik.errors.CommandNotFound(f'Command "{uri}" not configured.')
 
     return conf.commands[name]
 
