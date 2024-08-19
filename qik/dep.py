@@ -10,6 +10,7 @@ import msgspec
 import qik.cmd
 import qik.conf
 import qik.ctx
+import qik.errors
 import qik.file
 import qik.hash
 import qik.unset
@@ -179,8 +180,8 @@ class Dist(BaseDep, frozen=True):
     def since(self) -> list[str]:
         venv = qik.venv.load()
         if not venv.lock_file:
-            raise ValueError(
-                "Must configure env lock file (venvs.default.lock-file) when using --since on dists."
+            raise qik.errors.LockFileNotFound(
+                "Must configure venv lock file (venvs.default.lock-file) when using --since on dists."
             )
 
         return venv.lock_file

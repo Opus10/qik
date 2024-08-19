@@ -10,6 +10,7 @@ import msgspec
 
 import qik.conf
 import qik.ctx
+import qik.errors
 import qik.file
 import qik.s3
 import qik.shell
@@ -252,7 +253,7 @@ def factory(conf: qik.conf.Cache) -> Cache:
                 endpoint_url=endpoint_url,
             )
         case other:
-            raise ValueError(f'Invalid cache backend - "{other}".')
+            raise qik.errors.InvalidCacheType(f'Invalid cache type - "{other}".')
 
 
 @functools.cache
@@ -270,4 +271,4 @@ def load(backend: str | None) -> Cache:
             if conf := proj.caches.get(custom):
                 return factory(conf)
             else:
-                raise ValueError(f'Unconfigured cache - "{custom}"')
+                raise qik.errors.UnconfiguredCache(f'Unconfigured cache - "{custom}"')
