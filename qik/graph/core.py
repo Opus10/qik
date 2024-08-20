@@ -105,8 +105,8 @@ def build() -> Graph:
     proj = qik.conf.project()
     grimp_g = grimp.build_graph(
         *internal_modules,
-        include_external_packages=proj.graph.include_dists,
-        exclude_type_checking_imports=not proj.graph.include_type_checking,
+        include_external_packages=not proj.graph.ignore_dists,
+        exclude_type_checking_imports=proj.graph.ignore_type_checking,
         cache_dir=qik.conf.priv_work_dir() / ".grimp",
     )
     graph_modules_imps = [(imp.split(".", 1)[0], imp) for imp in sorted(grimp_g.modules)]

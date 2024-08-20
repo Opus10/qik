@@ -117,7 +117,7 @@ Use the above profile with `qik -p custom-profile`.
 
 <a id="ctx1"></a>
 
-#### Environment CastFailured
+#### Environment Cast Failure
 
 Context variables are typed, so environment variables must be able to be cast to these types. You'll receive this error when:
 
@@ -170,3 +170,65 @@ lock-file = "requirements.txt"
 #### Virtual Environment Not Found
 
 `Venv named "{name}" not configured in qik.venvs` means the referenced virtual environment is not found in the project configuration. Ensure you have a `[venvs.{name}]` section for any non-default virtual environment.
+
+## Graph
+
+<a id="graph0"></a>
+
+#### No Module Distribution
+
+`No distribution found for module "{top-level import}"` means the `qik.graph` plugin found an external module that could not be mapped to its PyPI distribution. This can happen when the distribution is not installed in the virtual environment (e.g. optional dependencies) or when issues with Python's `importlib.metadata` arise.
+
+For example, say that `import my_package.submodule` triggers this. You have three options for resolution:
+
+1. Map the top-level module to its distribution:
+
+    ```toml
+    [graph.module-dists]
+    my_package = "pypi_distribution"
+    ```
+
+    !!! note
+
+        If the distribution is not installed in your virtual environment, you'll also need to configure the distribution version using [this troubleshooting tip](#dep0).
+
+2. Ignore the specific module:
+
+    ```toml
+    [graph.module-dists]
+    my_package = ""
+    ```
+
+3. Ignore all modules that cannot be mapped:
+
+    ```toml
+    [graph]
+    ignore-missing-module-dists = true
+    ```
+
+!!! tip
+
+    You can also ignore tracking distributions entirely in the graph with `graph.ignore_dists = true`.
+
+## Dependencies
+
+<a id="dep0"></a>
+
+#### Distribution Not Found
+
+`Distribution "{package name}" not found` means the distribution could not be found in the virtual environment. You have two options for resolution:
+
+1. Map the distribution to a version:
+
+    ```toml
+    [dist-versions]
+    pypi-package-name = "version"
+    ```
+
+2. Ignore any missing distributions:
+
+    ```toml
+    ignore-missing-dists = true
+    ```
+
+If this error surfaces from using the `qik.graph` plugin for module dependencies, other options for overriding behavior are in [this troubleshooting tip](#graph0).

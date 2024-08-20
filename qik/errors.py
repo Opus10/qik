@@ -14,84 +14,109 @@ class Error(Exception):
     code = "general"
 
 
-class ConfigNotFound(Error):
+class RunnerError(Error):
+    """Runner errors result in the whole runner exiting."""
+
+    code = "runner"
+
+
+class ConfigNotFound(RunnerError):
     code = "conf0"
 
 
-class ModulePathNotFound(Error):
+class ModulePathNotFound(RunnerError):
     code = "conf1"
 
 
-class ModuleNotFound(Error):
+class ModuleNotFound(RunnerError):
     code = "conf2"
 
 
-class PluginNotFound(Error):
+class PluginNotFound(RunnerError):
     code = "conf3"
 
 
-class ModuleOrPluginNotFound(Error):
+class ModuleOrPluginNotFound(RunnerError):
     code = "conf4"
 
 
-class CommandNotFound(Error):
+class CommandNotFound(RunnerError):
     code = "conf5"
 
 
-class PluginImport(Error):
+class PluginImport(RunnerError):
     code = "conf6"
 
 
-class GraphCycle(Error):
+class GraphCycle(RunnerError):
     code = "conf7"
 
 
-class UnconfiguredCache(Error):
+class UnconfiguredCache(RunnerError):
     code = "cache0"
 
 
-class InvalidCacheType(Error):
+class InvalidCacheType(RunnerError):
     code = "cache1"
 
 
-class CtxProfileNotFound(Error):
+class CtxProfileNotFound(RunnerError):
     code = "ctx0"
 
 
-class EnvCast(Error):
+class EnvCast(RunnerError):
     code = "ctx1"
 
 
-class CtxValueNotFound(Error):
+class CtxValueNotFound(RunnerError):
     code = "ctx2"
 
 
-class UnconfiguredCtx(Error):
+class UnconfiguredCtx(RunnerError):
     code = "ctx3"
 
 
-class InvalidCtxNamespace(Error):
+class InvalidCtxNamespace(RunnerError):
     code = "ctx4"
 
 
-class LockFileNotFound(Error):
+class LockFileNotFound(RunnerError):
     code = "venv0"
 
 
-class VenvNotFound(Error):
+class VenvNotFound(RunnerError):
     code = "venv1"
 
 
-def print(exc: Exception) -> None:
-    print_err_kwargs = {"emoji": "broken_heart", "color": "red"}
-    if isinstance(exc, Error):
-        if qik_ctx.module("qik").verbosity >= 3:
-            qik.console.print_exception()
+class RunnableError(Error):
+    """Runnable errors result in an individual runnable erroring."""
 
-        qik.console.print(
-            f"{exc.args[0]} [reset][dim]https://qik.build/en/stable/errors/#{exc.code}[/dim]",
-            **print_err_kwargs,
+    code = "runnable"
+
+
+class ModuleDistributionNotFound(RunnableError):
+    code = "graph0"
+
+
+class DistributionNotFound(RunnableError):
+    code = "dep0"
+
+
+def fmt_msg(exc: Exception) -> str:
+    err_kwargs = (
+        {} if isinstance(exc, RunnableError) else {"emoji": "broken_heart", "color": "red"}
+    )
+    if isinstance(exc, Error):
+        return qik.console.fmt_msg(
+            f"{exc.args[0]} [reset][dim]See https://qik.build/en/stable/errors/#{exc.code}[/dim]",
+            **err_kwargs,
         )
     else:
-        qik.console.print("An unexpected error happened.", **print_err_kwargs)
+        return qik.console.fmt_msg("An unexpected error happened", **err_kwargs)
+
+
+def print(exc: Exception) -> None:
+    msg = fmt_msg(exc)
+    qik.console.get().print(msg)
+    if not isinstance(exc, Error) or qik_ctx.module("qik").verbosity >= 3:
         qik.console.print_exception()
