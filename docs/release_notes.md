@@ -6,6 +6,12 @@ hide:
 
 # Changelog
 
+## 0.1.6 (2024-08-20)
+
+### Trivial
+
+  - Includes the ability to override missing module and distributions, along with much better error handling for individual failures in the runner. [Wesley Kendall, fe5d844]
+
 ## 0.1.5 (2024-08-19)
 
 ### Trivial
