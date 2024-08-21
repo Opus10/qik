@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import collections
 import functools
 import importlib.metadata
 import os
@@ -12,6 +13,7 @@ import msgspec
 
 import qik.conf
 import qik.dep
+import qik.errors
 import qik.file
 import qik.graph.core
 import qik.hash
@@ -66,11 +68,16 @@ class PackagesDistributions(msgspec.Struct):
 
 @functools.lru_cache(maxsize=1)
 def _packages_distributions(venv_hash: str) -> dict[str, list[str]]:
+    graph_conf = qik.conf.project().graph
     cache_path = qik.conf.priv_work_dir() / "graph" / "packages_distributions.json"
+    overrides = (
+        {} if not graph_conf.ignore_missing_module_dists else collections.defaultdict(lambda: [""])
+    )
+    overrides |= {module: [dist] for module, dist in graph_conf.module_dists.items()}
     try:
         cached_val = msgspec.json.decode(cache_path.read_bytes(), type=PackagesDistributions)
         if cached_val.venv_hash == venv_hash:
-            return cached_val.packages_distributions
+            return overrides | cached_val.packages_distributions
     except FileNotFoundError:
         pass
 
@@ -79,7 +86,7 @@ def _packages_distributions(venv_hash: str) -> dict[str, list[str]]:
     )
     qik.file.write(cache_path, msgspec.json.encode(cached_val))
 
-    return cached_val.packages_distributions
+    return overrides | cached_val.packages_distributions
 
 
 _PACKAGES_DISTRIBUTIONS_LOCK = threading.Lock()
@@ -116,7 +123,12 @@ def analyze_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
     def _gen_upstream_dists() -> Iterator[str]:
         for module in upstream:
             if not module.is_internal:
-                yield from distributions[module.imp]
+                try:
+                    yield from (dist for dist in distributions[module.imp] if dist)
+                except KeyError as exc:
+                    raise qik.errors.DistributionNotFound(
+                        f'No distribution found for module "{module.imp}"'
+                    ) from exc
 
     qik.dep.store(
         analysis_path(module.name),

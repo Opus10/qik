@@ -220,9 +220,13 @@ When depending on a module, any import, even inside of a `TYPE_CHECKING` block, 
 
 ```toml
 [graph]
-include-type-checking: false
-include-dists: false
+ignore-type-checking = true
+ignore-dists = true
 ```
+
+!!! note
+
+    Optional distributions that aren't installed in the virtual environment may lead to mapping and version resolution errors. See the troubleshooting section on [mapping modules to distributions](errors.md#graph0) and [overriding distribution versions](errors.md#dep0) for more information.
 
 Qik does not discover dynamic imports such as django's [apps.get_model](https://docs.djangoproject.com/en/5.0/ref/applications/#django.apps.AppConfig.get_models). To ensure accuracy in your import graph, do either of:
 

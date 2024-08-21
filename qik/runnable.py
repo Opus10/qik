@@ -14,6 +14,7 @@ import qik.cache
 import qik.conf
 import qik.ctx
 import qik.dep
+import qik.errors
 import qik.hash
 import qik.shell
 import qik.unset
@@ -154,18 +155,23 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
 
     def _uncached_exec(self, logger: qik.logger.Logger) -> Result:
         """Run a command without wrapped caching."""
-        if self.shell:
-            process = qik.shell.popen(self.val, env=_get_exec_env())
-            output = []
-            for line in process.stdout if process.stdout is not None else []:
-                logger.print(line, runnable=self, event="output")
-                output.append(line)
+        try:
+            if self.shell:
+                process = qik.shell.popen(self.val, env=_get_exec_env())
+                output = []
+                for line in process.stdout if process.stdout is not None else []:
+                    logger.print(line, runnable=self, event="output")
+                    output.append(line)
 
-            process.wait()
-            code = process.returncode
-            log = "".join(output)
-        else:
-            code, log = pkgutil.resolve_name(self.val)(runnable=self)
+                process.wait()
+                code = process.returncode
+                log = "".join(output)
+            else:
+                code, log = pkgutil.resolve_name(self.val)(runnable=self)
+                logger.print(log, runnable=self, event="output")
+        except qik.errors.RunnableError as exc:
+            log = qik.errors.fmt_msg(exc)
+            code = 1
             logger.print(log, runnable=self, event="output")
 
         return Result(log=log, code=code, hash=self.hash())
@@ -173,33 +179,40 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
     def _exec(self) -> Result:
         """Run a command, caching the results."""
         logger = qik.ctx.runner().logger
-        cache_entry = self.get_cache_entry()
-        print_kwargs = {"cache_entry": cache_entry, "runnable": self}
-
-        if cache_entry:
-            # Run cached command
-            logger.print(
-                msg=f"{self.name} [default][dim]{self.val}",
-                emoji="fast-forward_button",
-                color="cyan",
-                event="start",
-                **print_kwargs,
-            )
-            if cache_entry.log:
-                logger.print(cache_entry.log, event="output", **print_kwargs)
-
-            result = Result.from_cache(cache_entry)
+        print_kwargs = {"runnable": self}
+        try:
+            cache_entry = self.get_cache_entry()
+        except qik.errors.RunnableError as exc:
+            log = qik.errors.fmt_msg(exc)
+            logger.print(log, runnable=self, event="output")
+            result = Result(log=log, code=1, hash="")
         else:
-            # Run uncached command
-            logger.print(
-                msg=f"{self.name} [default][dim]{self.val}",
-                emoji="construction",
-                color="cyan",
-                event="start",
-                **print_kwargs,
-            )
-            result = self._uncached_exec(logger=logger)
-            self.cache_result(result)
+            print_kwargs |= {"cache_entry": cache_entry}
+
+            if cache_entry:
+                # Run cached command
+                logger.print(
+                    msg=f"{self.name} [default][dim]{self.val}",
+                    emoji="fast-forward_button",
+                    color="cyan",
+                    event="start",
+                    **print_kwargs,
+                )
+                if cache_entry.log:
+                    logger.print(cache_entry.log, event="output", **print_kwargs)
+
+                result = Result.from_cache(cache_entry)
+            else:
+                # Run uncached command
+                logger.print(
+                    msg=f"{self.name} [default][dim]{self.val}",
+                    emoji="construction",
+                    color="cyan",
+                    event="start",
+                    **print_kwargs,
+                )
+                result = self._uncached_exec(logger=logger)
+                self.cache_result(result)
 
         if result.code == 0:
             logger.print(

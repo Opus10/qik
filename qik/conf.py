@@ -142,8 +142,10 @@ class Env(Base, frozen=True):
 
 
 class Graph(Base, frozen=True):
-    include_type_checking: bool = True
-    include_dists: bool = True
+    ignore_type_checking: bool = False
+    ignore_dists: bool = False
+    ignore_missing_module_dists: bool = False
+    module_dists: dict[str, str] = {}
 
 
 class Cache(Base, frozen=True, tag_field="type"):
@@ -168,6 +170,8 @@ class ProjectConf(ModuleConf, frozen=True):
     venvs: dict[str, Env] = {}
     caches: dict[str, S3Cache] = {}
     graph: Graph = msgspec.field(default_factory=Graph)
+    dist_versions: dict[str, str] = {}
+    ignore_missing_dists: bool = False
 
     @functools.cached_property
     def modules_by_name(self) -> dict[str, ModulePath]:

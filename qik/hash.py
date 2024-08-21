@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import collections
+import functools
 import importlib.metadata
 import subprocess
 from typing import TYPE_CHECKING
 
 import xxhash
 
+import qik.conf
+import qik.errors
 import qik.shell
 
 if TYPE_CHECKING:
@@ -62,9 +65,27 @@ def globs(*vals: run_deps.Glob | str) -> str:
     return xxhash.xxh128_hexdigest("".join(f"{name}{hash}" for name, hash in hashes.items()))
 
 
+@functools.cache
+def _dist_version_overrides() -> dict[str, str]:
+    project_conf = qik.conf.project()
+    base = collections.defaultdict(str) if project_conf.ignore_missing_dists else {}
+    return base | project_conf.dist_versions
+
+
+@functools.cache
+def _dist_version(dist: str) -> str:
+    try:
+        return importlib.metadata.version(dist)
+    except importlib.metadata.PackageNotFoundError:
+        try:
+            return _dist_version_overrides()[dist]
+        except KeyError as exc:
+            raise qik.errors.DistributionNotFound(f'Distribution "{dist}" not found.') from exc
+
+
 def dists(*vals: str) -> str:
     return xxhash.xxh128_hexdigest(
-        "".join(f"{dist}{importlib.metadata.version(dist)}" for dist in sorted(vals))
+        "".join(f"{dist}{_dist_version(dist)}" for dist in sorted(vals))
     )
 
 
