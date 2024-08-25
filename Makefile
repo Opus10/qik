@@ -66,7 +66,7 @@ endif
 # Pull the latest container and start a detached run
 .PHONY: docker-start
 docker-start:
-	$(DOCKER_CMD)-compose pull
+	$(DOCKER_CMD) compose pull
 	$(DOCKER_RUN_CMD)
 
 
@@ -74,19 +74,13 @@ docker-start:
 .PHONY: lock
 lock:
 	$(EXEC_WRAPPER) poetry lock --no-update
+	$(EXEC_WRAPPER) poetry export --with dev --without-hashes -f requirements.txt > docs/requirements.txt
 
 
 # Install dependencies
 .PHONY: dependencies
 dependencies:
 	$(EXEC_WRAPPER) poetry install --no-ansi
-
-
-# Set up git configuration
-.PHONY: git-setup
-git-setup:
-	$(EXEC_WRAPPER) git tidy --template -o .gitcommit.tpl
-	$(EXEC_WRAPPER) git config --local commit.template .gitcommit.tpl
 
 
 
@@ -102,12 +96,12 @@ conda-create:
 # Sets up a Conda development environment
 .PHONY: conda-setup
 conda-setup: EXEC_WRAPPER=conda run -n ${PACKAGE_NAME} --no-capture-output
-conda-setup: conda-create lock dependencies git-setup 
+conda-setup: conda-create lock dependencies 
 
 
 # Sets up a Docker development environment
 .PHONY: docker-setup
-docker-setup: docker-teardown docker-start lock dependencies git-setup
+docker-setup: docker-teardown docker-start lock dependencies
 
 
 # Spin down docker resources
@@ -153,6 +147,7 @@ lint:
 	$(EXEC_WRAPPER) ruff format . --check
 	$(EXEC_WRAPPER) ruff check ${MODULE_NAME}
 	$(EXEC_WRAPPER) bash -c 'make docs'
+	$(EXEC_WRAPPER) diff <(poetry export --with dev --without-hashes -f requirements.txt) docs/requirements.txt >/dev/null 2>&1 || exit 1
 
 
 # Fix common linting errors
@@ -166,21 +161,3 @@ lint-fix:
 .PHONY: type-check
 type-check:
 	$(EXEC_WRAPPER) pyright $(MODULE_NAME)
-
-
-# Lint commit messages
-.PHONY: tidy-lint
-tidy-lint:
-	$(EXEC_WRAPPER) git tidy-lint origin/main..
-
-
-# Perform a tidy commit
-.PHONY: tidy-commit
-tidy-commit:
-	$(EXEC_WRAPPER) git tidy-commit
-
-
-# Perform a tidy squash
-.PHONY: tidy-squash
-tidy-squash:
-	$(EXEC_WRAPPER) git tidy-squash origin/main
