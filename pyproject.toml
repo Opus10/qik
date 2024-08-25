@@ -29,7 +29,7 @@ exclude = [
 ]
 version = "0.1.6"
 description = "Run cached commands in your modular monorepo."
-authors = ["Opus 10 Engineering"]
+authors = ["Wes Kendall"]
 classifiers = [
   "Intended Audience :: Developers",
   "Operating System :: OS Independent",
