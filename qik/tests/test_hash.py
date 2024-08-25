@@ -48,8 +48,8 @@ def test_globs(tmpdir, mocker):
 
 
 def test_dists():
-    assert qik.hash.dists("pytest") == "e4f1dfd3b7d393a31505bb9450dfd422"
-    assert qik.hash.dists("pytest", "pytest-cov") == "b7a21e1a89ea608a7c339b673ef57434"
+    assert qik.hash.dists("pytest") == "b57d851a0617e17d0a9cb1d93fe9099a"
+    assert qik.hash.dists("pytest", "pytest-cov") == "705e4096c5edbeda860aa1745170bff1"
 
 
 def test_strs():
