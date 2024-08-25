@@ -56,8 +56,8 @@ markdown_extensions:
 theme:
   custom_dir: docs/overrides
   name: material
-  logo: static/icon.png
-  favicon: static/icon.png
+  logo: static/logo.png
+  favicon: static/logo.png
   features:
     - navigation.footer
     - navigation.path
