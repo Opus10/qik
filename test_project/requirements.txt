@@ -6,13 +6,13 @@
 #
 asgiref==3.8.1
     # via django
-build==1.2.1
+build==1.2.2
     # via poetry
 cachecontrol[filecache]==0.14.0
     # via poetry
-certifi==2024.7.4
+certifi==2024.8.30
     # via requests
-cffi==1.17.0
+cffi==1.17.1
     # via xattr
 charset-normalizer==3.3.2
     # via requests
@@ -24,7 +24,7 @@ crashtest==0.4.1
     #   poetry
 distlib==0.3.8
     # via virtualenv
-django==5.1
+django==5.1.1
     # via -r requirements.in
 dulwich==0.21.7
     # via poetry
@@ -42,7 +42,7 @@ jaraco-classes==3.4.0
     # via keyring
 keyring==24.3.1
     # via poetry
-more-itertools==10.4.0
+more-itertools==10.5.0
     # via jaraco-classes
 msgpack==1.0.8
     # via cachecontrol
@@ -76,7 +76,7 @@ pyproject-hooks==1.1.0
     # via
     #   build
     #   poetry
-rapidfuzz==3.9.6
+rapidfuzz==3.9.7
     # via cleo
 requests==2.32.3
     # via

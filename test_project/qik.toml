@@ -1,4 +1,4 @@
-modules = ["a", {name = "b_module", path = "b"}, "nest"]
+modules = ["a", {name = "b_module", path = "b"}, "nest/c"]
 plugins = [{name = "graph", path = "qik.graph"}]
 deps = ["python_version"]
 vars = ["aws_access_key_id", "aws_secret_access_key", {name = "aws_endpoint_url", required = false}]

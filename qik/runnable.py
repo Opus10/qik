@@ -42,7 +42,7 @@ def _make_runnable(
     *,
     cmd: str,
     conf: qik.conf.CmdConf,
-    module: qik.conf.ModulePath | None = None,
+    module: qik.conf.ModuleLocator | None = None,
 ) -> Runnable:
     return Runnable(
         name=f"{cmd}@{module.name}" if module else cmd,

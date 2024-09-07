@@ -104,13 +104,15 @@ class ModuleConf(Base, frozen=True):
         return dict((v, Var(v)) if isinstance(v, str) else (v.name, v) for v in self.vars)
 
 
-class ModulePath(Base, frozen=True):
+class ModuleLocator(Base, frozen=True):
     name: str
     path: str
 
     @functools.cached_property
     def dir(self) -> pathlib.Path:
-        return root() / self.path.replace(".", os.path.sep).replace("/", os.path.sep)
+        # TODO: While this handles most windows paths, it does not handle literal '/'
+        # in paths that are escaped (e.g. my\/file/path)
+        return root() / self.path.replace("/", os.path.sep)
 
     @functools.cached_property
     def imp(self) -> str:
@@ -127,7 +129,7 @@ class ModulePath(Base, frozen=True):
             return ModuleConf()
 
 
-class PluginPath(ModulePath, frozen=True):
+class PluginPath(ModuleLocator, frozen=True):
     @functools.cached_property
     def dir(self) -> pathlib.Path:
         spec = importlib.util.find_spec(self.path)
@@ -163,7 +165,7 @@ class S3Cache(Cache, frozen=True, tag="s3"):
 
 
 class ProjectConf(ModuleConf, frozen=True):
-    modules: list[str | ModulePath] = []
+    modules: list[str | ModuleLocator] = []
     plugins: list[str | PluginPath] = []
     deps: list[DepType] = []
     ctx: dict[str, dict[CtxNamespace, dict[str, Any]]] = {}
@@ -174,13 +176,15 @@ class ProjectConf(ModuleConf, frozen=True):
     ignore_missing_dists: bool = False
 
     @functools.cached_property
-    def modules_by_name(self) -> dict[str, ModulePath]:
-        return dict(
-            (m, ModulePath(m, m)) if isinstance(m, str) else (m.name, m) for m in self.modules
+    def modules_by_name(self) -> dict[str, ModuleLocator]:
+        module_locators = (
+            ModuleLocator(name=m.replace("/", "."), path=m) if isinstance(m, str) else m
+            for m in self.modules
         )
+        return {m.name: m for m in module_locators}
 
     @functools.cached_property
-    def modules_by_path(self) -> dict[str, ModulePath]:
+    def modules_by_path(self) -> dict[str, ModuleLocator]:
         return {m.path: m for m in self.modules_by_name.values()}
 
     @functools.cached_property
@@ -190,8 +194,8 @@ class ProjectConf(ModuleConf, frozen=True):
         )
 
     @functools.cached_property
-    def plugins_by_path(self) -> dict[str, PluginPath]:
-        return {p.path: p for p in self.plugins_by_name.values()}
+    def plugins_by_imp(self) -> dict[str, PluginPath]:
+        return {p.imp: p for p in self.plugins_by_name.values()}
 
 
 class PyprojectTool(msgspec.Struct):
@@ -242,34 +246,37 @@ def project() -> ProjectConf:
 
 
 @functools.cache
-def path_to_name(path: str) -> str:
-    """Given a full path, return the module or plugin name."""
+def module_locator(uri: str, *, by_path: bool = False) -> ModuleLocator:
+    """Get module locator."""
     proj = project()
-    if path in proj.modules_by_path:
-        return proj.modules_by_path[path].name
-    elif path in proj.plugins_by_path:
-        return proj.plugins_by_path[path].name
-    else:
-        raise qik.errors.ModulePathNotFound(f'No configured module or plugin with path "{path}".')
+    lookup = proj.modules_by_path if by_path else proj.modules_by_name
+    if uri not in lookup:
+        raise qik.errors.ModuleNotFound(f'Module "{uri}" not configured in {location().name}.')
+
+    return lookup[uri]
 
 
 @functools.cache
-def module(name: str) -> ModuleConf:
+def module(uri: str, *, by_path: bool = False) -> ModuleConf:
     """Get module configuration."""
+    return module_locator(uri, by_path=by_path).conf
+
+
+@functools.cache
+def plugin_locator(uri: str, *, by_imp: bool = False) -> ModuleLocator:
+    """Get plugin locator."""
     proj = project()
-    if name not in proj.modules_by_name:
-        raise qik.errors.ModuleNotFound(f'Module "{name}" not configured in {location().name}.')
+    lookup = proj.plugins_by_imp if by_imp else proj.plugins_by_name
+    if uri not in lookup:
+        raise qik.errors.PluginNotFound(f'Plugin "{uri}" not configured in {location().name}.')
 
-    return proj.modules_by_name[name].conf
+    return lookup[uri]
 
 
-def plugin(name: str) -> ModuleConf:
+@functools.cache
+def plugin(uri: str, by_imp: bool = False) -> ModuleConf:
     """Get plugin configuration."""
-    proj = project()
-    if name not in proj.plugins_by_name:
-        raise qik.errors.PluginNotFound(f'Plugin "{name}" not configured in {location().name}.')
-
-    return proj.plugins_by_name[name].conf
+    return plugin_locator(uri, by_imp=by_imp).conf
 
 
 @functools.cache

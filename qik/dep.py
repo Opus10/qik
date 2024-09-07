@@ -94,7 +94,9 @@ class BaseDep(msgspec.Struct, frozen=True, tag=True, dict=True):
         return self.watch
 
 
-def factory(conf: qik.conf.BaseDep | str | pathlib.Path, module: str | None = None) -> BaseDep:
+def factory(
+    conf: qik.conf.BaseDep | str | pathlib.Path, module: qik.conf.ModuleLocator | None = None
+) -> BaseDep:
     """A factory for creating dependencies from a configuration."""
 
     def _fmt(val: str) -> str:

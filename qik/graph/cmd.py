@@ -183,13 +183,13 @@ def analyze_cmd_factory(cmd: str, conf: qik.conf.CmdConf) -> dict[str, qik.runna
 
 @functools.cache
 def build_cmd_name() -> str:
-    graph_plugin_name = qik.conf.path_to_name("qik.graph")
+    graph_plugin_name = qik.conf.plugin_locator("qik.graph", by_imp=True).name
     return f"{graph_plugin_name}.build"
 
 
 @functools.cache
 def analyze_cmd_name() -> str:
-    graph_plugin_name = qik.conf.path_to_name("qik.graph")
+    graph_plugin_name = qik.conf.plugin_locator("qik.graph", by_imp=True).name
     return f"{graph_plugin_name}.analyze"
 
 

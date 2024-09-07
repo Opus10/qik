@@ -24,7 +24,7 @@ class ConfigNotFound(RunnerError):
     code = "conf0"
 
 
-class ModulePathNotFound(RunnerError):
+class ModuleLocatorNotFound(RunnerError):
     code = "conf1"
 
 
