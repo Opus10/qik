@@ -32,7 +32,7 @@ cache = "remote"
 cache-when = "finished"
 
 [commands.modular_lint]
-exec = "ruff check {module.path}"
+exec = "ruff check {module.dir}"
 deps = [{type = "module", imp = "{module.imp}"}]
 cache = "repo"
 
@@ -42,8 +42,8 @@ deps = [{type = "module", imp = "b"}, {type = "module", imp = "nest.c"}]
 cache = "repo"
 
 [commands.modular_format]
-exec = "ruff format {module.path}"
-deps = ["{module.path}/**.py", {type = "command", name = "modular_lint"}]
+exec = "ruff format {module.dir}"
+deps = ["{module.dir}/**.py", {type = "command", name = "modular_lint"}]
 cache = "repo"
 
 [commands.lint]
