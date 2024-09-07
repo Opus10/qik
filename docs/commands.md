@@ -31,7 +31,7 @@ Use a `local` cache to cache results locally or specify `artifacts` to leverage 
 Configure modules and parametrize your commands with them like so:
 
 ```toml
-modules = ["my_module_a", "nested_module.b", "module_c"]
+modules = ["my_module_a", "nested_module/b", "module_c"]
 
 [command.format]
 exec = "ruff format {module.dir}"
@@ -39,12 +39,12 @@ deps = ["{module.dir}/**.py"]
 cache = "repo"
 ```
 
-Qik parametrizes any command with `{module}` across all modules. `qik format` will run three invocations of `ruff format` in parallel. Use `qik format -m my_module_a -m module_c` to run specific modules.
+Qik parametrizes any command with `{module}` across all modules. `qik format` will run three invocations of `ruff format` in parallel. Use `qik format -m my_module_a -m nested_module/b` to run specific modules.
 
 We'll cover more advanced module configuration later. For now keep the following in mind:
 
-- `modules` is a list of paths separated with `.` or `/`.
-- Use `modules = [{ name = "name", path = "path"}]` to give the module a different name.
+- `modules` is a list of paths, using `/` as the directory separator.
+- Use `modules = [{ name = "name", path = "path/to/folder"}]` to give the module a different name (alphanumeric characters, dots, or underscores only).
 - Use `{module.dir}` for the directory or `{module.imp}` for the dotted import path.
 
 ## Dependencies

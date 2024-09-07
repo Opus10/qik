@@ -1,5 +1,7 @@
 [commands.build]
 factory = "qik.graph.cmd.build_cmd_factory"
+hidden = true
 
 [commands.analyze]
 factory = "qik.graph.cmd.analyze_cmd_factory"
+hidden = true

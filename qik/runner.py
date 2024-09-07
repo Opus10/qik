@@ -321,7 +321,7 @@ def _get_graph() -> Graph:
     modules = qik_ctx.modules
 
     if not cmds:
-        cmds = [cmd.name for cmd in qik.cmd.ls()]
+        cmds = list(qik.cmd.ls())
 
     try:
         graph = Graph(cmds)

@@ -112,11 +112,13 @@ def factory(
         case qik.conf.ValDep():
             return Val(_fmt(conf.key), file=_fmt(conf.file))
         case qik.conf.ModuleDep():
-            return Module(_fmt(conf.name))
+            return Module(_fmt(conf.imp))
         case qik.conf.CmdDep():
-            return Cmd(val=_fmt(conf.name), strict=conf.strict, isolated=conf.isolated)
+            return Cmd(_fmt(conf.name), strict=conf.strict, isolated=conf.isolated)
         case qik.conf.ConstDep():
-            return Const(val=_fmt(conf.val))
+            return Const(_fmt(conf.val))
+        case qik.conf.LoadDep():
+            return Load(_fmt(conf.path), default=conf.default)
         case other:
             raise AssertionError(f'Unexpected dep cls "{other}"')
 
@@ -135,7 +137,7 @@ class Val(BaseDep, frozen=True):
     file: str
 
     @property
-    def vals(self) -> list[str]:
+    def vals(self) -> list[str]:  # type: ignore
         # This dependency is still experimental and only used by qik graph.
         raise NotImplementedError
 
@@ -151,12 +153,17 @@ class BaseCmd(BaseDep, frozen=True):
     def get_cmd_name(self) -> str:
         raise NotImplementedError
 
+    def get_cmd_args(self) -> dict[str, str]:
+        return {}
+
     @functools.cached_property
     def runnables(self) -> list[Runnable]:
         """Return any runnables of the dependency."""
         return [
             Runnable(name=runnable.name, obj=runnable, strict=self.strict, isolated=self.isolated)
-            for runnable in qik.cmd.load(self.get_cmd_name()).runnables.values()
+            for runnable in qik.cmd.load(
+                self.get_cmd_name(), **self.get_cmd_args()
+            ).runnables.values()
         ]
 
 
@@ -205,6 +212,9 @@ class Module(BaseCmd, frozen=True):
     def get_cmd_name(self) -> str:
         return graph_cmd.analyze_cmd_name()
 
+    def get_cmd_args(self) -> dict[str, str]:
+        return {"imp": self.val}
+
     @property
     def globs(self) -> list[str]:  # type: ignore
         return [str(graph_cmd.analysis_path(self.val))]
@@ -241,7 +251,7 @@ def store(
     hash: bool = True,
 ) -> None:
     if hash:
-        hash_val = Collection(*[*(globs or []), *[Dist(val=dist) for dist in dists]]).hash()
+        hash_val = Collection(*[*(globs or []), *[Dist(val=dist) for dist in dists or []]]).hash()
     else:
         hash_val = None
 

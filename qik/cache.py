@@ -161,7 +161,7 @@ class Repo(Cache):
     def base_path(self, *, runnable: Runnable, hash: str) -> pathlib.Path:
         return qik.conf.pub_work_dir() / "cache" / runnable.cmd
 
-    def post_set(self, *, runnable: Runnable, hash: str, manifest: Manifest) -> list[str]:
+    def post_set(self, *, runnable: Runnable, hash: str, manifest: Manifest) -> None:
         git_add = [str(self.manifest_path(runnable=runnable, hash=hash))]
 
         if manifest.log:

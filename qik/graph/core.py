@@ -107,7 +107,7 @@ def build() -> Graph:
         *internal_modules,
         include_external_packages=not proj.graph.ignore_dists,
         exclude_type_checking_imports=proj.graph.ignore_type_checking,
-        cache_dir=qik.conf.priv_work_dir() / ".grimp",
+        cache_dir=str(qik.conf.priv_work_dir() / ".grimp"),
     )
     graph_modules_imps = [(imp.split(".", 1)[0], imp) for imp in sorted(grimp_g.modules)]
     modules = [
@@ -146,31 +146,3 @@ def build() -> Graph:
         )
 
     return Graph(modules=modules, edges=sorted(rx_g.edge_list())).bind(rx_g)
-
-
-'''
-def classify(*modules: str, distributions: dict[str, list[str]]) -> Iterator[Import]:
-    """Given modules, classify import characteristics.
-
-    Return only modules that can be classified.
-    """
-    internal_path = str(qik.utils.project_dir())
-
-    for module in modules:
-        spec = importlib.util.find_spec(module.split(".", 1)[0])
-
-        if module in distributions:
-            yield Import(module=module, packages=distributions[module])
-        elif spec.origin.startswith(internal_path):
-            yield Import(module=module, path=spec.origin[len(internal_path) + 1 :])
-
-
-def build_bak(module: str) -> ModuleImports:
-    """Build the import graph for a module."""
-    graph = Graph()._grimp
-    upstream = graph.find_upstream_modules(module, as_package=True)
-    distributions = importlib.metadata.packages_distributions()
-    return ModuleImports(
-        module=module, imports=list(classify(*upstream, distributions=distributions))
-    )
-'''

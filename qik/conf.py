@@ -7,6 +7,7 @@ import importlib.util
 import os.path
 import pathlib
 import sys
+from types import UnionType
 from typing import Any, Literal, TypeAlias, TypeVar
 
 import msgspec.structs
@@ -62,10 +63,15 @@ class DistDep(BaseDep, tag="dist", frozen=True):
 
 
 class ModuleDep(BaseDep, tag="module", frozen=True):
-    name: str
+    imp: str
 
 
-DepType: TypeAlias = str | GlobDep | CmdDep | DistDep | ModuleDep | ConstDep
+class LoadDep(BaseDep, tag="load", frozen=True):
+    path: str
+    default: list[str] = []
+
+
+DepType: TypeAlias = str | GlobDep | CmdDep | DistDep | ModuleDep | ConstDep | LoadDep
 
 
 class CmdConf(Base, frozen=True):
@@ -75,6 +81,7 @@ class CmdConf(Base, frozen=True):
     cache: str | qik.unset.UnsetType = qik.unset.UNSET
     cache_when: CacheWhen | qik.unset.UnsetType = qik.unset.UNSET
     factory: str = ""
+    hidden: bool = False
 
 
 class Var(Base, frozen=True):
@@ -88,14 +95,14 @@ class Var(Base, frozen=True):
             msgspec.structs.force_setattr(self, "default", None)
 
     @property
-    def py_type(self) -> type[VarType]:
+    def py_type(self) -> type | UnionType:
         if self.required:
             return __builtins__[self.type]
         else:
             return __builtins__[self.type] | None
 
 
-class ModuleConf(Base, frozen=True):
+class ModuleOrPluginConf(Base, frozen=True):
     vars: list[str | Var] = []
     commands: dict[str, CmdConf] = {}
 
@@ -104,9 +111,34 @@ class ModuleConf(Base, frozen=True):
         return dict((v, Var(v)) if isinstance(v, str) else (v.name, v) for v in self.vars)
 
 
-class ModuleLocator(Base, frozen=True):
+class BaseLocator(Base, frozen=True):
     name: str
+
+    @functools.cached_property
+    def dir(self) -> pathlib.Path:
+        raise NotImplementedError
+
+    @functools.cached_property
+    def imp(self) -> str:
+        raise NotImplementedError
+
+    @functools.cached_property
+    def conf(self) -> ModuleOrPluginConf:
+        try:
+            return msgspec.toml.decode(
+                (self.dir / "qik.toml").read_bytes(),
+                type=ModuleOrPluginConf,
+            )
+        except FileNotFoundError:
+            return ModuleOrPluginConf()
+
+
+class ModuleLocator(BaseLocator, frozen=True):
     path: str
+
+    @functools.cached_property
+    def imp(self) -> str:
+        return self.path.replace("/", ".")
 
     @functools.cached_property
     def dir(self) -> pathlib.Path:
@@ -114,25 +146,13 @@ class ModuleLocator(Base, frozen=True):
         # in paths that are escaped (e.g. my\/file/path)
         return root() / self.path.replace("/", os.path.sep)
 
-    @functools.cached_property
-    def imp(self) -> str:
-        return self.path.replace("/", ".")
 
-    @functools.cached_property
-    def conf(self) -> ModuleConf:
-        try:
-            return msgspec.toml.decode(
-                (self.dir / "qik.toml").read_bytes(),
-                type=ModuleConf,
-            )
-        except FileNotFoundError:
-            return ModuleConf()
+class PluginLocator(BaseLocator, frozen=True):
+    imp: str  # type: ignore
 
-
-class PluginPath(ModuleLocator, frozen=True):
     @functools.cached_property
     def dir(self) -> pathlib.Path:
-        spec = importlib.util.find_spec(self.path)
+        spec = importlib.util.find_spec(self.imp)
         if not spec or not spec.origin:
             raise qik.errors.PluginImport(f'Could not import plugin "{self.name}"')
 
@@ -164,9 +184,9 @@ class S3Cache(Cache, frozen=True, tag="s3"):
     endpoint_url: str | None = None
 
 
-class ProjectConf(ModuleConf, frozen=True):
+class ProjectConf(ModuleOrPluginConf, frozen=True):
     modules: list[str | ModuleLocator] = []
-    plugins: list[str | PluginPath] = []
+    plugins: list[str | PluginLocator] = []
     deps: list[DepType] = []
     ctx: dict[str, dict[CtxNamespace, dict[str, Any]]] = {}
     venvs: dict[str, Env] = {}
@@ -178,8 +198,7 @@ class ProjectConf(ModuleConf, frozen=True):
     @functools.cached_property
     def modules_by_name(self) -> dict[str, ModuleLocator]:
         module_locators = (
-            ModuleLocator(name=m.replace("/", "."), path=m) if isinstance(m, str) else m
-            for m in self.modules
+            ModuleLocator(name=m, path=m) if isinstance(m, str) else m for m in self.modules
         )
         return {m.name: m for m in module_locators}
 
@@ -188,13 +207,14 @@ class ProjectConf(ModuleConf, frozen=True):
         return {m.path: m for m in self.modules_by_name.values()}
 
     @functools.cached_property
-    def plugins_by_name(self) -> dict[str, PluginPath]:
-        return dict(
-            (p, PluginPath(p, p)) if isinstance(p, str) else (p.name, p) for p in self.plugins
+    def plugins_by_name(self) -> dict[str, PluginLocator]:
+        plugin_locators = (
+            PluginLocator(name=p, imp=p) if isinstance(p, str) else p for p in self.plugins
         )
+        return {p.name: p for p in plugin_locators}
 
     @functools.cached_property
-    def plugins_by_imp(self) -> dict[str, PluginPath]:
+    def plugins_by_imp(self) -> dict[str, PluginLocator]:
         return {p.imp: p for p in self.plugins_by_name.values()}
 
 
@@ -257,13 +277,13 @@ def module_locator(uri: str, *, by_path: bool = False) -> ModuleLocator:
 
 
 @functools.cache
-def module(uri: str, *, by_path: bool = False) -> ModuleConf:
+def module(uri: str, *, by_path: bool = False) -> ModuleOrPluginConf:
     """Get module configuration."""
     return module_locator(uri, by_path=by_path).conf
 
 
 @functools.cache
-def plugin_locator(uri: str, *, by_imp: bool = False) -> ModuleLocator:
+def plugin_locator(uri: str, *, by_imp: bool = False) -> PluginLocator:
     """Get plugin locator."""
     proj = project()
     lookup = proj.plugins_by_imp if by_imp else proj.plugins_by_name
@@ -274,13 +294,13 @@ def plugin_locator(uri: str, *, by_imp: bool = False) -> ModuleLocator:
 
 
 @functools.cache
-def plugin(uri: str, by_imp: bool = False) -> ModuleConf:
+def plugin(uri: str, by_imp: bool = False) -> ModuleOrPluginConf:
     """Get plugin configuration."""
     return plugin_locator(uri, by_imp=by_imp).conf
 
 
 @functools.cache
-def get(name: str | None = None) -> ModuleConf:
+def get(name: str | None = None) -> ModuleOrPluginConf:
     """Get configuration for a given module, plugin, or project."""
     if not name:
         return project()

@@ -40,8 +40,10 @@ def print_exception() -> None:
     get().print_exception()
 
 
-def rule(msg: str, emoji: Emoji | None = None, color: Color | None = None, **kwargs: Any) -> None:
-    get().rule(fmt_msg(msg, emoji=emoji, color=color), align="left", style=color)
+def rule(
+    msg: str = "", emoji: Emoji | None = None, color: Color | None = None, **kwargs: Any
+) -> None:
+    get().rule(fmt_msg(msg, emoji=emoji, color=color), align="left", style=color or "rule.line")
 
 
 @contextlib.contextmanager
