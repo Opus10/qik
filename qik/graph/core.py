@@ -90,7 +90,7 @@ class Graph(msgspec.Struct, frozen=True, dict=True):
 
 
 def build() -> Graph:
-    """Build a graph from the current codebase."""
+    """Build the import graph from the current codebase."""
     internal_path = str(qik.conf.root())
     internal_modules = {
         module.name
@@ -121,7 +121,7 @@ def build() -> Graph:
     rx_g = rx.PyDiGraph()
     rx_g.add_nodes_from(modules)
 
-    # Add layered modules as dependencies on one another for graph analysis
+    # Add layered modules as dependencies on one another for graph locking
     def _iter_layered_module_edges() -> Iterator[tuple[int, int]]:
         for i, module in enumerate(modules):
             if i > 0 and "." in module.imp:

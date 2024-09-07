@@ -48,7 +48,7 @@ def _graph_conf_dep() -> qik.dep.Val:
 
 
 def build_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
-    """Build the graph."""
+    """Build the import graph."""
     try:
         graph = qik.graph.core.build()
     except grimp_exceptions.SourceSyntaxError as exc:
@@ -103,10 +103,10 @@ def packages_distributions() -> dict[str, list[str]]:
         return _packages_distributions(venv_hash)
 
 
-def analyze_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
+def lock_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
     imp = runnable.args.get("imp")
     if not imp:
-        raise AssertionError("Unexpected analyze runnable.")
+        raise AssertionError("Unexpected graph.deps runnable.")
 
     graph = load_graph()  # TODO: Use cached runner graph
     # TODO: Better error if the module doesn't exist
@@ -132,7 +132,7 @@ def analyze_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
                     ) from exc
 
     qik.dep.store(
-        analysis_path(imp),
+        lock_path(imp),
         globs=sorted(_gen_upstream_globs()),
         dists=sorted(_gen_upstream_dists()),
     )
@@ -155,21 +155,21 @@ def build_cmd_factory(
     return {runnable.name: runnable}
 
 
-def analyze_cmd_factory(
+def lock_cmd_factory(
     cmd: str, conf: qik.conf.CmdConf, **args: str
 ) -> dict[str, qik.runnable.Runnable]:
     imp = args.get("imp")
     if not imp:
         # TODO: Raise qik error with code
-        raise ValueError('"imp" arg is required for graph analyze command.')
+        raise ValueError('"imp" arg is required for graph.deps command.')
 
-    cmd_name = analyze_cmd_name()
-    artifact = str(analysis_path(imp))
+    cmd_name = lock_cmd_name()
+    artifact = str(lock_path(imp))
 
     runnable = qik.runnable.Runnable(
         name=f"{cmd_name}?imp={imp}",
         cmd=cmd_name,
-        val="qik.graph.cmd.analyze_cmd",
+        val="qik.graph.cmd.lock_cmd",
         shell=False,
         deps=[
             qik.dep.Cmd(build_cmd_name()),
@@ -191,9 +191,9 @@ def build_cmd_name() -> str:
 
 
 @functools.cache
-def analyze_cmd_name() -> str:
+def lock_cmd_name() -> str:
     graph_plugin_name = qik.conf.plugin_locator("qik.graph", by_imp=True).name
-    return f"{graph_plugin_name}.analyze"
+    return f"{graph_plugin_name}.lock"
 
 
 @functools.cache
@@ -202,12 +202,12 @@ def graph_path() -> pathlib.Path:
 
 
 @functools.cache
-def analysis_path(imp: str) -> pathlib.Path:
+def lock_path(imp: str) -> pathlib.Path:
     return (
         qik.conf.pub_work_dir(relative=True)
         / "artifacts"
-        / analyze_cmd_name()
-        / f"analzye.{imp}.json"
+        / lock_cmd_name()
+        / f"lock.{imp}.json"
     )
 
 

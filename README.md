@@ -67,7 +67,7 @@ Running `qik format` will parametrize `ruff format` in parallel over all availab
 qik format -n 2 -m b_module -m c_module
 ```
 
-### Module Dependencies
+### Import Graph Dependencies
 
 Some commands, such as [pyright](https://github.com/microsoft/pyright) type checking, should re-run whenever module files, imported code, or third-party dependencies change:
 
@@ -83,7 +83,7 @@ cache = "repo"
 
 Running `qik check-types` will parametrize `pyright` over all modules. Modular commands will be cached unless the module's files or dependencies change.
 
-We use the `qik.graph` plugin, which provides commands that are automatically used for building and analyzing the import graph.
+We use the `qik.graph` plugin, which provides commands that are automatically used for locking the import graph.
 
 ### Command Dependencies
 

@@ -2,6 +2,6 @@
 factory = "qik.graph.cmd.build_cmd_factory"
 hidden = true
 
-[commands.analyze]
-factory = "qik.graph.cmd.analyze_cmd_factory"
+[commands.lock]
+factory = "qik.graph.cmd.lock_cmd_factory"
 hidden = true

@@ -210,14 +210,14 @@ class Module(BaseCmd, frozen=True):
     strict: ClassVar[bool] = True  # type: ignore
 
     def get_cmd_name(self) -> str:
-        return graph_cmd.analyze_cmd_name()
+        return graph_cmd.lock_cmd_name()
 
     def get_cmd_args(self) -> dict[str, str]:
         return {"imp": self.val}
 
     @property
     def globs(self) -> list[str]:  # type: ignore
-        return [str(graph_cmd.analysis_path(self.val))]
+        return [str(graph_cmd.lock_path(self.val))]
 
 
 class Load(BaseDep, frozen=True):
