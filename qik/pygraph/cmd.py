@@ -15,8 +15,8 @@ import qik.conf
 import qik.dep
 import qik.errors
 import qik.file
-import qik.graph.core
 import qik.hash
+import qik.pygraph.core
 import qik.runnable
 
 if TYPE_CHECKING:
@@ -28,7 +28,7 @@ else:
 
 
 class GraphConfDep(qik.dep.Val, frozen=True, dict=True):
-    val: str = "graph"
+    val: str = "pygraph"
     file: str = ""  # The file is dynamic based on config location
 
     @functools.cached_property
@@ -38,7 +38,7 @@ class GraphConfDep(qik.dep.Val, frozen=True, dict=True):
     # TODO: break this cache on runner invocations
     @functools.cached_property
     def vals(self) -> list[str]:  # type: ignore
-        return [str(msgspec.json.encode(qik.conf.project().graph))]
+        return [str(msgspec.json.encode(qik.conf.project().pygraph))]
 
 
 @functools.cache
@@ -50,7 +50,7 @@ def _graph_conf_dep() -> qik.dep.Val:
 def build_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
     """Build the import graph."""
     try:
-        graph = qik.graph.core.build()
+        graph = qik.pygraph.core.build()
     except grimp_exceptions.SourceSyntaxError as exc:
         return 1, f"Cannot build import graph - {exc}"
 
@@ -68,12 +68,14 @@ class PackagesDistributions(msgspec.Struct):
 
 @functools.lru_cache(maxsize=1)
 def _packages_distributions(venv_hash: str) -> dict[str, list[str]]:
-    graph_conf = qik.conf.project().graph
-    cache_path = qik.conf.priv_work_dir() / "graph" / "packages_distributions.json"
+    pygraph_conf = qik.conf.project().pygraph
+    cache_path = qik.conf.priv_work_dir() / "pygraph" / "packages_distributions.json"
     overrides = (
-        {} if not graph_conf.ignore_missing_module_dists else collections.defaultdict(lambda: [""])
+        {}
+        if not pygraph_conf.ignore_missing_module_dists
+        else collections.defaultdict(lambda: [""])
     )
-    overrides |= {module: [dist] for module, dist in graph_conf.module_dists.items()}
+    overrides |= {module: [dist] for module, dist in pygraph_conf.module_dists.items()}
     try:
         cached_val = msgspec.json.decode(cache_path.read_bytes(), type=PackagesDistributions)
         if cached_val.venv_hash == venv_hash:
@@ -106,7 +108,7 @@ def packages_distributions() -> dict[str, list[str]]:
 def lock_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
     imp = runnable.args.get("imp")
     if not imp:
-        raise AssertionError("Unexpected graph.deps runnable.")
+        raise AssertionError("Unexpected qik.pygraph.deps runnable.")
 
     graph = load_graph()  # TODO: Use cached runner graph
     # TODO: Better error if the module doesn't exist
@@ -146,7 +148,7 @@ def build_cmd_factory(
     runnable = qik.runnable.Runnable(
         name=build_graph_cmd_name,
         cmd=build_graph_cmd_name,
-        val="qik.graph.cmd.build_cmd",
+        val="qik.pygraph.cmd.build_cmd",
         shell=False,
         deps=[qik.dep.Glob("**.py"), _graph_conf_dep(), *qik.dep.project_deps()],
         artifacts=[str(graph_path())],
@@ -161,7 +163,7 @@ def lock_cmd_factory(
     imp = args.get("imp")
     if not imp:
         # TODO: Raise qik error with code
-        raise ValueError('"imp" arg is required for graph.deps command.')
+        raise ValueError('"imp" arg is required for qik.pygraph.deps command.')
 
     cmd_name = lock_cmd_name()
     artifact = str(lock_path(imp))
@@ -169,7 +171,7 @@ def lock_cmd_factory(
     runnable = qik.runnable.Runnable(
         name=f"{cmd_name}?imp={imp}",
         cmd=cmd_name,
-        val="qik.graph.cmd.lock_cmd",
+        val="qik.pygraph.cmd.lock_cmd",
         shell=False,
         deps=[
             qik.dep.Cmd(build_cmd_name()),
@@ -186,13 +188,13 @@ def lock_cmd_factory(
 
 @functools.cache
 def build_cmd_name() -> str:
-    graph_plugin_name = qik.conf.plugin_locator("qik.graph", by_imp=True).name
+    graph_plugin_name = qik.conf.plugin_locator("qik.pygraph", by_imp=True).name
     return f"{graph_plugin_name}.build"
 
 
 @functools.cache
 def lock_cmd_name() -> str:
-    graph_plugin_name = qik.conf.plugin_locator("qik.graph", by_imp=True).name
+    graph_plugin_name = qik.conf.plugin_locator("qik.pygraph", by_imp=True).name
     return f"{graph_plugin_name}.lock"
 
 
@@ -204,13 +206,10 @@ def graph_path() -> pathlib.Path:
 @functools.cache
 def lock_path(imp: str) -> pathlib.Path:
     return (
-        qik.conf.pub_work_dir(relative=True)
-        / "artifacts"
-        / lock_cmd_name()
-        / f"lock.{imp}.json"
+        qik.conf.pub_work_dir(relative=True) / "artifacts" / lock_cmd_name() / f"lock.{imp}.json"
     )
 
 
-def load_graph() -> qik.graph.core.Graph:
+def load_graph() -> qik.pygraph.core.Graph:
     """Load the graph."""
-    return msgspec.json.decode(graph_path().read_bytes(), type=qik.graph.core.Graph)
+    return msgspec.json.decode(graph_path().read_bytes(), type=qik.pygraph.core.Graph)

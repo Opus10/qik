@@ -110,6 +110,10 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
         return f"{self.val}({args})" if args else self.val
 
     @functools.cached_property
+    def slug(self) -> str:
+        return re.sub(r"[^a-zA-Z0-9]", "__", self.name)
+
+    @functools.cached_property
     def deps_collection(self) -> qik.dep.Collection:
         return qik.dep.Collection(*self.deps, module=self.module)
 

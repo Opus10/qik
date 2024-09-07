@@ -17,12 +17,12 @@ import qik.unset
 import qik.venv
 
 if TYPE_CHECKING:
-    import qik.graph.cmd as graph_cmd
+    import qik.pygraph.cmd as pygraph_cmd
     import qik.runnable
 else:
     import qik.lazy
 
-    graph_cmd = qik.lazy.module("qik.graph.cmd")
+    pygraph_cmd = qik.lazy.module("qik.pygraph.cmd")
 
 
 @functools.cache
@@ -138,7 +138,7 @@ class Val(BaseDep, frozen=True):
 
     @property
     def vals(self) -> list[str]:  # type: ignore
-        # This dependency is still experimental and only used by qik graph.
+        # This dependency is still experimental and only used by qik.pygraph.
         raise NotImplementedError
 
     @functools.cached_property
@@ -210,14 +210,14 @@ class Module(BaseCmd, frozen=True):
     strict: ClassVar[bool] = True  # type: ignore
 
     def get_cmd_name(self) -> str:
-        return graph_cmd.lock_cmd_name()
+        return pygraph_cmd.lock_cmd_name()
 
     def get_cmd_args(self) -> dict[str, str]:
         return {"imp": self.val}
 
     @property
     def globs(self) -> list[str]:  # type: ignore
-        return [str(graph_cmd.lock_path(self.val))]
+        return [str(pygraph_cmd.lock_path(self.val))]
 
 
 class Load(BaseDep, frozen=True):

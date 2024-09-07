@@ -163,7 +163,7 @@ class Env(Base, frozen=True):
     lock_file: str | list[str] = []
 
 
-class Graph(Base, frozen=True):
+class Pygraph(Base, frozen=True):
     ignore_type_checking: bool = False
     ignore_dists: bool = False
     ignore_missing_module_dists: bool = False
@@ -191,7 +191,7 @@ class ProjectConf(ModuleOrPluginConf, frozen=True):
     ctx: dict[str, dict[CtxNamespace, dict[str, Any]]] = {}
     venvs: dict[str, Env] = {}
     caches: dict[str, S3Cache] = {}
-    graph: Graph = msgspec.field(default_factory=Graph)
+    pygraph: Pygraph = msgspec.field(default_factory=Pygraph)
     dist_versions: dict[str, str] = {}
     ignore_missing_dists: bool = False
 

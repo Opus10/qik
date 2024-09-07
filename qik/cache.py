@@ -55,10 +55,10 @@ class Cache:
         raise NotImplementedError
 
     def manifest_path(self, *, runnable: Runnable, hash: str) -> pathlib.Path:
-        return self.base_path(runnable=runnable, hash=hash) / f"{runnable.name}.json"
+        return self.base_path(runnable=runnable, hash=hash) / f"{runnable.slug}.json"
 
     def log_path(self, *, runnable: Runnable, hash: str) -> pathlib.Path:
-        return self.base_path(runnable=runnable, hash=hash) / f"{runnable.name}.out"
+        return self.base_path(runnable=runnable, hash=hash) / f"{runnable.slug}.out"
 
     def pre_get(self, *, runnable: Runnable, hash: str) -> None:
         pass
@@ -86,6 +86,13 @@ class Cache:
             manifest = msgspec.json.decode(manifest_path.read_bytes(), type=Manifest)
             if manifest.hash != hash:
                 raise FileNotFoundError("Manifest not found.")
+
+            print(
+                "get",
+                manifest_path,
+                base_path,
+                pathlib.Path(base_path / manifest.log) if manifest.log else None,
+            )
 
             log = pathlib.Path(base_path / manifest.log).read_text() if manifest.log else None
             if artifacts:
@@ -180,7 +187,7 @@ class Local(Cache):
     """A local cache in the .qik directory."""
 
     def base_path(self, *, runnable: Runnable, hash: str) -> pathlib.Path:
-        return qik.conf.priv_work_dir() / "cache" / f"{runnable.name}-{hash}"
+        return qik.conf.priv_work_dir() / "cache" / f"{runnable.slug}-{hash}"
 
     def restore_artifacts(self, *, runnable: Runnable, hash: str, artifacts: list[str]) -> None:
         base_path = self.base_path(runnable=runnable, hash=hash)
@@ -219,7 +226,7 @@ class S3(msgspec.Struct, Local, frozen=True, dict=True):
             endpoint_url=self.endpoint_url,
         )
 
-    def on_miss(self, runnable: Runnable, hash: str) -> None:
+    def on_miss(self, *, runnable: Runnable, hash: str) -> None:
         super().pre_get(runnable=runnable, hash=hash)
         base_path = self.base_path(runnable=runnable, hash=hash)
         self.client.download_dir(
@@ -228,7 +235,7 @@ class S3(msgspec.Struct, Local, frozen=True, dict=True):
             dir=base_path,
         )
 
-    def post_set(self, runnable: Runnable, hash: str, manifest: Manifest) -> None:
+    def post_set(self, *, runnable: Runnable, hash: str, manifest: Manifest) -> None:
         super().post_set(runnable=runnable, hash=hash, manifest=manifest)
         base_path = self.base_path(runnable=runnable, hash=hash)
         self.client.upload_dir(
