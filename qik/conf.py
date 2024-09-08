@@ -74,7 +74,7 @@ class LoadDep(BaseDep, tag="load", frozen=True):
 DepType: TypeAlias = str | GlobDep | CmdDep | PydistDep | PygraphDep | ConstDep | LoadDep
 
 
-class CmdConf(Base, frozen=True):
+class Cmd(Base, frozen=True):
     exec: str = ""
     deps: list[DepType] = []
     artifacts: list[str] = []
@@ -102,9 +102,9 @@ class Var(Base, frozen=True):
             return __builtins__[self.type] | None
 
 
-class ModuleOrPluginConf(Base, frozen=True):
+class ModuleOrPlugin(Base, frozen=True):
     vars: list[str | Var] = []
-    commands: dict[str, CmdConf] = {}
+    commands: dict[str, Cmd] = {}
 
     @functools.cached_property
     def vars_dict(self) -> dict[str, Var]:
@@ -123,14 +123,14 @@ class BaseLocator(Base, frozen=True):
         raise NotImplementedError
 
     @functools.cached_property
-    def conf(self) -> ModuleOrPluginConf:
+    def conf(self) -> ModuleOrPlugin:
         try:
             return msgspec.toml.decode(
                 (self.dir / "qik.toml").read_bytes(),
-                type=ModuleOrPluginConf,
+                type=ModuleOrPlugin,
             )
         except FileNotFoundError:
-            return ModuleOrPluginConf()
+            return ModuleOrPlugin()
 
 
 class ModuleLocator(BaseLocator, frozen=True):
@@ -184,7 +184,7 @@ class S3Cache(Cache, frozen=True, tag="s3"):
     endpoint_url: str | None = None
 
 
-class ProjectConf(ModuleOrPluginConf, frozen=True):
+class Project(ModuleOrPlugin, frozen=True):
     modules: list[str | ModuleLocator] = []
     plugins: list[str | PluginLocator] = []
     deps: list[DepType] = []
@@ -220,7 +220,7 @@ class ProjectConf(ModuleOrPluginConf, frozen=True):
 
 
 class PyprojectTool(msgspec.Struct):
-    qik: ProjectConf | None = None
+    qik: Project | None = None
 
 
 class Pyproject(msgspec.Struct, omit_defaults=True):
@@ -228,7 +228,7 @@ class Pyproject(msgspec.Struct, omit_defaults=True):
 
 
 @functools.cache
-def _project_conf() -> tuple[ProjectConf, pathlib.Path]:
+def _project() -> tuple[Project, pathlib.Path]:
     """Return the project configuration and file."""
     cwd = pathlib.Path.cwd()
     qik_toml: pathlib.Path | None = None
@@ -243,14 +243,14 @@ def _project_conf() -> tuple[ProjectConf, pathlib.Path]:
         ):
             if qik_toml and qik_toml.parent == directory:
                 # qik.toml is at the root. Use qik.toml
-                return msgspec.toml.decode(qik_toml.read_bytes(), type=ProjectConf), qik_toml
+                return msgspec.toml.decode(qik_toml.read_bytes(), type=Project), qik_toml
             elif has_pyproject:
                 location = directory / "pyproject.toml"
                 pyproject = msgspec.toml.decode(location.read_bytes(), type=Pyproject)
                 if pyproject.tool and pyproject.tool.qik:
                     return pyproject.tool.qik, location
                 elif qik_toml:  # qik.toml was found but not at root
-                    return msgspec.toml.decode(qik_toml.read_bytes(), type=ProjectConf), qik_toml
+                    return msgspec.toml.decode(qik_toml.read_bytes(), type=Project), qik_toml
 
             break
 
@@ -260,10 +260,10 @@ def _project_conf() -> tuple[ProjectConf, pathlib.Path]:
 
 
 @functools.cache
-def project() -> ProjectConf:
+def project() -> Project:
     """Get project-level configuration."""
     sys.path.append(str(root()))
-    return _project_conf()[0]
+    return _project()[0]
 
 
 @functools.cache
@@ -278,7 +278,7 @@ def module_locator(uri: str, *, by_path: bool = False) -> ModuleLocator:
 
 
 @functools.cache
-def module(uri: str, *, by_path: bool = False) -> ModuleOrPluginConf:
+def module(uri: str, *, by_path: bool = False) -> ModuleOrPlugin:
     """Get module configuration."""
     return module_locator(uri, by_path=by_path).conf
 
@@ -295,13 +295,13 @@ def plugin_locator(uri: str, *, by_pyimport: bool = False) -> PluginLocator:
 
 
 @functools.cache
-def plugin(uri: str, by_pyimport: bool = False) -> ModuleOrPluginConf:
+def plugin(uri: str, by_pyimport: bool = False) -> ModuleOrPlugin:
     """Get plugin configuration."""
     return plugin_locator(uri, by_pyimport=by_pyimport).conf
 
 
 @functools.cache
-def get(name: str | None = None) -> ModuleOrPluginConf:
+def get(name: str | None = None) -> ModuleOrPlugin:
     """Get configuration for a given module, plugin, or project."""
     if not name:
         return project()
@@ -324,7 +324,7 @@ def uri_parts(uri: str) -> tuple[str | None, str]:
 
 
 @functools.cache
-def command(uri: str) -> CmdConf:
+def command(uri: str) -> Cmd:
     """Get configuration for a command."""
     module, name = uri_parts(uri)
     conf = get(module)
@@ -337,7 +337,7 @@ def command(uri: str) -> CmdConf:
 @functools.cache
 def root() -> pathlib.Path:
     """Get the absolute root project directory."""
-    return _project_conf()[1].parent
+    return _project()[1].parent
 
 
 @functools.cache
@@ -355,4 +355,4 @@ def pub_work_dir(relative: bool = False) -> pathlib.Path:
 @functools.cache
 def location() -> pathlib.Path:
     """Get the root configuration file."""
-    return _project_conf()[1]
+    return _project()[1]

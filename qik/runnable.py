@@ -41,7 +41,7 @@ def _get_exec_env() -> dict[str, str]:
 def _make_runnable(
     *,
     cmd: str,
-    conf: qik.conf.CmdConf,
+    conf: qik.conf.Cmd,
     module: qik.conf.ModuleLocator | None = None,
 ) -> Runnable:
     return Runnable(
@@ -59,7 +59,7 @@ def _make_runnable(
     )
 
 
-def factory(cmd: str, conf: qik.conf.CmdConf, **args: str) -> dict[str, Runnable]:
+def factory(cmd: str, conf: qik.conf.Cmd, **args: str) -> dict[str, Runnable]:
     """The main factory for creating runnables.
 
     We don't preserve **args in the made runnables because generic runnables do not

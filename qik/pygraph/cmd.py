@@ -142,7 +142,7 @@ def lock_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
 
 
 def build_cmd_factory(
-    cmd: str, conf: qik.conf.CmdConf, **args: str
+    cmd: str, conf: qik.conf.Cmd, **args: str
 ) -> dict[str, qik.runnable.Runnable]:
     build_graph_cmd_name = build_cmd_name()
     runnable = qik.runnable.Runnable(
@@ -158,7 +158,7 @@ def build_cmd_factory(
 
 
 def lock_cmd_factory(
-    cmd: str, conf: qik.conf.CmdConf, **args: str
+    cmd: str, conf: qik.conf.Cmd, **args: str
 ) -> dict[str, qik.runnable.Runnable]:
     pyimport = args.get("pyimport")
     if not pyimport:
