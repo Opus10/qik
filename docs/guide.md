@@ -46,7 +46,7 @@ deps = ["requirements.in", {type = "dist", name = "pip-tools"}]
 
 Installing a different version of `pip-tools` will break the command cache.
 
-### Modular Commands
+#### Modular Commands
 
 Parametrize commands over modules, for example, running the [ruff](https://docs.astral.sh/ruff/) code formatter:
 
@@ -65,23 +65,32 @@ Running `qik format` will parametrize `ruff format` in parallel over all availab
 qik format -n 2 -m b_module -m c_module
 ```
 
-### Module Dependencies
+### Import Graph Dependencies
 
-Some commands, such as [pyright](https://github.com/microsoft/pyright) type checking, should re-run whenever module files, imported code, or third-party dependencies change:
+Some commands, such as [pyright](https://github.com/microsoft/pyright) type checking, should re-run whenever module files, imported code, or third-party dependencies change. Here we cache this command based on `my.module` files or dependencies:
 
 ```toml
-modules = ["a_module", "b_module", "c_module"]
-plugins = ["qik.graph"]
+plugins = ["qik.pygraph"]
 
 [commands.check-types]
-exec = "pyright {module.dir}"
-deps = [{type = "module", name = "{module.name}"}]
+exec = "pyright my/module"
+deps = [{type = "pygraph", imp = "my.module"}]
 cache = "repo"
 ```
 
-Running `qik check-types` will parametrize `pyright` over all modules. Modular commands will be cached unless the module's files or dependencies change.
+Parametrize this command over multiple modules:
 
-We use the `qik.graph` plugin, which provides commands that are automatically used for building and analyzing the import graph.
+```toml
+modules = ["a_module", "b_module", "c_module"]
+plugins = ["qik.pygraph"]
+
+[commands.check-types]
+exec = "pyright {module.dir}"
+deps = [{type = "pygraph", imp = "{module.imp}"}]
+cache = "repo"
+```
+
+We use the `qik.pygraph` plugin, which provides commands that lock the python import graph.
 
 ### Command Dependencies
 
@@ -89,7 +98,7 @@ Command dependencies help order execution. For example, change `deps` of `comman
 
 ```toml
 deps = [
-    {type = "module", name = "{module.name}"},
+    {type = "pygraph", imp = "{module.imp}"},
     {type = "command", name = "format"}
 ]
 ```

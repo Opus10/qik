@@ -103,7 +103,7 @@ Use commands as a dependency to force ordering. For example, code formatters tha
 
 ```toml
 modules = ["a_module", "b_module", "c_module"]
-plugins = ["qik.graph"]
+plugins = ["qik.pygraph"]
 
 [commands.format]
 exec = "ruff format {module.dir}"
@@ -113,7 +113,7 @@ cache = "repo"
 [commands.check-types]
 exec = "pyright {module.dir}"
 deps = [
-    {type = "module", name = "{module.name}"},
+    {type = "pygraph", imp = "{module.imp}"},
     {type = "command", name = "format"}
 ]
 cache = "repo"
@@ -214,12 +214,12 @@ Some aspects of the command runner and runnable graph have advanced configuratio
 
 <a id="module"></a>
 
-### Module Dependencies
+### Import Graph Dependencies
 
-When depending on a module, any import, even inside of a `TYPE_CHECKING` block, will be included in the dependency graph. Similarly, any direct third-party import will be included as a distribution dependency. Disable this behavior with the `graph` config section:
+When depending on a python module, any import, even inside of a `TYPE_CHECKING` block, will be included in the dependency graph. Similarly, any direct third-party import will be included as a distribution dependency. Disable this behavior with the `pygraph` config section:
 
 ```toml
-[graph]
+[pygraph]
 ignore-type-checking = true
 ignore-dists = true
 ```
@@ -256,11 +256,11 @@ Using `--since` or `--watch` will *not* select downstream commands by default if
 
 ```toml
 modules = ["a_module", "b_module", "c_module"]
-plugins = ["qik.graph"]
+plugins = ["qik.pygraph"]
 
 [commands.test]
 exec = "pytest {module.dir}"
-deps = [{type = "module", name = "{module.name}"}]
+deps = [{type = "pygraph", imp = "{module.imp}"}]
 
 [commands.coverage]
 exec = "coverage report"
@@ -284,7 +284,7 @@ Commands can be defined in `qik.toml` files in project modules. Command names ar
 For example, say we have a root `qik.toml`:
 
 ```toml
-modules = ["my.module.path"]
+modules = ["my/module/path"]
 ```
 
 Then in `my/module/path/qik.toml`:
@@ -294,18 +294,18 @@ Then in `my/module/path/qik.toml`:
 exec = "echo 'hello world'"
 ```
 
-`qik --ls` will show a `my.module.path.my_command` command.
+`qik --ls` will show a `my/module/path/my_command` command.
 
 <a id="alias"></a>
 For deeply-nested paths, consider giving your module an alias:
 
 ```toml
-modules = [{name = "my_module", path = "my.module.path"}]
+modules = [{name = "my_module", path = "my/module/path"}]
 ```
 
-This command can be executed with `my_module.my_command`.
+This command can be executed with `my_module/my_command`.
 
 Keep the following in mind when using defining commands inside modules:
 
 - Glob dependency paths are still relative to the root `qik.toml` directory.
-- Use the full aliased name (e.g. `my_module.my_command`) when depending on a module command.
+- Use the full aliased name (e.g. `my_module/my_command`) when depending on a module command.

@@ -69,11 +69,22 @@ qik format -n 2 -m b_module -m c_module
 
 ### Import Graph Dependencies
 
-Some commands, such as [pyright](https://github.com/microsoft/pyright) type checking, should re-run whenever module files, imported code, or third-party dependencies change:
+Some commands, such as [pyright](https://github.com/microsoft/pyright) type checking, should re-run whenever module files, imported code, or third-party dependencies change. Here we cache this command based on `my.module` files or dependencies:
+
+```toml
+plugins = ["qik.pygraph"]
+
+[commands.check-types]
+exec = "pyright my/module"
+deps = [{type = "pygraph", imp = "my.module"}]
+cache = "repo"
+```
+
+Parametrize this command over multiple modules:
 
 ```toml
 modules = ["a_module", "b_module", "c_module"]
-plugins = ["qik.graph"]
+plugins = ["qik.pygraph"]
 
 [commands.check-types]
 exec = "pyright {module.dir}"
@@ -81,9 +92,7 @@ deps = [{type = "pygraph", imp = "{module.imp}"}]
 cache = "repo"
 ```
 
-Running `qik check-types` will parametrize `pyright` over all modules. Modular commands will be cached unless the module's files or dependencies change.
-
-We use the `qik.graph` plugin, which provides commands that are automatically used for locking the import graph.
+We use the `qik.pygraph` plugin, which provides commands that lock the python import graph.
 
 ### Command Dependencies
 
@@ -91,7 +100,7 @@ Command dependencies help order execution. For example, change `deps` of `comman
 
 ```toml
 deps = [
-    {type = "module", name = "{module.name}"},
+    {type = "pygraph", imp = "{module.imp}"},
     {type = "command", name = "format"}
 ]
 ```
@@ -144,4 +153,4 @@ After this, read the:
 
 Qik is currently in beta. Bumping the minor version (e.g. `0.1.0` to `0.2.0`) will indicate an API break until we release version `1.0.0`.
 
-Be diligent when using qik in your CI/CD. We recommend including a [global dependency](https://qik.build/en/stable/commands#global) in your commands to regularly break the cache. We also recommend [understanding how the import graph is built](https://qik.build/en/stable/commands#module) when using module dependencies.
+Be diligent when using qik in your CI/CD. We recommend including a [global dependency](https://qik.build/en/stable/commands#global) in your commands to regularly break the cache. We also recommend [understanding how the import graph is built](https://qik.build/en/stable/commands#pygraph) when using import graph dependencies.
