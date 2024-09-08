@@ -9,7 +9,7 @@ Qik has several large upcoming features. If you'd like to suggest other future d
 
 ## Better Import Graph Control
 
-#### Direct Import Dependency Specification
+#### Direct Import Dependency Specification &nbsp; :white_check_mark:<code>v0.2.0</code>
 
 One must configure a module in the `qik.toml` modules list in order to use it as a module dependency. We plan to decouple this and allow people to directly express which module import dependencies.
 

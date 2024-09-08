@@ -24,10 +24,6 @@ class ConfigNotFound(RunnerError):
     code = "conf0"
 
 
-class ModuleLocatorNotFound(RunnerError):
-    code = "conf1"
-
-
 class ModuleNotFound(RunnerError):
     code = "conf2"
 

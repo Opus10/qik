@@ -39,7 +39,7 @@ deps = ["{module.dir}/**.py"]
 cache = "repo"
 ```
 
-Qik parametrizes any command with `{module}` across all modules. `qik format` will run three invocations of `ruff format` in parallel. Use `qik format -m my_module_a -m nested_module/b` to run specific modules.
+Qik parametrizes any command with `{module}` across all modules. `qik format` will run three invocations of `ruff format` in parallel. Use `qik format -m my_module_a -m nested_module.b` to run specific modules.
 
 We'll cover more advanced module configuration later. For now keep the following in mind:
 
@@ -81,7 +81,7 @@ Use the `module` dependency type to depend on a module's files, import graph, an
 
 ```toml
 modules = ["a_module", "b_module", "c_module"]
-plugins = ["qik.graph"]
+plugins = ["qik.pygraph"]
 
 [commands.check-types]
 exec = "pyright {module.dir}"
@@ -91,7 +91,7 @@ cache = "repo"
 
 If `b_module` imports `a_module`, we'll re-run type checking on both if `a_module` changes.
 
-Above we've added `qik.graph` to plugins. Doing `qik --ls` will show two additional graph commands that are automatically used to build and analyze the import graph. See [this section](#module) for more information on how to configure module dependencies.
+Above we've added `qik.pygraph` to plugins. Doing `qik --ls` will show two additional graph commands that are automatically used to build and analyze the import graph. See [this section](#module) for more information on how to configure module dependencies.
 
 !!! remember
 
@@ -294,7 +294,7 @@ Then in `my/module/path/qik.toml`:
 exec = "echo 'hello world'"
 ```
 
-`qik --ls` will show a `my/module/path/my_command` command.
+`qik --ls` will show a `my.module.path.my_command` command.
 
 <a id="alias"></a>
 For deeply-nested paths, consider giving your module an alias:
@@ -303,9 +303,9 @@ For deeply-nested paths, consider giving your module an alias:
 modules = [{name = "my_module", path = "my/module/path"}]
 ```
 
-This command can be executed with `my_module/my_command`.
+This command can be executed with `my_module.my_command`.
 
 Keep the following in mind when using defining commands inside modules:
 
 - Glob dependency paths are still relative to the root `qik.toml` directory.
-- Use the full aliased name (e.g. `my_module/my_command`) when depending on a module command.
+- Use the full aliased name (e.g. `my_module.my_command`) when depending on a module command.

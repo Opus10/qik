@@ -12,14 +12,6 @@ All errors from the qik CLI. If you encountered an unexpected error, open an iss
 
 Remember, the qik config must be present in the same level or a parent of your current working directory.
 
-<a id="conf1"></a>
-
-#### Module Path Not Found
-
-`No configured module or plugin with path...` means a path-based lookup of a module failed.
-
-Path-based lookup errors are generally from issues inside a plugin and not from direct configuration.
-
 <a id="conf2"></a>
 
 #### Module Not Found
@@ -177,7 +169,7 @@ lock-file = "requirements.txt"
 
 #### No Module Distribution
 
-`No distribution found for module "{top-level import}"` means the `qik.graph` plugin found an external module that could not be mapped to its PyPI distribution. This can happen when the distribution is not installed in the virtual environment (e.g. optional dependencies) or when issues with Python's `importlib.metadata` arise.
+`No distribution found for module "{top-level import}"` means the `qik.pygraph` plugin found an external module that could not be mapped to its PyPI distribution. This can happen when the distribution is not installed in the virtual environment (e.g. optional dependencies) or when issues with Python's `importlib.metadata` arise.
 
 For example, say that `import my_package.submodule` triggers this. You have three options for resolution:
 
@@ -231,4 +223,4 @@ For example, say that `import my_package.submodule` triggers this. You have thre
     ignore-missing-dists = true
     ```
 
-If this error surfaces from using the `qik.graph` plugin for module dependencies, other options for overriding behavior are in [this troubleshooting tip](#graph0).
+If this error surfaces from using the `qik.pygraph` plugin for module dependencies, other options for overriding behavior are in [this troubleshooting tip](#graph0).
