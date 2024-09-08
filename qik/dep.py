@@ -251,12 +251,15 @@ def store(
     hash: bool = True,
 ) -> None:
     if hash:
-        hash_val = Collection(*[*(globs or []), *[Pydist(val=pydist) for pydist in pydists or []]]).hash()
+        hash_val = Collection(
+            *[*(globs or []), *[Pydist(val=pydist) for pydist in pydists or []]]
+        ).hash()
     else:
         hash_val = None
 
     qik.file.write(
-        path, msgspec.json.encode(Serialized(globs=globs or [], pydists=pydists or [], hash=hash_val))
+        path,
+        msgspec.json.encode(Serialized(globs=globs or [], pydists=pydists or [], hash=hash_val)),
     )
 
 
