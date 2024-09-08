@@ -1,7 +1,13 @@
-modules = ["a", {name = "b_module", path = "b"}, "nest/c"]
 plugins = [{name = "graph", pyimport = "qik.pygraph"}]
 deps = ["python_version"]
 vars = ["aws_access_key_id", "aws_secret_access_key", {name = "aws_endpoint_url", required = false}]
+
+[spaces.default]
+venv = "default"
+modules = ["a", {name = "b_module", path = "b"}, "nest/c"]
+
+[venvs.default]
+lock-file = "requirements.txt"
 
 [caches.remote]
 type = "s3"
@@ -13,9 +19,6 @@ endpoint-url = "{ctx.project.aws_endpoint_url}"
 
 [ctx.ci.qik]
 workers = 1
-
-[venvs.default]
-lock-file = "requirements.txt"
 
 [commands.fail]
 exec = 'exit 1'

@@ -184,13 +184,20 @@ class S3Cache(Cache, frozen=True, tag="s3"):
     endpoint_url: str | None = None
 
 
-class Project(ModuleOrPlugin, frozen=True):
+class Space(Base, frozen=True):
+    root: str | None = None
     modules: list[str | ModuleLocator] = []
+    fence: list[str] = []
+    venv: str | None = None
+
+
+class Project(ModuleOrPlugin, frozen=True):
     plugins: list[str | PluginLocator] = []
     deps: list[DepType] = []
     ctx: dict[str, dict[CtxNamespace, dict[str, Any]]] = {}
     venvs: dict[str, Venv] = {}
     caches: dict[str, S3Cache] = {}
+    spaces: dict[str, Space] = {}
     pygraph: Pygraph = msgspec.field(default_factory=Pygraph)
     pydist_versions: dict[str, str] = {}
     ignore_missing_pydists: bool = False
@@ -199,7 +206,8 @@ class Project(ModuleOrPlugin, frozen=True):
     def modules_by_name(self) -> dict[str, ModuleLocator]:
         module_locators = (
             ModuleLocator(name=m.replace("/", "."), path=m) if isinstance(m, str) else m
-            for m in self.modules
+            for s in self.spaces.values()
+            for m in s.modules
         )
         return {m.name: m for m in module_locators}
 
@@ -332,6 +340,16 @@ def command(uri: str) -> Cmd:
         raise qik.errors.CommandNotFound(f'Command "{uri}" not configured.')
 
     return conf.commands[name]
+
+
+@functools.cache
+def space(name: str = "default") -> Space:
+    """Get configuration for a space."""
+    proj = project()
+    if name != "default" and name not in proj.spaces:
+        raise qik.errors.SpaceNotFound(f'Space "{name}" not configured.')
+
+    return proj.spaces.get(name, Space(venv="default"))
 
 
 @functools.cache

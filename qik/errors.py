@@ -48,6 +48,10 @@ class GraphCycle(RunnerError):
     code = "conf7"
 
 
+class SpaceNotFound(RunnerError):
+    code = "conf8"
+
+
 class UnconfiguredCache(RunnerError):
     code = "cache0"
 
