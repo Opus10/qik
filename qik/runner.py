@@ -228,12 +228,12 @@ class Graph:
                 if (regex := runnable.filter_regex(strategy)) and regex.search(globs)
             }
 
-        dists = {change.val for change in deps if isinstance(change, qik.dep.Dist)}
-        if dists:
+        pydists = {change.val for change in deps if isinstance(change, qik.dep.Pydist)}
+        if pydists:
             runnables |= {
                 runnable.name: runnable
                 for runnable in self
-                if set(runnable.deps_collection.dists) & dists
+                if set(runnable.deps_collection.pydists) & pydists
             }
 
         return self.filter(runnables.values())

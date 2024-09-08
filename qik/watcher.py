@@ -31,13 +31,13 @@ else:
 
 
 @functools.cache
-def _parse_dist(path: str) -> None | str:
+def _parse_pydist(path: str) -> None | str:
     match = re.match(r"^(.+)-([^-]+)\.dist-info/RECORD$", path)
 
     # The pip installation process seems to use "~" as a temporary marker
     # for package names
     if match and not match.group(1).startswith("~"):
-        return qik.dep._normalize_dist_name(match.group(1))
+        return qik.dep._normalize_pydist_name(match.group(1))
 
 
 def _make_watchdog_handler(
@@ -98,8 +98,8 @@ def _make_watchdog_handler(
                         self.changes.add(qik.dep.Glob(path))
                 except ValueError:
                     path = str(src_path.relative_to(self.env.dir))
-                    if (dist := _parse_dist(path)) and event.event_type == "created":
-                        self.changes.add(qik.dep.Dist(dist))
+                    if (pydist := _parse_pydist(path)) and event.event_type == "created":
+                        self.changes.add(qik.dep.Pydist(pydist))
 
                 self.restart_timer()
 

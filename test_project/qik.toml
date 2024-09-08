@@ -26,7 +26,7 @@ deps = [{type = "command", name = "fail"}, {type = "const", val = "hi"}]
 
 [commands.lock]
 exec = "pip-compile > requirements.txt"
-deps = ["requirements.in", {type = "dist", name = "pip-tools"}]
+deps = ["requirements.in", {type = "pydist", name = "pip-tools"}]
 artifacts = ["requirements.txt"]
 cache = "remote"
 cache-when = "finished"

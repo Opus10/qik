@@ -105,10 +105,10 @@ def fmt_msg(exc: Exception) -> str:
     if isinstance(exc, Error):
         return qik.console.fmt_msg(
             f"{exc.args[0]} [reset][dim]See https://qik.build/en/stable/errors/#{exc.code}[/dim]",
-            **err_kwargs,
+            **err_kwargs,  # type: ignore
         )
     else:
-        return qik.console.fmt_msg("An unexpected error happened", **err_kwargs)
+        return qik.console.fmt_msg("An unexpected error happened", **err_kwargs)  # type: ignore
 
 
 def print(exc: Exception) -> None:

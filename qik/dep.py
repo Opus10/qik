@@ -26,9 +26,9 @@ else:
 
 
 @functools.cache
-def _normalize_dist_name(dist: str) -> str:
-    dist = dist.lower().strip()
-    return re.sub(r"[^a-z0-9]+", "-", dist)
+def _normalize_pydist_name(pydist: str) -> str:
+    pydist = pydist.lower().strip()
+    return re.sub(r"[^a-z0-9]+", "-", pydist)
 
 
 class Runnable(msgspec.Struct, frozen=True):
@@ -59,8 +59,8 @@ class BaseDep(msgspec.Struct, frozen=True, tag=True, dict=True):
         return []
 
     @functools.cached_property
-    def dists(self) -> list[str]:
-        """Return any dists of the dependency."""
+    def pydists(self) -> list[str]:
+        """Return any pydists of the dependency."""
         return []
 
     @functools.cached_property
@@ -88,7 +88,7 @@ class BaseDep(msgspec.Struct, frozen=True, tag=True, dict=True):
 
         When using --since, we need to estimate which commands need to
         be re-executed based on git changes. For deps such as
-        dists or vals that aren't directly tied to git, we return globs
+        pydists or vals that aren't directly tied to git, we return globs
         that encapsulate those changes (lock files, parent files, etc).
         """
         return self.watch
@@ -107,8 +107,8 @@ def factory(
             return Glob(_fmt(str(conf)))
         case qik.conf.GlobDep():
             return Glob(_fmt(conf.pattern))
-        case qik.conf.DistDep():
-            return Dist(_fmt(conf.name))
+        case qik.conf.PydistDep():
+            return Pydist(_fmt(conf.name))
         case qik.conf.ValDep():
             return Val(_fmt(conf.key), file=_fmt(conf.file))
         case qik.conf.PygraphDep():
@@ -174,15 +174,15 @@ class Cmd(BaseCmd, frozen=True):
         return self.val
 
 
-class Dist(BaseDep, frozen=True):
+class Pydist(BaseDep, frozen=True):
     """A python distribution dependency."""
 
     @property
     def normalized(self) -> str:
-        return _normalize_dist_name(self.val)
+        return _normalize_pydist_name(self.val)
 
     @functools.cached_property
-    def dists(self) -> list[str]:
+    def pydists(self) -> list[str]:
         return [self.val]
 
     @functools.cached_property
@@ -190,7 +190,7 @@ class Dist(BaseDep, frozen=True):
         venv = qik.venv.load()
         if not venv.lock_file:
             raise qik.errors.LockFileNotFound(
-                "Must configure venv lock file (venvs.default.lock-file) when using --since on dists."
+                "Must configure venv lock file (venvs.default.lock-file) when using --since on pydists."
             )
 
         return venv.lock_file
@@ -233,9 +233,9 @@ class Load(BaseDep, frozen=True):
             return None
 
     @property
-    def dists(self) -> list[str]:  # type: ignore
+    def pydists(self) -> list[str]:  # type: ignore
         deps = self.load()
-        return deps.dists if deps else []
+        return deps.pydists if deps else []
 
     @property
     def globs(self) -> list[str]:  # type: ignore
@@ -247,16 +247,16 @@ def store(
     path: pathlib.Path,
     *,
     globs: list[str] | None = None,
-    dists: list[str] | None = None,
+    pydists: list[str] | None = None,
     hash: bool = True,
 ) -> None:
     if hash:
-        hash_val = Collection(*[*(globs or []), *[Dist(val=dist) for dist in dists or []]]).hash()
+        hash_val = Collection(*[*(globs or []), *[Pydist(val=pydist) for pydist in pydists or []]]).hash()
     else:
         hash_val = None
 
     qik.file.write(
-        path, msgspec.json.encode(Serialized(globs=globs or [], dists=dists or [], hash=hash_val))
+        path, msgspec.json.encode(Serialized(globs=globs or [], pydists=pydists or [], hash=hash_val))
     )
 
 
@@ -264,7 +264,7 @@ class Serialized(msgspec.Struct, frozen=True, omit_defaults=True):
     """A serialized representation of dependencies, meant to be loaded from a file."""
 
     globs: list[str] = []
-    dists: list[str] = []
+    pydists: list[str] = []
     hash: str | None = None
 
 
@@ -298,8 +298,8 @@ class Collection:
         return {val for dep in self._deps for val in dep.vals}
 
     @property
-    def dists(self) -> set[str]:
-        return {dist for dep in self._deps for dist in dep.dists}
+    def pydists(self) -> set[str]:
+        return {pydist for dep in self._deps for pydist in dep.pydists}
 
     @property
     def runnables(self) -> dict[str, Runnable]:
@@ -319,9 +319,9 @@ class Collection:
         """Hash file values."""
         return qik.hash.strs(*self.vals)
 
-    def hash_dists(self) -> str:
-        """Hash distributions."""
-        return qik.hash.dists(*self.dists)
+    def hash_pydists(self) -> str:
+        """Hash python distributions."""
+        return qik.hash.pydists(*self.pydists)
 
     def hash_globs(self) -> str:
         """Hash glob pattern."""
@@ -330,7 +330,7 @@ class Collection:
     def hash(self) -> str:
         """The full hash."""
         return qik.hash.strs(
-            self.consts_hash, self.hash_vals(), self.hash_globs(), self.hash_dists()
+            self.consts_hash, self.hash_vals(), self.hash_globs(), self.hash_pydists()
         )
 
 

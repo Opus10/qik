@@ -66,26 +66,26 @@ def globs(*vals: run_deps.Glob | str) -> str:
 
 
 @functools.cache
-def _dist_version_overrides() -> dict[str, str]:
+def _pydist_version_overrides() -> dict[str, str]:
     project_conf = qik.conf.project()
-    base = collections.defaultdict(str) if project_conf.ignore_missing_dists else {}
-    return base | project_conf.dist_versions
+    base = collections.defaultdict(str) if project_conf.ignore_missing_pydists else {}
+    return base | project_conf.pydist_versions
 
 
 @functools.cache
-def _dist_version(dist: str) -> str:
+def _pydist_version(pydist: str) -> str:
     try:
-        return importlib.metadata.version(dist)
+        return importlib.metadata.version(pydist)
     except importlib.metadata.PackageNotFoundError:
         try:
-            return _dist_version_overrides()[dist]
+            return _pydist_version_overrides()[pydist]
         except KeyError as exc:
-            raise qik.errors.DistributionNotFound(f'Distribution "{dist}" not found.') from exc
+            raise qik.errors.DistributionNotFound(f'Distribution "{pydist}" not found.') from exc
 
 
-def dists(*vals: str) -> str:
+def pydists(*vals: str) -> str:
     return xxhash.xxh128_hexdigest(
-        "".join(f"{dist}{_dist_version(dist)}" for dist in sorted(vals))
+        "".join(f"{pydist}{_pydist_version(pydist)}" for pydist in sorted(vals))
     )
 
 

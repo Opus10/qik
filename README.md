@@ -43,7 +43,7 @@ Running `qik lock` executes `pip-compile > requirements.txt`. Results are cached
 Change `deps` to re-run this command if we upgrade `pip-tools`:
 
 ```toml
-deps = ["requirements.in", {type = "dist", name = "pip-tools"}]
+deps = ["requirements.in", {type = "pydist", name = "pip-tools"}]
 ```
 
 Installing a different version of `pip-tools` will break the command cache.

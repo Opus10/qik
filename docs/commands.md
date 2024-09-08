@@ -49,7 +49,7 @@ We'll cover more advanced module configuration later. For now keep the following
 
 ## Dependencies
 
-Qik command caching is centered around a rich set of dependencies. Here we'll cover globs, distributions, modules, commands, and constants. At the end, we'll touch on global dependencies across all commands.
+Qik command caching is centered around a rich set of dependencies. Here we'll cover globs, commands, constants, and python-specific dependencies. At the end, we'll touch on global dependencies across all commands.
 
 For a more in-depth look into how dependency caching works, see [the caching section](caching.md).
 
@@ -64,20 +64,20 @@ deps = ["dir/**/*.py"]
 
 <a id="distributions"></a>
 
-### Distributions
+### Python Distributions
 
-Use the `dist` dependency type to depend on an external Python distribution. Qik examines the virtual environment to break the cache if the version changes. Here we depend on the `ruff` distribution:
+Use the `pydist` dependency type to depend on an external python distribution. Qik examines the virtual environment to break the cache if the version changes. Here we depend on the `ruff` distribution:
 
 ```toml
 [command.lint]
 exec = "ruff format ."
-deps = ["**.py", {type = "dist", name = "ruff"}]
+deps = ["**.py", {type = "pydist", name = "ruff"}]
 cache = "repo"
 ```
 
-### Modules
+### Python Import Graph
 
-Use the `module` dependency type to depend on a module's files, import graph, and external distributions. Here we run [pyright](https://github.com/microsoft/pyright) type checking modularly based on module changes:
+Use the `pygraph` dependency type to depend on a python module's files, import graph, and external distributions. Here we run [pyright](https://github.com/microsoft/pyright) type checking modularly based on import graph changes:
 
 ```toml
 modules = ["a_module", "b_module", "c_module"]
@@ -85,13 +85,13 @@ plugins = ["qik.pygraph"]
 
 [commands.check-types]
 exec = "pyright {module.dir}"
-deps = [{type = "module", name = "{module.name}"}]
+deps = [{type = "pygraph", imp = "{module.imp}"}]
 cache = "repo"
 ```
 
 If `b_module` imports `a_module`, we'll re-run type checking on both if `a_module` changes.
 
-Above we've added `qik.pygraph` to plugins. Doing `qik --ls` will show two additional graph commands that are automatically used to build and analyze the import graph. See [this section](#module) for more information on how to configure module dependencies.
+Above we've added `qik.pygraph` to plugins. Doing `qik --ls` will show two additional graph commands that are automatically used to build and analyze the import graph. See [this section](#pygraph) for more information on how to configure module dependencies.
 
 !!! remember
 
@@ -165,7 +165,7 @@ In all circumstances, the output of the most recent run is always available in t
 
 ### Watching for Changes
 
-Use `--watch` to reactively re-run commands based on file changes. For `dist` dependencies, qik will watch the virtual environment for modifications.
+Use `--watch` to reactively re-run commands based on file changes. For `pydist` dependencies, qik will watch the virtual environment for modifications.
 
 ### Isolated Commands
 
@@ -179,7 +179,7 @@ Running a command with a dependent command will also bring it into the executabl
 
 Use `--since` to select commands based on changes since a git SHA, branch, tag, or other reference.
 
-If using `dist` dependencies, be sure to configure the location of the default virtual environment lock file:
+If using `pydist` dependencies, be sure to configure the location of the default virtual environment lock file:
 
 ```toml
 [venvs.default]
@@ -212,7 +212,7 @@ Set the context profile with `-p`. More on [qik context here](context.md).
 
 Some aspects of the command runner and runnable graph have advanced configuration parameters that we discuss here.
 
-<a id="module"></a>
+<a id="pygraph"></a>
 
 ### Import Graph Dependencies
 
@@ -221,7 +221,7 @@ When depending on a python module, any import, even inside of a `TYPE_CHECKING` 
 ```toml
 [pygraph]
 ignore-type-checking = true
-ignore-dists = true
+ignore-pydists = true
 ```
 
 !!! note

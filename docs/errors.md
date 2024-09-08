@@ -150,7 +150,7 @@ Similarly, context must be configured under the proper profile and namespace:
 
 #### Lock File Not Found
 
-`Must configure env lock file (venvs.default.lock-file) when using --since on dists.` means you're using the `--since` option with `qik` and have a command with `dist` dependencies. Commands that use module graph dependencies also may depend on distributions.
+`Must configure env lock file (venvs.default.lock-file) when using --since on pydists.` means you're using the `--since` option with `qik` and have a command with `pydist` dependencies. Commands that use module graph dependencies also may depend on python distributions.
 
 To use this functionality with `--since`, qik needs the lock file of the virtual environment. Configure a default like so:
 
@@ -176,7 +176,7 @@ For example, say that `import my_package.submodule` triggers this. You have thre
 1. Map the top-level module to its distribution:
 
     ```toml
-    [graph.module-dists]
+    [graph.module-pydists]
     my_package = "pypi_distribution"
     ```
 
@@ -187,7 +187,7 @@ For example, say that `import my_package.submodule` triggers this. You have thre
 2. Ignore the specific module:
 
     ```toml
-    [graph.module-dists]
+    [graph.module-pydists]
     my_package = ""
     ```
 
@@ -195,12 +195,12 @@ For example, say that `import my_package.submodule` triggers this. You have thre
 
     ```toml
     [graph]
-    ignore-missing-module-dists = true
+    ignore-missing-module-pydists = true
     ```
 
 !!! tip
 
-    You can also ignore tracking distributions entirely in the graph with `graph.ignore_dists = true`.
+    You can also ignore tracking distributions entirely in the graph with `pygraph.ignore_pydists = true`.
 
 ## Dependencies
 
@@ -213,7 +213,7 @@ For example, say that `import my_package.submodule` triggers this. You have thre
 1. Map the distribution to a version:
 
     ```toml
-    [dist-versions]
+    [pydist-versions]
     pypi-package-name = "version"
     ```
 

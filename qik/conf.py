@@ -58,7 +58,7 @@ class CmdDep(BaseDep, tag="command", frozen=True):
     isolated: bool | qik.unset.UnsetType = qik.unset.UNSET
 
 
-class DistDep(BaseDep, tag="dist", frozen=True):
+class PydistDep(BaseDep, tag="pydist", frozen=True):
     name: str
 
 
@@ -71,7 +71,7 @@ class LoadDep(BaseDep, tag="load", frozen=True):
     default: list[str] = []
 
 
-DepType: TypeAlias = str | GlobDep | CmdDep | DistDep | PygraphDep | ConstDep | LoadDep
+DepType: TypeAlias = str | GlobDep | CmdDep | PydistDep | PygraphDep | ConstDep | LoadDep
 
 
 class CmdConf(Base, frozen=True):
@@ -165,9 +165,9 @@ class Env(Base, frozen=True):
 
 class Pygraph(Base, frozen=True):
     ignore_type_checking: bool = False
-    ignore_dists: bool = False
-    ignore_missing_module_dists: bool = False
-    module_dists: dict[str, str] = {}
+    ignore_pydists: bool = False
+    ignore_missing_module_pydists: bool = False
+    module_pydists: dict[str, str] = {}
 
 
 class Cache(Base, frozen=True, tag_field="type"):
@@ -192,8 +192,8 @@ class ProjectConf(ModuleOrPluginConf, frozen=True):
     venvs: dict[str, Env] = {}
     caches: dict[str, S3Cache] = {}
     pygraph: Pygraph = msgspec.field(default_factory=Pygraph)
-    dist_versions: dict[str, str] = {}
-    ignore_missing_dists: bool = False
+    pydist_versions: dict[str, str] = {}
+    ignore_missing_pydists: bool = False
 
     @functools.cached_property
     def modules_by_name(self) -> dict[str, ModuleLocator]:

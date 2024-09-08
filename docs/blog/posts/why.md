@@ -66,7 +66,7 @@ Qik dependencies can be glob patterns and other advanced types. For example, let
 ```toml
 [commands.lock]
 exec = "pip-compile > requirements.txt"
-deps = ["requirements.in", {type = "dist", name = "pip-tools"}]
+deps = ["requirements.in", {type = "pydist", name = "pip-tools"}]
 ```
 
 Furthermore, let's break the cache when executed on a different machine architecture using [qik context](../../context.md):
@@ -76,7 +76,7 @@ Furthermore, let's break the cache when executed on a different machine architec
 exec = "pip-compile > requirements.txt"
 deps = [
     "requirements.in",
-    {type = "dist", name = "pip-tools"},
+    {type = "pydist", name = "pip-tools"},
     {type = "const", val = "{ctx.qik.arch}"
 ]
 ```
@@ -86,7 +86,7 @@ deps = [
 Define modules for your project and parametrize commands over them:
 
 ```toml
-modules = ["my.module.a", "my.module.b"]
+modules = ["my/module/a", "my/module/b"]
 
 [commands.lint]
 exec = "ruff check {module.dir}"
@@ -100,15 +100,16 @@ Qik runs commands in parallel by default. Use `-m` to specify individual modules
 Commands such as type checkers or test runners need to re-run when the import graph changes:
 
 ```toml
-modules = ["my.module.a", "my.module.b"]
+modules = ["my/module/a", "my/module/b"]
+plugins = ["qik.pygraph"]
 
 [commands.check-types]
 exec = "pyright {module.dir}"
-deps = [{type = "module", name = "{module.name}"}]
+deps = [{type = "pygraph", imp = "{module.imp}"}]
 cache = "repo"
 ```
 
-If `my.module.b` imports `my.module.a`, changes to files in `my.module.a` will cause both module-level invocations to re-run. The `module` dependency type also dynamically adds `dist` dependencies for imported external packages.
+If `my.module.b` imports `my.module.a`, changes to files in `my.module.a` will cause both module-level invocations to re-run. The `pygraph` dependency type also dynamically adds `pydist` dependencies for imported external packages.
 
 ### Watching for Changes
 

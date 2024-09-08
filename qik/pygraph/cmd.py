@@ -72,10 +72,10 @@ def _packages_distributions(venv_hash: str) -> dict[str, list[str]]:
     cache_path = qik.conf.priv_work_dir() / "pygraph" / "packages_distributions.json"
     overrides = (
         {}
-        if not pygraph_conf.ignore_missing_module_dists
+        if not pygraph_conf.ignore_missing_module_pydists
         else collections.defaultdict(lambda: [""])
     )
-    overrides |= {module: [dist] for module, dist in pygraph_conf.module_dists.items()}
+    overrides |= {module: [dist] for module, dist in pygraph_conf.module_pydists.items()}
     try:
         cached_val = msgspec.json.decode(cache_path.read_bytes(), type=PackagesDistributions)
         if cached_val.venv_hash == venv_hash:
@@ -96,7 +96,7 @@ _PACKAGES_DISTRIBUTIONS_LOCK = threading.Lock()
 
 
 def packages_distributions() -> dict[str, list[str]]:
-    """Obtain a mapping of modules to their associated dists.
+    """Obtain a mapping of modules to their associated python distributions.
 
     This is an expensive command, so use an underlying cache when possible.
     """
@@ -123,11 +123,11 @@ def lock_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
                 yield f"{path}/**.py"
                 yield f"{path}.py"
 
-    def _gen_upstream_dists() -> Iterator[str]:
+    def _gen_upstream_pydists() -> Iterator[str]:
         for module in upstream:
             if not module.is_internal:
                 try:
-                    yield from (dist for dist in distributions[module.imp] if dist)
+                    yield from (pydist for pydist in distributions[module.imp] if pydist)
                 except KeyError as exc:
                     raise qik.errors.DistributionNotFound(
                         f'No distribution found for module "{module.imp}"'
@@ -136,7 +136,7 @@ def lock_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
     qik.dep.store(
         lock_path(imp),
         globs=sorted(_gen_upstream_globs()),
-        dists=sorted(_gen_upstream_dists()),
+        pydists=sorted(_gen_upstream_pydists()),
     )
     return 0, ""
 

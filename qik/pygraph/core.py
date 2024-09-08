@@ -105,7 +105,7 @@ def build() -> Graph:
     proj = qik.conf.project()
     grimp_g = grimp.build_graph(
         *internal_modules,
-        include_external_packages=not proj.pygraph.ignore_dists,
+        include_external_packages=not proj.pygraph.ignore_pydists,
         exclude_type_checking_imports=proj.pygraph.ignore_type_checking,
         cache_dir=str(qik.conf.priv_work_dir() / ".grimp"),
     )

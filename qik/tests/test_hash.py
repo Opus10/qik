@@ -47,9 +47,9 @@ def test_globs(tmpdir, mocker):
     assert qik.hash.globs("my_file", "another_file") == "99aa06d3014798d86001c324468d497f"
 
 
-def test_dists():
-    assert qik.hash.dists("pytest") == "b57d851a0617e17d0a9cb1d93fe9099a"
-    assert qik.hash.dists("pytest", "pytest-cov") == "705e4096c5edbeda860aa1745170bff1"
+def test_pydists():
+    assert qik.hash.pydists("pytest") == "b57d851a0617e17d0a9cb1d93fe9099a"
+    assert qik.hash.pydists("pytest", "pytest-cov") == "705e4096c5edbeda860aa1745170bff1"
 
 
 def test_strs():
