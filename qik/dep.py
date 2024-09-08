@@ -19,10 +19,12 @@ import qik.venv
 if TYPE_CHECKING:
     import qik.pygraph.cmd as pygraph_cmd
     import qik.runnable
+    import qik.uv.cmd as uv_cmd
 else:
     import qik.lazy
 
     pygraph_cmd = qik.lazy.module("qik.pygraph.cmd")
+    uv_cmd = qik.lazy.module("qik.uv.cmd")
 
 
 @functools.cache
@@ -149,12 +151,13 @@ class Val(BaseDep, frozen=True):
 class BaseCmd(BaseDep, frozen=True):
     strict: bool = False
     isolated: bool | qik.unset.UnsetType = qik.unset.UNSET
+    args: dict[str, str] = {}
 
     def get_cmd_name(self) -> str:
         raise NotImplementedError
 
     def get_cmd_args(self) -> dict[str, str]:
-        return {}
+        return self.args
 
     @functools.cached_property
     def runnables(self) -> list[Runnable]:
@@ -274,9 +277,15 @@ class Serialized(msgspec.Struct, frozen=True, omit_defaults=True):
 class Collection:
     """A filterable and hashable collection of dependencies."""
 
-    def __init__(self, *deps: str | pathlib.Path | BaseDep, module: str | None = None):
+    def __init__(
+        self,
+        *deps: str | pathlib.Path | BaseDep,
+        module: str | None = None,
+        space: str | None = None,
+    ):
         self._deps = [dep if isinstance(dep, BaseDep) else Glob(str(dep)) for dep in deps]
         self.module = module
+        self.space = space
 
     @property
     def globs(self) -> set[str]:
@@ -304,6 +313,19 @@ class Collection:
     def pydists(self) -> set[str]:
         return {pydist for dep in self._deps for pydist in dep.pydists}
 
+    @functools.cached_property
+    def venv_runnables(self) -> dict[str, Runnable]:
+        return (
+            {
+                runnable.name: Runnable(name=runnable.name, obj=runnable, strict=True)
+                for runnable in qik.cmd.load(
+                    uv_cmd.install_cmd_name(), venv="default"
+                ).runnables.values()
+            }
+            if self.space
+            else {}
+        )
+
     @property
     def runnables(self) -> dict[str, Runnable]:
         return {
@@ -311,7 +333,7 @@ class Collection:
             for dep in self._deps
             for runnable in dep.runnables
             if not self.module or not runnable.obj.module or self.module == runnable.obj.module
-        }
+        } | self.venv_runnables
 
     @functools.cached_property
     def consts_hash(self) -> str:

@@ -108,7 +108,7 @@ def packages_distributions() -> dict[str, list[str]]:
 def lock_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
     pyimport = runnable.args.get("pyimport")
     if not pyimport:
-        raise AssertionError("Unexpected qik.pygraph.deps runnable.")
+        raise AssertionError("Unexpected qik.pygraph.lock runnable.")
 
     graph = load_graph()  # TODO: Use cached runner graph
     # TODO: Better error if the module doesn't exist
@@ -162,7 +162,7 @@ def lock_cmd_factory(
 ) -> dict[str, qik.runnable.Runnable]:
     pyimport = args.get("pyimport")
     if not pyimport:
-        raise qik.errors.ArgNotSupplied('"pyimport" arg is required for qik.pygraph.deps command.')
+        raise qik.errors.ArgNotSupplied('"pyimport" arg is required for qik.pygraph.lock command.')
 
     cmd_name = lock_cmd_name()
     artifact = str(lock_path(pyimport))

@@ -56,6 +56,7 @@ def _make_runnable(
         artifacts=[qik.ctx.format(artifact) for artifact in conf.artifacts],
         cache=qik.ctx.format(conf.cache),
         cache_when=qik.ctx.format(conf.cache_when),
+        space="default",
     )
 
 
@@ -103,6 +104,7 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
     cache: str | None | qik.unset.UnsetType = qik.unset.UNSET
     cache_when: qik.conf.CacheWhen | qik.unset.UnsetType = qik.unset.UNSET
     args: dict[str, str] = {}
+    space: str | None = None
 
     @functools.cached_property
     def description(self) -> str:
@@ -115,7 +117,7 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
 
     @functools.cached_property
     def deps_collection(self) -> qik.dep.Collection:
-        return qik.dep.Collection(*self.deps, module=self.module)
+        return qik.dep.Collection(*self.deps, module=self.module, space=self.space)
 
     # TODO cache this based on the runner session
     def filter_regex(self, strategy: FilterStrategy) -> re.Pattern | None:
