@@ -90,7 +90,7 @@ deps = [{type = "pygraph", imp = "{module.imp}"}]
 cache = "repo"
 ```
 
-We use the `qik.pygraph` plugin, which provides commands that lock the python import graph.
+We use the `qik.pygraph` plugin, which provides commands that lock the Python import graph.
 
 ### Command Dependencies
 

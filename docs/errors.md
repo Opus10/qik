@@ -150,7 +150,7 @@ Similarly, context must be configured under the proper profile and namespace:
 
 #### Lock File Not Found
 
-`Must configure env lock file (venvs.default.lock-file) when using --since on pydists.` means you're using the `--since` option with `qik` and have a command with `pydist` dependencies. Commands that use module graph dependencies also may depend on python distributions.
+`Must configure env lock file (venvs.default.lock-file) when using --since on pydists.` means you're using the `--since` option with `qik` and have a command with `pydist` dependencies. Commands that use module graph dependencies also may depend on Python distributions.
 
 To use this functionality with `--since`, qik needs the lock file of the virtual environment. Configure a default like so:
 

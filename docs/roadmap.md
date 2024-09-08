@@ -23,7 +23,7 @@ We intend to allow users to explicitly disable certain distributions from the gr
 
 #### Adding and Removing Import Links
 
-Users must [manually import modules](commands.md#pygraph) in a python file if those imports are dynamic. We are planning to allow for more explicit control over this, along with removing imports from the graph. For example, one will be able to remove imports from their migration files.
+Users must [manually import modules](commands.md#pygraph) in a Python file if those imports are dynamic. We are planning to allow for more explicit control over this, along with removing imports from the graph. For example, one will be able to remove imports from their migration files.
 
 ## Better Virtual Environment (Venv) Support
 

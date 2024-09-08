@@ -49,7 +49,7 @@ We'll cover more advanced module configuration later. For now keep the following
 
 ## Dependencies
 
-Qik command caching is centered around a rich set of dependencies. Here we'll cover globs, commands, constants, and python-specific dependencies. At the end, we'll touch on global dependencies across all commands.
+Qik command caching is centered around a rich set of dependencies. Here we'll cover globs, commands, constants, and Python-specific dependencies. At the end, we'll touch on global dependencies across all commands.
 
 For a more in-depth look into how dependency caching works, see [the caching section](caching.md).
 
@@ -66,7 +66,7 @@ deps = ["dir/**/*.py"]
 
 ### Python Distributions
 
-Use the `pydist` dependency type to depend on an external python distribution. Qik examines the virtual environment to break the cache if the version changes. Here we depend on the `ruff` distribution:
+Use the `pydist` dependency type to depend on an external Python distribution. Qik examines the virtual environment to break the cache if the version changes. Here we depend on the `ruff` distribution:
 
 ```toml
 [command.lint]
@@ -77,7 +77,7 @@ cache = "repo"
 
 ### Python Import Graph
 
-Use the `pygraph` dependency type to depend on a python module's files, import graph, and external distributions. Here we run [pyright](https://github.com/microsoft/pyright) type checking modularly based on import graph changes:
+Use the `pygraph` dependency type to depend on a Python module's files, import graph, and external distributions. Here we run [pyright](https://github.com/microsoft/pyright) type checking modularly based on import graph changes:
 
 ```toml
 modules = ["a_module", "b_module", "c_module"]
@@ -216,7 +216,7 @@ Some aspects of the command runner and runnable graph have advanced configuratio
 
 ### Import Graph Dependencies
 
-When depending on a python module, any import, even inside of a `TYPE_CHECKING` block, will be included in the dependency graph. Similarly, any direct third-party import will be included as a distribution dependency. Disable this behavior with the `pygraph` config section:
+When depending on a Python module's import graph, any import, even inside of a `TYPE_CHECKING` block, will be included in the dependency graph. Similarly, any direct third-party import will be included as a distribution dependency. Disable this behavior with the `pygraph` config section:
 
 ```toml
 [pygraph]
