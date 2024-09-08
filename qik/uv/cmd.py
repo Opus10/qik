@@ -27,14 +27,12 @@ def lock_cmd_factory(
         raise qik.errors.ArgNotSupplied('"venv" arg is required for qik.uv.lock command.')
 
     cmd_name = lock_cmd_name()
-    print("cmd_name", cmd_name)
-
     runnable = qik.runnable.Runnable(
         name=f"{cmd_name}?venv={venv}",
         cmd=cmd_name,
         val="qik.uv.cmd.lock_cmd",
         shell=False,
-        deps=[],
+        deps=[qik.dep.Pydist("uv")],
         artifacts=[],
         cache="repo",
         args={"venv": venv},

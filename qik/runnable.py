@@ -197,17 +197,9 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
         """Run a command, caching the results."""
         logger = qik.ctx.runner().logger
         print_kwargs = {"runnable": self}
-        try:
-            cache_entry = self.get_cache_entry()
-        except qik.errors.RunnableError as exc:
-            log = qik.errors.fmt_msg(exc)
-            logger.print(log, runnable=self, event="output")
-            result = Result(log=log, code=1, hash="")
-        else:
-            print_kwargs |= {"cache_entry": cache_entry}
 
-            if cache_entry:
-                # Run cached command
+        def _log_start(cached: bool) -> None:
+            if cached:
                 logger.print(
                     msg=f"{self.name} [default][dim]{self.description}",
                     emoji="fast-forward_button",
@@ -215,12 +207,7 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
                     event="start",
                     **print_kwargs,  # type: ignore
                 )
-                if cache_entry.log:
-                    logger.print(cache_entry.log, event="output", **print_kwargs)  # type: ignore
-
-                result = Result.from_cache(cache_entry)
             else:
-                # Run uncached command
                 logger.print(
                     msg=f"{self.name} [default][dim]{self.description}",
                     emoji="construction",
@@ -228,6 +215,27 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
                     event="start",
                     **print_kwargs,  # type: ignore
                 )
+
+        try:
+            cache_entry = self.get_cache_entry()
+        except qik.errors.RunnableError as exc:
+            _log_start(cached=False)
+            log = qik.errors.fmt_msg(exc)
+            logger.print(f"{log}", runnable=self, event="output")
+            result = Result(log=log, code=1, hash="")
+        else:
+            print_kwargs |= {"cache_entry": cache_entry}
+
+            if cache_entry:
+                # Run cached command
+                _log_start(cached=True)
+                if cache_entry.log:
+                    logger.print(cache_entry.log, event="output", **print_kwargs)  # type: ignore
+
+                result = Result.from_cache(cache_entry)
+            else:
+                # Run uncached command
+                _log_start(cached=False)
                 result = self._uncached_exec(logger=logger)
                 self.cache_result(result)
 

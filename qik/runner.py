@@ -79,7 +79,8 @@ class DAGPool:
                     _skip(dep)
             else:
                 for dep in self.downstream[name]:
-                    in_degree[dep] -= 1
+                    if dep in in_degree:
+                        in_degree[dep] -= 1
 
             del in_degree[name]
             del futures[name]

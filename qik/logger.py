@@ -235,7 +235,7 @@ class Stdout(Logger):
     ) -> None:
         """Print output from a runnable."""
         if event == "output":
-            qik.console.print(msg, emoji=emoji, color=color, end="", highlight=False, style=None)
+            qik.console.print(msg.strip(), emoji=emoji, color=color, highlight=False, style=None)
         elif event == "start" or (event == "finish" and not result):
             qik.console.rule(msg, emoji=emoji, color=color)
         else:
@@ -380,23 +380,23 @@ class Progress(Logger):
                         )
                         color = "green"
                         show = True if verbosity > 1 else False
-                        output = "".join(self.captured[name])
+                        output = "\n".join(line.strip() for line in self.captured[name])
                     case "failed":
                         emoji = (
                             "fast-forward_button" if name in cached_runnables else "broken_heart"
                         )
                         color = "red"
                         show = True if verbosity > 0 else False
-                        output = "".join(self.captured[name])
+                        output = "\n".join(line.strip() for line in self.captured[name])
                     case _:
                         emoji = "heavy_minus_sign"
                         color = "yellow"
                         show = True if verbosity > 1 else False
-                        output = "[dim][italic]Skipped\n"
+                        output = "[dim][italic]Skipped"
 
                 if show:
                     qik.console.rule(f":{emoji}-emoji: [{color}]{name}", style=color)
                     output = output or "[dim][italic]No output"
-                    qik.console.print(output.strip())
+                    qik.console.print(output)
 
         qik.console.print(self.get_status_text())
