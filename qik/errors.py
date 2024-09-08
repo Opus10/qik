@@ -84,6 +84,10 @@ class VenvNotFound(RunnerError):
     code = "venv1"
 
 
+class ArgNotSupplied(RunnerError):
+    code = "args0"
+
+
 class RunnableError(Error):
     """Runnable errors result in an individual runnable erroring."""
 

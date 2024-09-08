@@ -224,3 +224,13 @@ For example, say that `import my_package.submodule` triggers this. You have thre
     ```
 
 If this error surfaces from using the `qik.pygraph` plugin for module dependencies, other options for overriding behavior are in [this troubleshooting tip](#graph0).
+
+## Args
+
+<a id="args0"></a>
+
+#### Argument Not Supplied
+
+`Arg is required` means a command, such as `qik.pygraph.lock` requires parameters. This can happen when directly invoking graph locking via `qik qik.pygraph.lock`.
+
+There is currently no way to directly invoke `qik.pygraph.lock` with arguments. This will be added in the future.

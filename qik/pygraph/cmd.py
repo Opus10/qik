@@ -162,8 +162,7 @@ def lock_cmd_factory(
 ) -> dict[str, qik.runnable.Runnable]:
     pyimport = args.get("pyimport")
     if not pyimport:
-        # TODO: Raise qik error with code
-        raise ValueError('"pyimport" arg is required for qik.pygraph.deps command.')
+        raise qik.errors.ArgNotSupplied('"pyimport" arg is required for qik.pygraph.deps command.')
 
     cmd_name = lock_cmd_name()
     artifact = str(lock_path(pyimport))
