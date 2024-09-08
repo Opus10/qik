@@ -88,7 +88,7 @@ plugins = ["qik.pygraph"]
 
 [commands.check-types]
 exec = "pyright {module.dir}"
-deps = [{type = "pygraph", pyimport = "{module.imp}"}]
+deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]
 cache = "repo"
 ```
 
@@ -100,7 +100,7 @@ Command dependencies help order execution. For example, change `deps` of `comman
 
 ```toml
 deps = [
-    {type = "pygraph", pyimport = "{module.imp}"},
+    {type = "pygraph", pyimport = "{module.pyimport}"},
     {type = "command", name = "format"}
 ]
 ```
