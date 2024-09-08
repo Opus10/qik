@@ -159,7 +159,7 @@ class PluginLocator(BaseLocator, frozen=True):
         return pathlib.Path(spec.origin).parent
 
 
-class Env(Base, frozen=True):
+class Venv(Base, frozen=True):
     lock_file: str | list[str] = []
 
 
@@ -189,7 +189,7 @@ class ProjectConf(ModuleOrPluginConf, frozen=True):
     plugins: list[str | PluginLocator] = []
     deps: list[DepType] = []
     ctx: dict[str, dict[CtxNamespace, dict[str, Any]]] = {}
-    venvs: dict[str, Env] = {}
+    venvs: dict[str, Venv] = {}
     caches: dict[str, S3Cache] = {}
     pygraph: Pygraph = msgspec.field(default_factory=Pygraph)
     pydist_versions: dict[str, str] = {}

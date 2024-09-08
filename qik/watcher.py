@@ -69,7 +69,7 @@ def _make_watchdog_handler(
             return pathlib.Path.cwd()
 
         @functools.cached_property
-        def env(self) -> qik.venv.Env:
+        def venv(self) -> qik.venv.Venv:
             return qik.venv.load()
 
         def restart_timer(self, interval: float = 0.1):
@@ -97,7 +97,7 @@ def _make_watchdog_handler(
                     elif self.qik_file_re.match(path):
                         self.changes.add(qik.dep.Glob(path))
                 except ValueError:
-                    path = str(src_path.relative_to(self.env.dir))
+                    path = str(src_path.relative_to(self.venv.dir))
                     if (pydist := _parse_pydist(path)) and event.event_type == "created":
                         self.changes.add(qik.dep.Pydist(pydist))
 
