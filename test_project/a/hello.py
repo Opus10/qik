@@ -12,5 +12,3 @@ def my_func():
 
 def hi() -> msgspec.Struct:
     requests.get()
-
-
