@@ -62,7 +62,7 @@ class DistDep(BaseDep, tag="dist", frozen=True):
     name: str
 
 
-class ModuleDep(BaseDep, tag="module", frozen=True):
+class PygraphDep(BaseDep, tag="pygraph", frozen=True):
     imp: str
 
 
@@ -71,7 +71,7 @@ class LoadDep(BaseDep, tag="load", frozen=True):
     default: list[str] = []
 
 
-DepType: TypeAlias = str | GlobDep | CmdDep | DistDep | ModuleDep | ConstDep | LoadDep
+DepType: TypeAlias = str | GlobDep | CmdDep | DistDep | PygraphDep | ConstDep | LoadDep
 
 
 class CmdConf(Base, frozen=True):

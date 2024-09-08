@@ -87,13 +87,6 @@ class Cache:
             if manifest.hash != hash:
                 raise FileNotFoundError("Manifest not found.")
 
-            print(
-                "get",
-                manifest_path,
-                base_path,
-                pathlib.Path(base_path / manifest.log) if manifest.log else None,
-            )
-
             log = pathlib.Path(base_path / manifest.log).read_text() if manifest.log else None
             if artifacts:
                 self.restore_artifacts(runnable=runnable, hash=hash, artifacts=manifest.artifacts)

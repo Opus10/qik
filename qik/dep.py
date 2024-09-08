@@ -111,8 +111,8 @@ def factory(
             return Dist(_fmt(conf.name))
         case qik.conf.ValDep():
             return Val(_fmt(conf.key), file=_fmt(conf.file))
-        case qik.conf.ModuleDep():
-            return Module(_fmt(conf.imp))
+        case qik.conf.PygraphDep():
+            return Pygraph(_fmt(conf.imp))
         case qik.conf.CmdDep():
             return Cmd(_fmt(conf.name), strict=conf.strict, isolated=conf.isolated)
         case qik.conf.ConstDep():
@@ -204,7 +204,7 @@ class Const(BaseDep, frozen=True):
         return ["*qik.toml"]
 
 
-class Module(BaseCmd, frozen=True):
+class Pygraph(BaseCmd, frozen=True):
     """A python module and its associated imports."""
 
     strict: ClassVar[bool] = True  # type: ignore

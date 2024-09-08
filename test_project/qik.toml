@@ -33,12 +33,12 @@ cache-when = "finished"
 
 [commands.modular_lint]
 exec = "ruff check {module.dir}"
-deps = [{type = "module", imp = "{module.imp}"}]
+deps = [{type = "pygraph", imp = "{module.imp}"}]
 cache = "repo"
 
 [commands.ind_lint]
 exec = "ruff check b"
-deps = [{type = "module", imp = "b"}, {type = "module", imp = "nest.c"}]
+deps = [{type = "pygraph", imp = "b"}, {type = "pygraph", imp = "nest.c"}]
 cache = "repo"
 
 [commands.modular_format]

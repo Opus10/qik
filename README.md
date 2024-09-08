@@ -77,7 +77,7 @@ plugins = ["qik.graph"]
 
 [commands.check-types]
 exec = "pyright {module.dir}"
-deps = [{type = "module", name = "{module.name}"}]
+deps = [{type = "pygraph", imp = "{module.imp}"}]
 cache = "repo"
 ```
 
