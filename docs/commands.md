@@ -45,7 +45,7 @@ We'll cover more advanced module configuration later. For now keep the following
 
 - `modules` is a list of paths, using `/` as the directory separator.
 - Use `modules = [{ name = "name", path = "path/to/folder"}]` to give the module a different name (alphanumeric characters, dots, or underscores only).
-- Use `{module.dir}` for the directory or `{module.imp}` for the dotted import path.
+- Use `{module.dir}` for the directory or `{module.pyimport}` for the dotted Python import path.
 
 ## Dependencies
 
@@ -85,7 +85,7 @@ plugins = ["qik.pygraph"]
 
 [commands.check-types]
 exec = "pyright {module.dir}"
-deps = [{type = "pygraph", imp = "{module.imp}"}]
+deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]
 cache = "repo"
 ```
 
@@ -113,7 +113,7 @@ cache = "repo"
 [commands.check-types]
 exec = "pyright {module.dir}"
 deps = [
-    {type = "pygraph", imp = "{module.imp}"},
+    {type = "pygraph", pyimport = "{module.pyimport}"},
     {type = "command", name = "format"}
 ]
 cache = "repo"
@@ -260,7 +260,7 @@ plugins = ["qik.pygraph"]
 
 [commands.test]
 exec = "pytest {module.dir}"
-deps = [{type = "pygraph", imp = "{module.imp}"}]
+deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]
 
 [commands.coverage]
 exec = "coverage report"

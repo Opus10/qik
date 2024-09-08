@@ -112,7 +112,7 @@ def factory(
         case qik.conf.ValDep():
             return Val(_fmt(conf.key), file=_fmt(conf.file))
         case qik.conf.PygraphDep():
-            return Pygraph(_fmt(conf.imp))
+            return Pygraph(_fmt(conf.pyimport))
         case qik.conf.CmdDep():
             return Cmd(_fmt(conf.name), strict=conf.strict, isolated=conf.isolated)
         case qik.conf.ConstDep():
@@ -213,7 +213,7 @@ class Pygraph(BaseCmd, frozen=True):
         return pygraph_cmd.lock_cmd_name()
 
     def get_cmd_args(self) -> dict[str, str]:
-        return {"imp": self.val}
+        return {"pyimport": self.val}
 
     @property
     def globs(self) -> list[str]:  # type: ignore

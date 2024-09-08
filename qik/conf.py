@@ -63,7 +63,7 @@ class PydistDep(BaseDep, tag="pydist", frozen=True):
 
 
 class PygraphDep(BaseDep, tag="pygraph", frozen=True):
-    imp: str
+    pyimport: str
 
 
 class LoadDep(BaseDep, tag="load", frozen=True):
@@ -119,7 +119,7 @@ class BaseLocator(Base, frozen=True):
         raise NotImplementedError
 
     @functools.cached_property
-    def imp(self) -> str:
+    def pyimport(self) -> str:
         raise NotImplementedError
 
     @functools.cached_property
@@ -137,7 +137,7 @@ class ModuleLocator(BaseLocator, frozen=True):
     path: str
 
     @functools.cached_property
-    def imp(self) -> str:
+    def pyimport(self) -> str:
         return self.path.replace("/", ".")
 
     @functools.cached_property
@@ -148,11 +148,11 @@ class ModuleLocator(BaseLocator, frozen=True):
 
 
 class PluginLocator(BaseLocator, frozen=True):
-    imp: str  # type: ignore
+    pyimport: str  # type: ignore
 
     @functools.cached_property
     def dir(self) -> pathlib.Path:
-        spec = importlib.util.find_spec(self.imp)
+        spec = importlib.util.find_spec(self.pyimport)
         if not spec or not spec.origin:
             raise qik.errors.PluginImport(f'Could not import plugin "{self.name}"')
 
@@ -210,13 +210,13 @@ class ProjectConf(ModuleOrPluginConf, frozen=True):
     @functools.cached_property
     def plugins_by_name(self) -> dict[str, PluginLocator]:
         plugin_locators = (
-            PluginLocator(name=p, imp=p) if isinstance(p, str) else p for p in self.plugins
+            PluginLocator(name=p, pyimport=p) if isinstance(p, str) else p for p in self.plugins
         )
         return {p.name: p for p in plugin_locators}
 
     @functools.cached_property
-    def plugins_by_imp(self) -> dict[str, PluginLocator]:
-        return {p.imp: p for p in self.plugins_by_name.values()}
+    def plugins_by_pyimport(self) -> dict[str, PluginLocator]:
+        return {p.pyimport: p for p in self.plugins_by_name.values()}
 
 
 class PyprojectTool(msgspec.Struct):
@@ -284,10 +284,10 @@ def module(uri: str, *, by_path: bool = False) -> ModuleOrPluginConf:
 
 
 @functools.cache
-def plugin_locator(uri: str, *, by_imp: bool = False) -> PluginLocator:
+def plugin_locator(uri: str, *, by_pyimport: bool = False) -> PluginLocator:
     """Get plugin locator."""
     proj = project()
-    lookup = proj.plugins_by_imp if by_imp else proj.plugins_by_name
+    lookup = proj.plugins_by_pyimport if by_pyimport else proj.plugins_by_name
     if uri not in lookup:
         raise qik.errors.PluginNotFound(f'Plugin "{uri}" not configured in {location().name}.')
 
@@ -295,9 +295,9 @@ def plugin_locator(uri: str, *, by_imp: bool = False) -> PluginLocator:
 
 
 @functools.cache
-def plugin(uri: str, by_imp: bool = False) -> ModuleOrPluginConf:
+def plugin(uri: str, by_pyimport: bool = False) -> ModuleOrPluginConf:
     """Get plugin configuration."""
-    return plugin_locator(uri, by_imp=by_imp).conf
+    return plugin_locator(uri, by_pyimport=by_pyimport).conf
 
 
 @functools.cache

@@ -1,5 +1,5 @@
 modules = ["a", {name = "b_module", path = "b"}, "nest/c"]
-plugins = [{name = "graph", imp = "qik.pygraph"}]
+plugins = [{name = "graph", pyimport = "qik.pygraph"}]
 deps = ["python_version"]
 vars = ["aws_access_key_id", "aws_secret_access_key", {name = "aws_endpoint_url", required = false}]
 
@@ -33,12 +33,12 @@ cache-when = "finished"
 
 [commands.modular_lint]
 exec = "ruff check {module.dir}"
-deps = [{type = "pygraph", imp = "{module.imp}"}]
+deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]
 cache = "repo"
 
 [commands.ind_lint]
 exec = "ruff check b"
-deps = [{type = "pygraph", imp = "b"}, {type = "pygraph", imp = "nest.c"}]
+deps = [{type = "pygraph", pyimport = "b"}, {type = "pygraph", pyimport = "nest.c"}]
 cache = "repo"
 
 [commands.modular_format]

@@ -106,14 +106,14 @@ def packages_distributions() -> dict[str, list[str]]:
 
 
 def lock_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
-    imp = runnable.args.get("imp")
-    if not imp:
+    pyimport = runnable.args.get("pyimport")
+    if not pyimport:
         raise AssertionError("Unexpected qik.pygraph.deps runnable.")
 
     graph = load_graph()  # TODO: Use cached runner graph
     # TODO: Better error if the module doesn't exist
-    upstream = graph.upstream_modules(imp, idx=False)
-    root = graph.modules[graph.modules_idx[imp]]
+    upstream = graph.upstream_modules(pyimport, idx=False)
+    root = graph.modules[graph.modules_idx[pyimport]]
     distributions = packages_distributions()
 
     def _gen_upstream_globs() -> Iterator[str]:
@@ -134,7 +134,7 @@ def lock_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
                     ) from exc
 
     qik.dep.store(
-        lock_path(imp),
+        lock_path(pyimport),
         globs=sorted(_gen_upstream_globs()),
         pydists=sorted(_gen_upstream_pydists()),
     )
@@ -160,16 +160,16 @@ def build_cmd_factory(
 def lock_cmd_factory(
     cmd: str, conf: qik.conf.CmdConf, **args: str
 ) -> dict[str, qik.runnable.Runnable]:
-    imp = args.get("imp")
-    if not imp:
+    pyimport = args.get("pyimport")
+    if not pyimport:
         # TODO: Raise qik error with code
-        raise ValueError('"imp" arg is required for qik.pygraph.deps command.')
+        raise ValueError('"pyimport" arg is required for qik.pygraph.deps command.')
 
     cmd_name = lock_cmd_name()
-    artifact = str(lock_path(imp))
+    artifact = str(lock_path(pyimport))
 
     runnable = qik.runnable.Runnable(
-        name=f"{cmd_name}?imp={imp}",
+        name=f"{cmd_name}?pyimport={pyimport}",
         cmd=cmd_name,
         val="qik.pygraph.cmd.lock_cmd",
         shell=False,
@@ -181,20 +181,20 @@ def lock_cmd_factory(
         ],
         artifacts=[artifact],
         cache="repo",
-        args={"imp": imp},
+        args={"pyimport": pyimport},
     )
     return {runnable.name: runnable}
 
 
 @functools.cache
 def build_cmd_name() -> str:
-    graph_plugin_name = qik.conf.plugin_locator("qik.pygraph", by_imp=True).name
+    graph_plugin_name = qik.conf.plugin_locator("qik.pygraph", by_pyimport=True).name
     return f"{graph_plugin_name}.build"
 
 
 @functools.cache
 def lock_cmd_name() -> str:
-    graph_plugin_name = qik.conf.plugin_locator("qik.pygraph", by_imp=True).name
+    graph_plugin_name = qik.conf.plugin_locator("qik.pygraph", by_pyimport=True).name
     return f"{graph_plugin_name}.lock"
 
 

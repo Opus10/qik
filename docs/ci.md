@@ -40,7 +40,7 @@ If repo-based caching isn't acceptable or you have architecture-specific command
 ```toml
 [commands.pytest]
 exec = "pytest --cov {module.dir} --cov-report xml:{module.name}-coverage.xml"
-deps = [{type = "pygraph", name = "{module.imp}"}]
+deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]
 artifacts = ["{module.name}-coverage.xml"]
 ```
 
