@@ -24,10 +24,6 @@ class ConfigNotFound(RunnerError):
     code = "conf0"
 
 
-class ModulePathNotFound(RunnerError):
-    code = "conf1"
-
-
 class ModuleNotFound(RunnerError):
     code = "conf2"
 
@@ -88,6 +84,10 @@ class VenvNotFound(RunnerError):
     code = "venv1"
 
 
+class ArgNotSupplied(RunnerError):
+    code = "args0"
+
+
 class RunnableError(Error):
     """Runnable errors result in an individual runnable erroring."""
 
@@ -109,10 +109,10 @@ def fmt_msg(exc: Exception) -> str:
     if isinstance(exc, Error):
         return qik.console.fmt_msg(
             f"{exc.args[0]} [reset][dim]See https://qik.build/en/stable/errors/#{exc.code}[/dim]",
-            **err_kwargs,
+            **err_kwargs,  # type: ignore
         )
     else:
-        return qik.console.fmt_msg("An unexpected error happened", **err_kwargs)
+        return qik.console.fmt_msg("An unexpected error happened", **err_kwargs)  # type: ignore
 
 
 def print(exc: Exception) -> None:

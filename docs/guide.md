@@ -41,12 +41,12 @@ Running `qik lock` executes `pip-compile > requirements.txt`. Results are cached
 Change `deps` to re-run this command if we upgrade `pip-tools`:
 
 ```toml
-deps = ["requirements.in", {type = "dist", name = "pip-tools"}]
+deps = ["requirements.in", {type = "pydist", name = "pip-tools"}]
 ```
 
 Installing a different version of `pip-tools` will break the command cache.
 
-### Modular Commands
+#### Modular Commands
 
 Parametrize commands over modules, for example, running the [ruff](https://docs.astral.sh/ruff/) code formatter:
 
@@ -65,23 +65,32 @@ Running `qik format` will parametrize `ruff format` in parallel over all availab
 qik format -n 2 -m b_module -m c_module
 ```
 
-### Module Dependencies
+### Import Graph Dependencies
 
-Some commands, such as [pyright](https://github.com/microsoft/pyright) type checking, should re-run whenever module files, imported code, or third-party dependencies change:
+Some commands, such as [pyright](https://github.com/microsoft/pyright) type checking, should re-run whenever module files, imported code, or third-party dependencies change. Here we cache this command based on `my.module` files or dependencies:
 
 ```toml
-modules = ["a_module", "b_module", "c_module"]
-plugins = ["qik.graph"]
+plugins = ["qik.pygraph"]
 
 [commands.check-types]
-exec = "pyright {module.dir}"
-deps = [{type = "module", name = "{module.name}"}]
+exec = "pyright my/module"
+deps = [{type = "pygraph", pyimport = "my.module"}]
 cache = "repo"
 ```
 
-Running `qik check-types` will parametrize `pyright` over all modules. Modular commands will be cached unless the module's files or dependencies change.
+Parametrize this command over multiple modules:
 
-We use the `qik.graph` plugin, which provides commands that are automatically used for building and analyzing the import graph.
+```toml
+modules = ["a_module", "b_module", "c_module"]
+plugins = ["qik.pygraph"]
+
+[commands.check-types]
+exec = "pyright {module.dir}"
+deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]
+cache = "repo"
+```
+
+We use the `qik.pygraph` plugin, which provides commands that lock the Python import graph.
 
 ### Command Dependencies
 
@@ -89,7 +98,7 @@ Command dependencies help order execution. For example, change `deps` of `comman
 
 ```toml
 deps = [
-    {type = "module", name = "{module.name}"},
+    {type = "pygraph", pyimport = "{module.pyimport}"},
     {type = "command", name = "format"}
 ]
 ```
@@ -142,4 +151,4 @@ After this, read the:
 
 Qik is currently in beta. Bumping the minor version (e.g. `0.1.0` to `0.2.0`) will indicate an API break until we release version `1.0.0`.
 
-Be diligent when using qik in your CI/CD. We recommend including a [global dependency](commands.md#global) in your commands to regularly break the cache. We also recommend [understanding how the import graph is built](commands.md#module) when using module dependencies.
+Be diligent when using qik in your CI/CD. We recommend including a [global dependency](commands.md#global) in your commands to regularly break the cache. We also recommend [understanding how the import graph is built](commands.md#pygraph) when using pygraph dependencies.

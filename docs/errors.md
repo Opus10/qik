@@ -12,14 +12,6 @@ All errors from the qik CLI. If you encountered an unexpected error, open an iss
 
 Remember, the qik config must be present in the same level or a parent of your current working directory.
 
-<a id="conf1"></a>
-
-#### Module Path Not Found
-
-`No configured module or plugin with path...` means a path-based lookup of a module failed.
-
-Path-based lookup errors are generally from issues inside a plugin and not from direct configuration.
-
 <a id="conf2"></a>
 
 #### Module Not Found
@@ -158,7 +150,7 @@ Similarly, context must be configured under the proper profile and namespace:
 
 #### Lock File Not Found
 
-`Must configure env lock file (venvs.default.lock-file) when using --since on dists.` means you're using the `--since` option with `qik` and have a command with `dist` dependencies. Commands that use module graph dependencies also may depend on distributions.
+`Must configure env lock file (venvs.default.lock-file) when using --since on pydists.` means you're using the `--since` option with `qik` and have a command with `pydist` dependencies. Commands that use module graph dependencies also may depend on Python distributions.
 
 To use this functionality with `--since`, qik needs the lock file of the virtual environment. Configure a default like so:
 
@@ -177,14 +169,14 @@ lock-file = "requirements.txt"
 
 #### No Module Distribution
 
-`No distribution found for module "{top-level import}"` means the `qik.graph` plugin found an external module that could not be mapped to its PyPI distribution. This can happen when the distribution is not installed in the virtual environment (e.g. optional dependencies) or when issues with Python's `importlib.metadata` arise.
+`No distribution found for module "{top-level import}"` means the `qik.pygraph` plugin found an external module that could not be mapped to its PyPI distribution. This can happen when the distribution is not installed in the virtual environment (e.g. optional dependencies) or when issues with Python's `importlib.metadata` arise.
 
 For example, say that `import my_package.submodule` triggers this. You have three options for resolution:
 
 1. Map the top-level module to its distribution:
 
     ```toml
-    [graph.module-dists]
+    [graph.module-pydists]
     my_package = "pypi_distribution"
     ```
 
@@ -195,7 +187,7 @@ For example, say that `import my_package.submodule` triggers this. You have thre
 2. Ignore the specific module:
 
     ```toml
-    [graph.module-dists]
+    [graph.module-pydists]
     my_package = ""
     ```
 
@@ -203,12 +195,12 @@ For example, say that `import my_package.submodule` triggers this. You have thre
 
     ```toml
     [graph]
-    ignore-missing-module-dists = true
+    ignore-missing-module-pydists = true
     ```
 
 !!! tip
 
-    You can also ignore tracking distributions entirely in the graph with `graph.ignore_dists = true`.
+    You can also ignore tracking distributions entirely in the graph with `pygraph.ignore_pydists = true`.
 
 ## Dependencies
 
@@ -221,7 +213,7 @@ For example, say that `import my_package.submodule` triggers this. You have thre
 1. Map the distribution to a version:
 
     ```toml
-    [dist-versions]
+    [pydist-versions]
     pypi-package-name = "version"
     ```
 
@@ -231,4 +223,14 @@ For example, say that `import my_package.submodule` triggers this. You have thre
     ignore-missing-dists = true
     ```
 
-If this error surfaces from using the `qik.graph` plugin for module dependencies, other options for overriding behavior are in [this troubleshooting tip](#graph0).
+If this error surfaces from using the `qik.pygraph` plugin for module dependencies, other options for overriding behavior are in [this troubleshooting tip](#graph0).
+
+## Args
+
+<a id="args0"></a>
+
+#### Argument Not Supplied
+
+`Arg is required` means a command, such as `qik.pygraph.lock` requires arguments. This can happen when directly invoking graph locking via `qik qik.pygraph.lock`.
+
+There is currently no way to directly invoke `qik.pygraph.lock` with arguments. This will be added in the future.

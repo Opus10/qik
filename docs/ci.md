@@ -40,7 +40,7 @@ If repo-based caching isn't acceptable or you have architecture-specific command
 ```toml
 [commands.pytest]
 exec = "pytest --cov {module.dir} --cov-report xml:{module.name}-coverage.xml"
-deps = [{type = "module", name = "{module.name}"}]
+deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]
 artifacts = ["{module.name}-coverage.xml"]
 ```
 
@@ -61,7 +61,7 @@ Use either `-p ci` or set `QIK__PROFILE=ci` in your environment to use the defau
 
 If commands have other [command dependencies](commands.md#command), these will also be selected even if trying to run a single command with `qik <command_name>`. This is normally harmless since upstream commands are usually cached, however it can be undesirable if using a slower remote cache.
 
-To bypass this, use `--isolated` when running the command. Remember, using [module dependencies](commands.md#module) will automatically insert dependent commands, so be sure to either validate the repo cache or run upstream commands elsewhere in your CI/CD flow.
+To bypass this, use `--isolated` when running the command. Remember, using [import graph dependencies](commands.md#pygraph) will automatically insert dependent commands, so be sure to either validate the repo cache or run upstream commands elsewhere in your CI/CD flow.
 
 ## Dynamic CI/CD Config Generation
 

@@ -7,6 +7,7 @@ import importlib.util
 import os.path
 import pathlib
 import sys
+from types import UnionType
 from typing import Any, Literal, TypeAlias, TypeVar
 
 import msgspec.structs
@@ -57,15 +58,20 @@ class CmdDep(BaseDep, tag="command", frozen=True):
     isolated: bool | qik.unset.UnsetType = qik.unset.UNSET
 
 
-class DistDep(BaseDep, tag="dist", frozen=True):
+class PydistDep(BaseDep, tag="pydist", frozen=True):
     name: str
 
 
-class ModuleDep(BaseDep, tag="module", frozen=True):
-    name: str
+class PygraphDep(BaseDep, tag="pygraph", frozen=True):
+    pyimport: str
 
 
-DepType: TypeAlias = str | GlobDep | CmdDep | DistDep | ModuleDep | ConstDep
+class LoadDep(BaseDep, tag="load", frozen=True):
+    path: str
+    default: list[str] = []
+
+
+DepType: TypeAlias = str | GlobDep | CmdDep | PydistDep | PygraphDep | ConstDep | LoadDep
 
 
 class CmdConf(Base, frozen=True):
@@ -75,6 +81,7 @@ class CmdConf(Base, frozen=True):
     cache: str | qik.unset.UnsetType = qik.unset.UNSET
     cache_when: CacheWhen | qik.unset.UnsetType = qik.unset.UNSET
     factory: str = ""
+    hidden: bool = False
 
 
 class Var(Base, frozen=True):
@@ -88,14 +95,14 @@ class Var(Base, frozen=True):
             msgspec.structs.force_setattr(self, "default", None)
 
     @property
-    def py_type(self) -> type[VarType]:
+    def py_type(self) -> type | UnionType:
         if self.required:
             return __builtins__[self.type]
         else:
             return __builtins__[self.type] | None
 
 
-class ModuleConf(Base, frozen=True):
+class ModuleOrPluginConf(Base, frozen=True):
     vars: list[str | Var] = []
     commands: dict[str, CmdConf] = {}
 
@@ -104,33 +111,48 @@ class ModuleConf(Base, frozen=True):
         return dict((v, Var(v)) if isinstance(v, str) else (v.name, v) for v in self.vars)
 
 
-class ModulePath(Base, frozen=True):
+class BaseLocator(Base, frozen=True):
     name: str
-    path: str
 
     @functools.cached_property
     def dir(self) -> pathlib.Path:
-        return root() / self.path.replace(".", os.path.sep).replace("/", os.path.sep)
+        raise NotImplementedError
 
     @functools.cached_property
-    def imp(self) -> str:
-        return self.path.replace("/", ".")
+    def pyimport(self) -> str:
+        raise NotImplementedError
 
     @functools.cached_property
-    def conf(self) -> ModuleConf:
+    def conf(self) -> ModuleOrPluginConf:
         try:
             return msgspec.toml.decode(
                 (self.dir / "qik.toml").read_bytes(),
-                type=ModuleConf,
+                type=ModuleOrPluginConf,
             )
         except FileNotFoundError:
-            return ModuleConf()
+            return ModuleOrPluginConf()
 
 
-class PluginPath(ModulePath, frozen=True):
+class ModuleLocator(BaseLocator, frozen=True):
+    path: str
+
+    @functools.cached_property
+    def pyimport(self) -> str:
+        return self.path.replace("/", ".")
+
     @functools.cached_property
     def dir(self) -> pathlib.Path:
-        spec = importlib.util.find_spec(self.path)
+        # TODO: While this handles most windows paths, it does not handle literal '/'
+        # in paths that are escaped (e.g. my\/file/path)
+        return root() / self.path.replace("/", os.path.sep)
+
+
+class PluginLocator(BaseLocator, frozen=True):
+    pyimport: str  # type: ignore
+
+    @functools.cached_property
+    def dir(self) -> pathlib.Path:
+        spec = importlib.util.find_spec(self.pyimport)
         if not spec or not spec.origin:
             raise qik.errors.PluginImport(f'Could not import plugin "{self.name}"')
 
@@ -141,11 +163,11 @@ class Env(Base, frozen=True):
     lock_file: str | list[str] = []
 
 
-class Graph(Base, frozen=True):
+class Pygraph(Base, frozen=True):
     ignore_type_checking: bool = False
-    ignore_dists: bool = False
-    ignore_missing_module_dists: bool = False
-    module_dists: dict[str, str] = {}
+    ignore_pydists: bool = False
+    ignore_missing_module_pydists: bool = False
+    module_pydists: dict[str, str] = {}
 
 
 class Cache(Base, frozen=True, tag_field="type"):
@@ -162,36 +184,39 @@ class S3Cache(Cache, frozen=True, tag="s3"):
     endpoint_url: str | None = None
 
 
-class ProjectConf(ModuleConf, frozen=True):
-    modules: list[str | ModulePath] = []
-    plugins: list[str | PluginPath] = []
+class ProjectConf(ModuleOrPluginConf, frozen=True):
+    modules: list[str | ModuleLocator] = []
+    plugins: list[str | PluginLocator] = []
     deps: list[DepType] = []
     ctx: dict[str, dict[CtxNamespace, dict[str, Any]]] = {}
     venvs: dict[str, Env] = {}
     caches: dict[str, S3Cache] = {}
-    graph: Graph = msgspec.field(default_factory=Graph)
-    dist_versions: dict[str, str] = {}
-    ignore_missing_dists: bool = False
+    pygraph: Pygraph = msgspec.field(default_factory=Pygraph)
+    pydist_versions: dict[str, str] = {}
+    ignore_missing_pydists: bool = False
 
     @functools.cached_property
-    def modules_by_name(self) -> dict[str, ModulePath]:
-        return dict(
-            (m, ModulePath(m, m)) if isinstance(m, str) else (m.name, m) for m in self.modules
+    def modules_by_name(self) -> dict[str, ModuleLocator]:
+        module_locators = (
+            ModuleLocator(name=m.replace("/", "."), path=m) if isinstance(m, str) else m
+            for m in self.modules
         )
+        return {m.name: m for m in module_locators}
 
     @functools.cached_property
-    def modules_by_path(self) -> dict[str, ModulePath]:
+    def modules_by_path(self) -> dict[str, ModuleLocator]:
         return {m.path: m for m in self.modules_by_name.values()}
 
     @functools.cached_property
-    def plugins_by_name(self) -> dict[str, PluginPath]:
-        return dict(
-            (p, PluginPath(p, p)) if isinstance(p, str) else (p.name, p) for p in self.plugins
+    def plugins_by_name(self) -> dict[str, PluginLocator]:
+        plugin_locators = (
+            PluginLocator(name=p, pyimport=p) if isinstance(p, str) else p for p in self.plugins
         )
+        return {p.name: p for p in plugin_locators}
 
     @functools.cached_property
-    def plugins_by_path(self) -> dict[str, PluginPath]:
-        return {p.path: p for p in self.plugins_by_name.values()}
+    def plugins_by_pyimport(self) -> dict[str, PluginLocator]:
+        return {p.pyimport: p for p in self.plugins_by_name.values()}
 
 
 class PyprojectTool(msgspec.Struct):
@@ -242,38 +267,41 @@ def project() -> ProjectConf:
 
 
 @functools.cache
-def path_to_name(path: str) -> str:
-    """Given a full path, return the module or plugin name."""
+def module_locator(uri: str, *, by_path: bool = False) -> ModuleLocator:
+    """Get module locator."""
     proj = project()
-    if path in proj.modules_by_path:
-        return proj.modules_by_path[path].name
-    elif path in proj.plugins_by_path:
-        return proj.plugins_by_path[path].name
-    else:
-        raise qik.errors.ModulePathNotFound(f'No configured module or plugin with path "{path}".')
+    lookup = proj.modules_by_path if by_path else proj.modules_by_name
+    if uri not in lookup:
+        raise qik.errors.ModuleNotFound(f'Module "{uri}" not configured in {location().name}.')
+
+    return lookup[uri]
 
 
 @functools.cache
-def module(name: str) -> ModuleConf:
+def module(uri: str, *, by_path: bool = False) -> ModuleOrPluginConf:
     """Get module configuration."""
-    proj = project()
-    if name not in proj.modules_by_name:
-        raise qik.errors.ModuleNotFound(f'Module "{name}" not configured in {location().name}.')
-
-    return proj.modules_by_name[name].conf
-
-
-def plugin(name: str) -> ModuleConf:
-    """Get plugin configuration."""
-    proj = project()
-    if name not in proj.plugins_by_name:
-        raise qik.errors.PluginNotFound(f'Plugin "{name}" not configured in {location().name}.')
-
-    return proj.plugins_by_name[name].conf
+    return module_locator(uri, by_path=by_path).conf
 
 
 @functools.cache
-def get(name: str | None = None) -> ModuleConf:
+def plugin_locator(uri: str, *, by_pyimport: bool = False) -> PluginLocator:
+    """Get plugin locator."""
+    proj = project()
+    lookup = proj.plugins_by_pyimport if by_pyimport else proj.plugins_by_name
+    if uri not in lookup:
+        raise qik.errors.PluginNotFound(f'Plugin "{uri}" not configured in {location().name}.')
+
+    return lookup[uri]
+
+
+@functools.cache
+def plugin(uri: str, by_pyimport: bool = False) -> ModuleOrPluginConf:
+    """Get plugin configuration."""
+    return plugin_locator(uri, by_pyimport=by_pyimport).conf
+
+
+@functools.cache
+def get(name: str | None = None) -> ModuleOrPluginConf:
     """Get configuration for a given module, plugin, or project."""
     if not name:
         return project()

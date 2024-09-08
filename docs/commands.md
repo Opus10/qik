@@ -31,7 +31,7 @@ Use a `local` cache to cache results locally or specify `artifacts` to leverage 
 Configure modules and parametrize your commands with them like so:
 
 ```toml
-modules = ["my_module_a", "nested_module.b", "module_c"]
+modules = ["my_module_a", "nested_module/b", "module_c"]
 
 [command.format]
 exec = "ruff format {module.dir}"
@@ -39,17 +39,17 @@ deps = ["{module.dir}/**.py"]
 cache = "repo"
 ```
 
-Qik parametrizes any command with `{module}` across all modules. `qik format` will run three invocations of `ruff format` in parallel. Use `qik format -m my_module_a -m module_c` to run specific modules.
+Qik parametrizes any command with `{module}` across all modules. `qik format` will run three invocations of `ruff format` in parallel. Use `qik format -m my_module_a -m nested_module.b` to run specific modules.
 
 We'll cover more advanced module configuration later. For now keep the following in mind:
 
-- `modules` is a list of paths separated with `.` or `/`.
-- Use `modules = [{ name = "name", path = "path"}]` to give the module a different name.
-- Use `{module.dir}` for the directory or `{module.imp}` for the dotted import path.
+- `modules` is a list of paths, using `/` as the directory separator.
+- Use `modules = [{ name = "name", path = "path/to/folder"}]` to give the module a different name (alphanumeric characters, dots, or underscores only).
+- Use `{module.dir}` for the directory or `{module.pyimport}` for the dotted Python import path.
 
 ## Dependencies
 
-Qik command caching is centered around a rich set of dependencies. Here we'll cover globs, distributions, modules, commands, and constants. At the end, we'll touch on global dependencies across all commands.
+Qik command caching is centered around a rich set of dependencies. Here we'll cover globs, commands, constants, and Python-specific dependencies. At the end, we'll touch on global dependencies across all commands.
 
 For a more in-depth look into how dependency caching works, see [the caching section](caching.md).
 
@@ -64,34 +64,34 @@ deps = ["dir/**/*.py"]
 
 <a id="distributions"></a>
 
-### Distributions
+### Python Distributions
 
-Use the `dist` dependency type to depend on an external Python distribution. Qik examines the virtual environment to break the cache if the version changes. Here we depend on the `ruff` distribution:
+Use the `pydist` dependency type to depend on an external Python distribution. Qik examines the virtual environment to break the cache if the version changes. Here we depend on the `ruff` distribution:
 
 ```toml
 [command.lint]
 exec = "ruff format ."
-deps = ["**.py", {type = "dist", name = "ruff"}]
+deps = ["**.py", {type = "pydist", name = "ruff"}]
 cache = "repo"
 ```
 
-### Modules
+### Python Import Graph
 
-Use the `module` dependency type to depend on a module's files, import graph, and external distributions. Here we run [pyright](https://github.com/microsoft/pyright) type checking modularly based on module changes:
+Use the `pygraph` dependency type to depend on a Python module's files, import graph, and external distributions. Here we run [pyright](https://github.com/microsoft/pyright) type checking modularly based on import graph changes:
 
 ```toml
 modules = ["a_module", "b_module", "c_module"]
-plugins = ["qik.graph"]
+plugins = ["qik.pygraph"]
 
 [commands.check-types]
 exec = "pyright {module.dir}"
-deps = [{type = "module", name = "{module.name}"}]
+deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]
 cache = "repo"
 ```
 
 If `b_module` imports `a_module`, we'll re-run type checking on both if `a_module` changes.
 
-Above we've added `qik.graph` to plugins. Doing `qik --ls` will show two additional graph commands that are automatically used to build and analyze the import graph. See [this section](#module) for more information on how to configure module dependencies.
+Above we've added `qik.pygraph` to plugins. Doing `qik --ls` will show two additional graph commands that are automatically used to build and analyze the import graph. See [this section](#pygraph) for more information on how to configure module dependencies.
 
 !!! remember
 
@@ -103,7 +103,7 @@ Use commands as a dependency to force ordering. For example, code formatters tha
 
 ```toml
 modules = ["a_module", "b_module", "c_module"]
-plugins = ["qik.graph"]
+plugins = ["qik.pygraph"]
 
 [commands.format]
 exec = "ruff format {module.dir}"
@@ -113,7 +113,7 @@ cache = "repo"
 [commands.check-types]
 exec = "pyright {module.dir}"
 deps = [
-    {type = "module", name = "{module.name}"},
+    {type = "pygraph", pyimport = "{module.pyimport}"},
     {type = "command", name = "format"}
 ]
 cache = "repo"
@@ -165,7 +165,7 @@ In all circumstances, the output of the most recent run is always available in t
 
 ### Watching for Changes
 
-Use `--watch` to reactively re-run commands based on file changes. For `dist` dependencies, qik will watch the virtual environment for modifications.
+Use `--watch` to reactively re-run commands based on file changes. For `pydist` dependencies, qik will watch the virtual environment for modifications.
 
 ### Isolated Commands
 
@@ -179,7 +179,7 @@ Running a command with a dependent command will also bring it into the executabl
 
 Use `--since` to select commands based on changes since a git SHA, branch, tag, or other reference.
 
-If using `dist` dependencies, be sure to configure the location of the default virtual environment lock file:
+If using `pydist` dependencies, be sure to configure the location of the default virtual environment lock file:
 
 ```toml
 [venvs.default]
@@ -212,16 +212,16 @@ Set the context profile with `-p`. More on [qik context here](context.md).
 
 Some aspects of the command runner and runnable graph have advanced configuration parameters that we discuss here.
 
-<a id="module"></a>
+<a id="pygraph"></a>
 
-### Module Dependencies
+### Import Graph Dependencies
 
-When depending on a module, any import, even inside of a `TYPE_CHECKING` block, will be included in the dependency graph. Similarly, any direct third-party import will be included as a distribution dependency. Disable this behavior with the `graph` config section:
+When depending on a Python module's import graph, any import, even inside of a `TYPE_CHECKING` block, will be included in the dependency graph. Similarly, any direct third-party import will be included as a distribution dependency. Disable this behavior with the `pygraph` config section:
 
 ```toml
-[graph]
+[pygraph]
 ignore-type-checking = true
-ignore-dists = true
+ignore-pydists = true
 ```
 
 !!! note
@@ -256,11 +256,11 @@ Using `--since` or `--watch` will *not* select downstream commands by default if
 
 ```toml
 modules = ["a_module", "b_module", "c_module"]
-plugins = ["qik.graph"]
+plugins = ["qik.pygraph"]
 
 [commands.test]
 exec = "pytest {module.dir}"
-deps = [{type = "module", name = "{module.name}"}]
+deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]
 
 [commands.coverage]
 exec = "coverage report"
@@ -284,7 +284,7 @@ Commands can be defined in `qik.toml` files in project modules. Command names ar
 For example, say we have a root `qik.toml`:
 
 ```toml
-modules = ["my.module.path"]
+modules = ["my/module/path"]
 ```
 
 Then in `my/module/path/qik.toml`:
@@ -300,7 +300,7 @@ exec = "echo 'hello world'"
 For deeply-nested paths, consider giving your module an alias:
 
 ```toml
-modules = [{name = "my_module", path = "my.module.path"}]
+modules = [{name = "my_module", path = "my/module/path"}]
 ```
 
 This command can be executed with `my_module.my_command`.

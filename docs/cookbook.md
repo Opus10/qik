@@ -71,7 +71,7 @@ Below are common command definitions. Note that we only provide basic dependenci
 ```toml
 [commands.check-types]
 exec = "pyright {module.dir}"
-deps = [{type = "module", name = "{module.name}"}]
+deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]
 cache = "repo"
 ```
 
@@ -156,7 +156,7 @@ artifacts = ["docs/build/**"]
 ```toml
 [commands.test]
 exec = "pytest {module.dir}"
-deps = [{type = "module", name = "{module.name}"}]
+deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]
 ```
 
 #### Pytest with Coverage
@@ -164,7 +164,7 @@ deps = [{type = "module", name = "{module.name}"}]
 ```toml
 [commands.test]
 exec = "pytest {module.dir} --cov-report xml:{module.name}-coverage.xml"
-deps = [{type = "module", name = "{module.name}"}]
+deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]
 artifacts = ["{module.name}-coverage.xml"]
 ```
 
@@ -189,7 +189,7 @@ DATABASES = {
 ```toml
 [commands.test]
 exec = "pytest {module.dir}"
-deps = [{type = "module", name = "{module.name}"}]
+deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]
 ```
 
 ### Generating API Clients

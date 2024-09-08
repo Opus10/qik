@@ -1,15 +1,19 @@
+from __future__ import annotations
+
 import concurrent.futures
 import functools
 import os
 import pathlib
 from typing import TYPE_CHECKING
 
+import boto3.s3
 import msgspec
 
 import qik.file
 
 if TYPE_CHECKING:
     import boto3
+    from boto3.resources.base import ServiceResource
 else:
     import qik.lazy
 
@@ -46,19 +50,19 @@ class Client(msgspec.Struct, frozen=True, dict=True):
     endpoint_url: str | None = None
 
     @functools.cached_property
-    def s3_session(self) -> boto3.Session:
+    def s3_session(self) -> ServiceResource:
         s3_kwargs = {"endpoint_url": self.endpoint_url} if self.endpoint_url else {}
-        return boto3.Session(
+        return boto3.Session(  # type: ignore
             aws_access_key_id=self.aws_access_key_id,
             aws_secret_access_key=self.aws_secret_access_key,
             aws_session_token=self.aws_session_token,
             region_name=self.region_name,
-        ).resource("s3", **s3_kwargs)
+        ).resource("s3", **s3_kwargs)  # type: ignore
 
     def download_dir(
         self, *, bucket_name: str, prefix: pathlib.Path, dir: pathlib.Path, max_workers: int = 10
     ) -> None:
-        bucket = self.s3_session.Bucket(bucket_name)
+        bucket = self.s3_session.Bucket(bucket_name)  # type: ignore
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = [
@@ -73,7 +77,7 @@ class Client(msgspec.Struct, frozen=True, dict=True):
     def upload_dir(
         self, *, bucket_name: str, prefix: pathlib.Path, dir: pathlib.Path, max_workers: int = 10
     ) -> None:
-        bucket = self.s3_session.Bucket(bucket_name)
+        bucket = self.s3_session.Bucket(bucket_name)  # type: ignore
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = [

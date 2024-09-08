@@ -9,13 +9,13 @@ Qik has several large upcoming features. If you'd like to suggest other future d
 
 ## Better Import Graph Control
 
-#### Direct Import Dependency Specification
+#### Direct Import Dependency Specification &nbsp; :white_check_mark:<code>v0.2.0</code>
 
 One must configure a module in the `qik.toml` modules list in order to use it as a module dependency. We plan to decouple this and allow people to directly express which module import dependencies.
 
 #### Auto-Ignoring Missing Distributions &nbsp; :white_check_mark:<code>v0.1.6</code>
 
-Some distributions in a project may be optional and not installed, causing the graph builder to fail. Currently one can [globally disable external distributions from the graph](commands.md#module), however, we plan for better control over this.
+Some distributions in a project may be optional and not installed, causing the graph builder to fail. Currently one can [globally disable external distributions from the graph](commands.md#pygraph), however, we plan for better control over this.
 
 #### Ignoring Specific Distributions &nbsp; :white_check_mark:<code>v0.1.6</code>
 
@@ -23,7 +23,7 @@ We intend to allow users to explicitly disable certain distributions from the gr
 
 #### Adding and Removing Import Links
 
-Users must [manually import modules](commands.md#module) in a python file if those imports are dynamic. We are planning to allow for more explicit control over this, along with removing imports from the graph. For example, one will be able to remove imports from their migration files.
+Users must [manually import modules](commands.md#pygraph) in a Python file if those imports are dynamic. We are planning to allow for more explicit control over this, along with removing imports from the graph. For example, one will be able to remove imports from their migration files.
 
 ## Better Virtual Environment (Venv) Support
 

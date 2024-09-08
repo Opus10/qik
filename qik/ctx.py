@@ -27,7 +27,7 @@ _RUNNABLE: contextvars.ContextVar[Runnable | None] = contextvars.ContextVar(
     "_RUNNABLE", default=None
 )
 _CURR_WORKER_ID: int = 0
-_WORKER_IDS: dict[str, int] = {}
+_WORKER_IDS: dict[int, int] = {}
 _WORKER_LOCK = threading.Lock()
 _WORKER_ID: contextvars.ContextVar[int | None] = contextvars.ContextVar("_WORKER_ID", default=None)
 
@@ -122,7 +122,7 @@ class QikCtx(msgspec.Struct, forbid_unknown_fields=True, rename="kebab", dict=Tr
     cache: str | None = None
     force: bool = False
     ls: bool = False
-    workers: int = msgspec.field(default_factory=lambda: os.cpu_count())
+    workers: int = msgspec.field(default_factory=lambda: os.cpu_count() or 1)
     fail: bool = False
     cache_when: qik.conf.CacheWhen = "success"
     verbosity: int = 1
@@ -186,7 +186,7 @@ def _module(
         raise qik.errors.CtxProfileNotFound(f'Context profile "{profile}" is not configured.')
 
     ctx = proj_ctx[profile].get(namespace, {})
-    if name is None:
+    if module_name is None:
         ctx = {k: v for k, v in ctx.items() if not isinstance(v, dict)}
     else:
         parts = module_name.split(".")
@@ -261,8 +261,8 @@ def set_vars(
 class _ModuleCtx:
     """A utility class for accessing module context as an object."""
 
-    def __init__(self, namespace: str, module_name: str | None):
-        self._namespace = namespace
+    def __init__(self, namespace: qik.conf.CtxNamespace, module_name: str | None):
+        self._namespace: qik.conf.CtxNamespace = namespace
         self._module_name = module_name
 
     @functools.cached_property
@@ -284,8 +284,8 @@ class _ModuleCtx:
 class _ModulesCtx:
     """A utility class for accessing modules/plugins context as an object."""
 
-    def __init__(self, namespace: str):
-        self._namespace = namespace
+    def __init__(self, namespace: qik.conf.CtxNamespace):
+        self._namespace: qik.conf.CtxNamespace = namespace
         self._cache: dict[str, _ModuleCtx] = {}
 
     def __getattr__(self, module_name: str) -> _ModuleCtx:
@@ -322,18 +322,18 @@ class Ctx:
         return _ModuleCtx("qik", None)
 
     @functools.cached_property
-    def modules(self) -> _ModuleCtx:
+    def modules(self) -> _ModulesCtx:
         return _ModulesCtx("modules")
 
     @functools.cached_property
-    def plugins(self) -> _ModuleCtx:
-        return _ModuleCtx("plugins")
+    def plugins(self) -> _ModulesCtx:
+        return _ModulesCtx("plugins")
 
 
 _CTX = Ctx()
-FMT_STR_T = TypeVar("FMT_STR_T", str, qik.unset.UnsetType, None)
+FMT_STR_T = TypeVar("FMT_STR_T", bound=str | qik.unset.UnsetType | None)
 
 
-def format(val: FMT_STR_T, module: qik.conf.ModulePath | None = None) -> FMT_STR_T:
+def format(val: FMT_STR_T, module: qik.conf.ModuleLocator | None = None) -> FMT_STR_T:
     """Formats a string with context and other variables"""
     return val.format(module=module, ctx=_CTX) if isinstance(val, str) else val

@@ -61,7 +61,7 @@ boto3 = { version = ">=1", optional = true }
 
 [tool.poetry.extras]
 watch = ["watchdog"]
-graph = ["grimp", "rustworkx"]
+pygraph = ["grimp", "rustworkx"]
 dev = ["watchdog", "grimp", "rustworkx"]
 s3 = ["boto3"]
 

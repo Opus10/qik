@@ -42,10 +42,10 @@ def _make_runnable(
     *,
     cmd: str,
     conf: qik.conf.CmdConf,
-    module: qik.conf.ModulePath | None = None,
+    module: qik.conf.ModuleLocator | None = None,
 ) -> Runnable:
     return Runnable(
-        name=f"{cmd}@{module.name}" if module else cmd,
+        name=f"{cmd}#{module.name}" if module else cmd,
         cmd=cmd,
         val=qik.ctx.format(conf.exec, module=module),
         deps=[
@@ -59,7 +59,12 @@ def _make_runnable(
     )
 
 
-def factory(cmd: str, conf: qik.conf.CmdConf) -> dict[str, Runnable]:
+def factory(cmd: str, conf: qik.conf.CmdConf, **args: str) -> dict[str, Runnable]:
+    """The main factory for creating runnables.
+
+    We don't preserve **args in the made runnables because generic runnables do not
+    yet support args. Only custom runnables do.
+    """
     if "{module" in conf.exec:
         runnables = (
             _make_runnable(cmd=cmd, conf=conf, module=module)
@@ -97,6 +102,16 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
     module: str | None = None
     cache: str | None | qik.unset.UnsetType = qik.unset.UNSET
     cache_when: qik.conf.CacheWhen | qik.unset.UnsetType = qik.unset.UNSET
+    args: dict[str, str] = {}
+
+    @functools.cached_property
+    def description(self) -> str:
+        args = ", ".join(f"{k}={v}" for k, v in self.args.items())
+        return f"{self.val}({args})" if args else self.val
+
+    @functools.cached_property
+    def slug(self) -> str:
+        return re.sub(r"[^a-zA-Z0-9]", "__", self.name)
 
     @functools.cached_property
     def deps_collection(self) -> qik.dep.Collection:
@@ -124,7 +139,7 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
     def get_cache_when(self) -> qik.conf.CacheWhen:
         return (
             qik.ctx.module("qik").cache_when
-            if self.cache_when is qik.unset.UNSET
+            if isinstance(self.cache_when, qik.unset.UnsetType)
             else self.cache_when
         )
 
@@ -192,45 +207,45 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
             if cache_entry:
                 # Run cached command
                 logger.print(
-                    msg=f"{self.name} [default][dim]{self.val}",
+                    msg=f"{self.name} [default][dim]{self.description}",
                     emoji="fast-forward_button",
                     color="cyan",
                     event="start",
-                    **print_kwargs,
+                    **print_kwargs,  # type: ignore
                 )
                 if cache_entry.log:
-                    logger.print(cache_entry.log, event="output", **print_kwargs)
+                    logger.print(cache_entry.log, event="output", **print_kwargs)  # type: ignore
 
                 result = Result.from_cache(cache_entry)
             else:
                 # Run uncached command
                 logger.print(
-                    msg=f"{self.name} [default][dim]{self.val}",
+                    msg=f"{self.name} [default][dim]{self.description}",
                     emoji="construction",
                     color="cyan",
                     event="start",
-                    **print_kwargs,
+                    **print_kwargs,  # type: ignore
                 )
                 result = self._uncached_exec(logger=logger)
                 self.cache_result(result)
 
         if result.code == 0:
             logger.print(
-                msg=f"{self.name} [default][dim]{self.val}",
+                msg=f"{self.name} [default][dim]{self.description}",
                 emoji="white_check_mark",
                 color="green",
                 event="finish",
                 result=result,
-                **print_kwargs,
+                **print_kwargs,  # type: ignore
             )
         else:
             logger.print(
-                msg=f"{self.name} [default][dim]{self.val}",
+                msg=f"{self.name} [default][dim]{self.description}",
                 emoji="broken_heart",
                 color="red",
                 event="finish",
                 result=result,
-                **print_kwargs,
+                **print_kwargs,  # type: ignore
             )
 
         return result

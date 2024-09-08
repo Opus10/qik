@@ -130,7 +130,7 @@ class Logger:
         for file in log_files.values():
             file.close()
         self._log_files = {}
-        self.stats: Stats | None = None
+        self._stats: Stats | None = None
 
     def _get_log_file(self, runnable: Runnable) -> IO[str]:
         if runnable.name not in self._log_files:
@@ -138,6 +138,17 @@ class Logger:
             self._log_files[runnable.name] = qik.file.open(path, "w")
 
         return self._log_files[runnable.name]
+
+    @property
+    def stats(self) -> Stats:
+        if not self._stats:
+            raise AssertionError("Stats not initialized")
+
+        return self._stats
+
+    @stats.setter
+    def stats(self, stats: Stats) -> None:
+        self._stats = stats
 
     @contextlib.contextmanager
     def run(self, graph: Graph) -> Iterator[None]:
@@ -235,7 +246,7 @@ class Stdout(Logger):
 
 
 class HideableBarColumn(rich_progress.BarColumn):
-    def render(self, task) -> RenderableType:
+    def render(self, task) -> RenderableType:  # type: ignore
         if task.fields.get("show_progress", True):
             return super().render(task)
         return rich_text.Text("")
@@ -347,7 +358,7 @@ class Progress(Logger):
             qik.console.print_exception()
         elif event != "output":
             qik.console.print(msg, emoji=emoji, color=color)
-        else:
+        elif runnable:
             self.captured[runnable.name].append(msg)
 
     def handle_run_finished(self) -> None:

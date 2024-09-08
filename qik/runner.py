@@ -119,15 +119,17 @@ class DAGPool:
 class Graph:
     """A graph of runnables."""
 
-    def __init__(self, cmds: Iterable[str]):
+    def __init__(self, cmds: Iterable[str], modules: Iterable[str]):
         self.cmds = cmds
         self._view = None
+        modules = frozenset(modules)
 
         # Construct the graph
         self._nodes: dict[str, Runnable] = {
             name: runnable
             for cmd in cmds
             for name, runnable in qik.cmd.load(cmd).runnables.items()
+            if not modules or not runnable.module or runnable.module in modules
         }
         self._graph = {
             "up": collections.defaultdict(set[str]),
@@ -228,12 +230,12 @@ class Graph:
                 if (regex := runnable.filter_regex(strategy)) and regex.search(globs)
             }
 
-        dists = {change.val for change in deps if isinstance(change, qik.dep.Dist)}
-        if dists:
+        pydists = {change.val for change in deps if isinstance(change, qik.dep.Pydist)}
+        if pydists:
             runnables |= {
                 runnable.name: runnable
                 for runnable in self
-                if set(runnable.deps_collection.dists) & dists
+                if set(runnable.deps_collection.pydists) & pydists
             }
 
         return self.filter(runnables.values())
@@ -321,10 +323,10 @@ def _get_graph() -> Graph:
     modules = qik_ctx.modules
 
     if not cmds:
-        cmds = [cmd.name for cmd in qik.cmd.ls()]
+        cmds = list(qik.cmd.ls())
 
     try:
-        graph = Graph(cmds)
+        graph = Graph(cmds, modules=modules)
     except RecursionError as exc:
         raise qik.errors.GraphCycle("Cycle detected in DAG.") from exc
 
@@ -336,9 +338,6 @@ def _get_graph() -> Graph:
 
     if qik_ctx.since:
         graph = graph.filter_since(qik_ctx.since)
-
-    if qik_ctx.modules:
-        graph = graph.filter_modules(modules)
 
     return graph
 

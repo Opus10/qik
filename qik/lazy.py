@@ -5,8 +5,8 @@ from typing import Any, Callable, Final, Generic, TypeVar
 T = TypeVar("T")
 _MODULE_TO_OPT_INSTALL: Final = {
     "watchdog": "watch",
-    "grimp": "graph",
-    "rustworkx": "graph",
+    "grimp": "pygraph",
+    "rustworkx": "pygraph",
     "boto3": "s3",
 }
 
