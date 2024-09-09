@@ -17,6 +17,7 @@ import qik.dep
 import qik.errors
 import qik.hash
 import qik.shell
+import qik.space
 import qik.unset
 
 if TYPE_CHECKING:
@@ -26,14 +27,17 @@ if TYPE_CHECKING:
 
     import qik.cache
     import qik.logger
+    import qik.venv
 
 
 def _get_exec_env() -> dict[str, str]:
     """Get the environment for runnables."""
+    runnable = qik.ctx.runnable()
+    environ = runnable.venv.environ if runnable.venv else os.environ
     return {
-        **os.environ,
-        "QIK__CMD": qik.ctx.runnable().cmd,
-        "QIK__RUNNABLE": qik.ctx.runnable().name,
+        **environ,
+        "QIK__CMD": runnable.cmd,
+        "QIK__RUNNABLE": runnable.name,
         "QIK__WORKER": str(qik.ctx.worker_id()),
     }
 
@@ -118,6 +122,10 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
     @functools.cached_property
     def deps_collection(self) -> qik.dep.Collection:
         return qik.dep.Collection(*self.deps, module=self.module, space=self.space)
+
+    @functools.cached_property
+    def venv(self) -> qik.venv.Venv | None:
+        return qik.space.load(self.space).venv if self.space else None
 
     # TODO cache this based on the runner session
     def filter_regex(self, strategy: FilterStrategy) -> re.Pattern | None:

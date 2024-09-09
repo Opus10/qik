@@ -1,4 +1,5 @@
 import functools
+import os
 import pathlib
 import sysconfig
 
@@ -12,6 +13,10 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
     name: str
     reqs: list[str] = []
     lock: list[str] = []
+
+    @functools.cached_property
+    def environ(self) -> dict[str, str]:
+        return os.environ  # type: ignore
 
     @functools.cached_property
     def dir(self) -> pathlib.Path:
@@ -33,6 +38,13 @@ class UV(Venv, frozen=True, dict=True):
     TODO: Move this Venv definition into qik.uv.venv module
     once we have a plugin system in place.
     """
+
+    @functools.cached_property
+    def environ(self) -> dict[str, str]:
+        return os.environ | {
+            "VIRTUAL_ENV": str(self.dir),
+            "PATH": f"{self.dir}/bin:{os.environ['PATH']}",
+        }
 
     @functools.cached_property
     def dir(self) -> pathlib.Path:

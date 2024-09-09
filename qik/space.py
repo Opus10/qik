@@ -4,10 +4,15 @@ import msgspec
 
 import qik.conf
 import qik.errors
+import qik.venv
 
 
 class Space(msgspec.Struct, frozen=True, dict=True):
     conf: qik.conf.Space
+
+    @functools.cached_property
+    def venv(self) -> qik.venv.Venv | None:
+        return qik.venv.load(self.conf.venv) if self.conf.venv else None
 
 
 @functools.cache

@@ -24,6 +24,9 @@ workers = 1
 [commands.fail]
 exec = 'exit 1'
 
+[commands.pghistory_version]
+exec = "pip freeze | grep django-pghistory"
+
 [commands.dep_fail]
 exec = 'echo "hi"; exit 1'
 deps = [{type = "command", name = "fail"}, {type = "const", val = "hi"}]

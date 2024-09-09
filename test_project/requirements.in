@@ -1,2 +1,4 @@
 poetry
 django
+django-pghistory
+pip
