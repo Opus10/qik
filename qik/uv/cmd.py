@@ -6,11 +6,7 @@ import qik.conf
 import qik.dep
 import qik.errors
 import qik.runnable
-
-
-def lock_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
-    """Lock the virtual env."""
-    return 0, "Locked!"
+import qik.venv
 
 
 @functools.cache
@@ -22,20 +18,23 @@ def lock_cmd_name() -> str:
 def lock_cmd_factory(
     cmd: str, conf: qik.conf.Cmd, **args: str
 ) -> dict[str, qik.runnable.Runnable]:
-    venv = args.get("venv")
-    if not venv:
+    venv_name = args.get("venv")
+    if not venv_name:
         raise qik.errors.ArgNotSupplied('"venv" arg is required for qik.uv.lock command.')
+
+    venv = qik.venv.load(venv_name)
+    if not venv.reqs:
+        raise qik.errors.ReqsNotFound(f'Requirements not found for "{venv_name}" venv.')
 
     cmd_name = lock_cmd_name()
     runnable = qik.runnable.Runnable(
-        name=f"{cmd_name}?venv={venv}",
+        name=f"{cmd_name}?venv={venv_name}",
         cmd=cmd_name,
-        val="qik.uv.cmd.lock_cmd",
-        shell=False,
-        deps=[qik.dep.Pydist("uv")],
-        artifacts=[],
+        val=f"uv pip compile --universal {' '.join(venv.reqs)} -o {venv.lock_file}",
+        deps=[qik.dep.Pydist("uv"), *(qik.dep.Glob(req) for req in venv.reqs)],
+        artifacts=[venv.lock_file],
         cache="repo",
-        args={"venv": venv},
+        args={"venv": venv_name},
     )
     return {runnable.name: runnable}
 
@@ -46,28 +45,26 @@ def install_cmd_name() -> str:
     return f"{plugin_name}.install"
 
 
-def install_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
-    """Install the virtual env."""
-    return 0, "Installed!"
-
-
 def install_cmd_factory(
     cmd: str, conf: qik.conf.Cmd, **args: str
 ) -> dict[str, qik.runnable.Runnable]:
-    venv = args.get("venv")
-    if not venv:
+    venv_name = args.get("venv")
+    if not venv_name:
         raise qik.errors.ArgNotSupplied('"venv" arg is required for qik.uv.install command.')
 
+    venv = qik.venv.load(venv_name)
     cmd_name = install_cmd_name()
     runnable = qik.runnable.Runnable(
-        name=f"{cmd_name}?venv={venv}",
+        name=f"{cmd_name}?venv={venv_name}",
         cmd=cmd_name,
-        val="qik.uv.cmd.install_cmd",
-        shell=False,
-        deps=[qik.dep.Cmd(lock_cmd_name(), args={"venv": venv})],
+        val=f"uv venv {venv.rel_dir} && uv pip sync {venv.lock_file} --python {venv.rel_dir}/bin/python",
+        deps=[
+            qik.dep.Cmd(lock_cmd_name(), args={"venv": venv_name}),
+            qik.dep.Glob(venv.lock_file),
+        ],
         artifacts=[],
-        cache="repo",
-        args={"venv": venv},
+        cache="local",
+        args={"venv": venv_name},
         space=None,
     )
     return {runnable.name: runnable}

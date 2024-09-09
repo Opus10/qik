@@ -10,11 +10,46 @@ import qik.errors
 
 class Venv(msgspec.Struct, frozen=True, dict=True):
     name: str
-    lock_file: list[str] = []
+    reqs: list[str] = []
+    lock: list[str] = []
 
     @functools.cached_property
     def dir(self) -> pathlib.Path:
         return pathlib.Path(sysconfig.get_path("purelib"))
+
+    @functools.cached_property
+    def rel_dir(self) -> pathlib.Path:
+        return self.dir
+
+    @functools.cached_property
+    def lock_file(self) -> str:
+        # TODO: Do not return a default lock file here, instead require the user to
+        # define it if they're not using a venv plugin
+        raise NotImplementedError
+
+
+class UV(Venv, frozen=True, dict=True):
+    """
+    TODO: Move this Venv definition into qik.uv.venv module
+    once we have a plugin system in place.
+    """
+
+    @functools.cached_property
+    def dir(self) -> pathlib.Path:
+        return qik.conf.priv_work_dir() / "venv" / self.name
+
+    @functools.cached_property
+    def rel_dir(self) -> pathlib.Path:
+        return self.dir.relative_to(qik.conf.root())
+
+    @functools.cached_property
+    def lock_file(self) -> str:
+        if len(self.lock) > 1:
+            raise qik.errors.MultipleLocksFound(
+                f'Multiple lock files found for "{self.name}" venv.'
+            )
+
+        return self.lock[0] if self.lock else f"requirements-{self.name}-lock.txt"
 
 
 @functools.cache
@@ -22,9 +57,10 @@ def load(name: str = "default") -> Venv:
     """Load a virtual environment."""
     proj = qik.conf.project()
     if conf := proj.venvs.get(name):
-        lock_file = conf.lock_file if isinstance(conf.lock_file, list) else [conf.lock_file]
-        return Venv(name=name, lock_file=lock_file)
+        reqs = conf.reqs if isinstance(conf.reqs, list) else [conf.reqs]
+        lock = conf.lock if isinstance(conf.lock, list) else [conf.lock]
+        return UV(name=name, reqs=reqs, lock=lock)
     elif name == "default":
-        return Venv(name="default")
+        return UV(name="default")
     else:
         raise qik.errors.VenvNotFound(f'Venv named "{name}" not configured in qik.venvs.')

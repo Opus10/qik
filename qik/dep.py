@@ -13,6 +13,7 @@ import qik.ctx
 import qik.errors
 import qik.file
 import qik.hash
+import qik.space
 import qik.unset
 import qik.venv
 
@@ -191,12 +192,12 @@ class Pydist(BaseDep, frozen=True):
     @functools.cached_property
     def since(self) -> list[str]:
         venv = qik.venv.load()
-        if not venv.lock_file:
+        if not venv.lock:
             raise qik.errors.LockFileNotFound(
-                "Must configure venv lock file (venvs.default.lock-file) when using --since on pydists."
+                "Must configure venv lock file (venvs.default.lock) when using --since on pydists."
             )
 
-        return venv.lock_file
+        return venv.lock
 
 
 class Const(BaseDep, frozen=True):
@@ -315,14 +316,15 @@ class Collection:
 
     @functools.cached_property
     def venv_runnables(self) -> dict[str, Runnable]:
+        venv = qik.space.load(self.space).conf.venv if self.space else None
         return (
             {
                 runnable.name: Runnable(name=runnable.name, obj=runnable, strict=True)
                 for runnable in qik.cmd.load(
-                    uv_cmd.install_cmd_name(), venv="default"
+                    uv_cmd.install_cmd_name(), venv=venv
                 ).runnables.values()
             }
-            if self.space
+            if venv
             else {}
         )
 

@@ -1,4 +1,4 @@
-plugins = [{name = "graph", pyimport = "qik.pygraph"}, "qik.uv"]
+plugins = [{name = "graph", pyimport = "qik.pygraph"}, {name = "uv", pyimport = "qik.uv"}]
 deps = ["python_version"]
 vars = ["aws_access_key_id", "aws_secret_access_key", {name = "aws_endpoint_url", required = false}]
 
@@ -7,7 +7,8 @@ venv = "default"
 modules = ["a", {name = "b_module", path = "b"}, "nest/c"]
 
 [venvs.default]
-lock-file = "requirements.txt"
+reqs = "requirements.in"
+lock = "requirements-lock.txt"
 
 [caches.remote]
 type = "s3"

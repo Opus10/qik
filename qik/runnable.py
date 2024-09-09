@@ -109,7 +109,7 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
     @functools.cached_property
     def description(self) -> str:
         args = ", ".join(f"{k}={v}" for k, v in self.args.items())
-        return f"{self.val}({args})" if args else self.val
+        return f"{self.val}({args})" if args and not self.shell else self.val
 
     @functools.cached_property
     def slug(self) -> str:

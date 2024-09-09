@@ -160,7 +160,8 @@ class PluginLocator(BaseLocator, frozen=True):
 
 
 class Venv(Base, frozen=True):
-    lock_file: str | list[str] = []
+    reqs: str | list[str] = []
+    lock: str | list[str] = []
 
 
 class Pygraph(Base, frozen=True):

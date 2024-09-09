@@ -239,7 +239,8 @@ class Stdout(Logger):
         elif event == "start" or (event == "finish" and not result):
             qik.console.rule(msg, emoji=emoji, color=color)
         else:
-            qik.console.print(msg, emoji=emoji, color=color)
+            kwargs = {"overflow": "ellipsis", "no_wrap": True} if event == "finish" else {}
+            qik.console.print(msg, emoji=emoji, color=color, **kwargs)
 
         if event == "exception":
             qik.console.print_exception()

@@ -88,6 +88,14 @@ class VenvNotFound(RunnerError):
     code = "venv1"
 
 
+class ReqsNotFound(RunnerError):
+    code = "venv2"
+
+
+class MultipleLocksFound(RunnerError):
+    code = "venv3"
+
+
 class ArgNotSupplied(RunnerError):
     code = "args0"
 
