@@ -161,7 +161,7 @@ class PluginLocator(BaseLocator, frozen=True):
 
 class Venv(Base, frozen=True, tag_field="type"):
     reqs: str | list[str] = []
-    lock: str | list[str] = []
+    lock: str | None = None
 
 
 class ActiveVenv(Venv, frozen=True, tag="active"):

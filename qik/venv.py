@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import functools
 import os
 import pathlib
@@ -5,7 +7,9 @@ import sysconfig
 
 import msgspec
 
+import qik.cmd
 import qik.conf
+import qik.dep
 import qik.errors
 import qik.uv.cmd
 
@@ -18,38 +22,33 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
     def reqs(self) -> list[str]:
         return self.conf.reqs if isinstance(self.conf.reqs, list) else [self.conf.reqs]
 
-    @functools.cached_property
-    def lock_files(self) -> list[str]:
-        return self.conf.lock if isinstance(self.conf.lock, list) else [self.conf.lock]
-
-    @functools.cached_property
+    @property
     def environ(self) -> dict[str, str]:
         return os.environ  # type: ignore
 
-    @functools.cached_property
+    @property
     def dir(self) -> pathlib.Path:
         raise NotImplementedError
 
     @functools.cached_property
     def rel_dir(self) -> pathlib.Path:
-        return self.dir
+        return pathlib.Path(self.dir).relative_to(qik.conf.root())
+
+    @property
+    def lock(self) -> str | None:
+        return self.conf.lock
 
     @functools.cached_property
-    def default_lock_file(self) -> str:
+    def rel_lock(self) -> str | None:
+        return str(pathlib.Path(self.lock).relative_to(qik.conf.root())) if self.lock else None
+
+    @functools.cached_property
+    def runnable_deps(self) -> dict[str, qik.dep.Runnable]:
         raise NotImplementedError
 
     @functools.cached_property
-    def lock_file(self) -> str:
-        if len(self.lock_files) > 1:
-            raise qik.errors.MultipleLocksFound(
-                f'Multiple lock files found for "{self.name}" venv.'
-            )
-
-        return self.default_lock_file
-
-    @functools.cached_property
-    def rel_lock_file(self) -> str:
-        return str(pathlib.Path(self.lock_file).relative_to(qik.conf.root()))
+    def glob_deps(self) -> set[str]:
+        return {self.lock} if self.lock else set()
 
 
 class Active(Venv, frozen=True, dict=True):
@@ -59,9 +58,17 @@ class Active(Venv, frozen=True, dict=True):
 
     conf: qik.conf.ActiveVenv
 
-    @functools.cached_property
+    @property
     def dir(self) -> pathlib.Path:
         return pathlib.Path(sysconfig.get_path("purelib"))
+
+    @property
+    def rel_dir(self) -> pathlib.Path:  # type: ignore
+        return self.dir
+
+    @functools.cached_property
+    def runnable_deps(self) -> dict[str, qik.dep.Runnable]:
+        return {}
 
 
 class UV(Venv, frozen=True, dict=True):
@@ -73,7 +80,7 @@ class UV(Venv, frozen=True, dict=True):
     conf: qik.conf.UVVenv
 
     @functools.cached_property
-    def default_lock_file(self) -> str:
+    def default_lock(self) -> str:
         return str(
             qik.conf.pub_work_dir()
             / "artifacts"
@@ -81,26 +88,36 @@ class UV(Venv, frozen=True, dict=True):
             / f"requirements-{self.name}-lock.txt"
         )
 
-    @functools.cached_property
-    def lock_files(self) -> list[str]:
-        if not self.conf.lock:
-            return [self.default_lock_file]
-        else:
-            return super().lock_files
+    @property
+    def lock(self) -> str:
+        return super().lock or self.default_lock
+
+    @property
+    def rel_lock(self) -> str:  # type: ignore
+        return super().rel_lock  # type: ignore
 
     @functools.cached_property
-    def environ(self) -> dict[str, str]:
+    def environ(self) -> dict[str, str]:  # type: ignore
         return os.environ | {
             "VIRTUAL_ENV": str(self.dir),
             "PATH": f"{self.dir}/bin:{os.environ['PATH']}",
         }
 
     @functools.cached_property
-    def dir(self) -> pathlib.Path:
+    def dir(self) -> pathlib.Path:  # type: ignore
         return qik.conf.priv_work_dir() / "venv" / self.name
 
+    @functools.cached_property
+    def runnable_deps(self) -> dict[str, qik.dep.Runnable]:
+        return {
+            runnable.name: qik.dep.Runnable(name=runnable.name, obj=runnable, strict=False)
+            for runnable in qik.cmd.load(
+                qik.uv.cmd.install_cmd_name(), venv=self.name
+            ).runnables.values()
+        }
 
-def factory(name: str, *, conf: qik.conf.Venv | None) -> Venv:
+
+def factory(name: str = "default", *, conf: qik.conf.Venv | None = None) -> Venv:
     if isinstance(conf, qik.conf.ActiveVenv):
         return Active(name=name, conf=conf)
     elif isinstance(conf, qik.conf.UVVenv):

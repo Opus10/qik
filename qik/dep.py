@@ -15,16 +15,15 @@ import qik.file
 import qik.hash
 import qik.space
 import qik.unset
+import qik.venv
 
 if TYPE_CHECKING:
     import qik.pygraph.cmd as pygraph_cmd
     import qik.runnable
-    import qik.uv.cmd as uv_cmd
 else:
     import qik.lazy
 
     pygraph_cmd = qik.lazy.module("qik.pygraph.cmd")
-    uv_cmd = qik.lazy.module("qik.uv.cmd")
 
 
 @functools.cache
@@ -287,25 +286,7 @@ class Collection:
         self._deps = [dep if isinstance(dep, BaseDep) else Glob(str(dep)) for dep in deps]
         self.module = module
         self.space = space
-
-    @functools.cached_property
-    def venv_runnables(self) -> dict[str, Runnable]:
-        venv = qik.space.load(self.space).venv if self.space else None
-        return (
-            {
-                runnable.name: Runnable(name=runnable.name, obj=runnable, strict=False)
-                for runnable in qik.cmd.load(
-                    uv_cmd.install_cmd_name(), venv=venv.name
-                ).runnables.values()
-            }
-            if venv
-            else {}
-        )
-
-    @functools.cached_property
-    def venv_locks(self) -> set[str]:
-        venv = qik.space.load(self.space).venv if self.space else None
-        return set(venv.lock_files) if venv else set()
+        self.venv = qik.space.load(self.space).venv if self.space else qik.venv.factory()
 
     @property
     def globs(self) -> set[str]:
@@ -316,7 +297,7 @@ class Collection:
                 for runnable in self.runnables.values()
                 for artifact in runnable.obj.artifacts
             }
-            | self.venv_locks
+            | self.venv.glob_deps
         )
 
     @functools.cached_property
@@ -346,7 +327,7 @@ class Collection:
             for dep in self._deps
             for runnable in dep.runnables
             if not self.module or not runnable.obj.module or self.module == runnable.obj.module
-        } | self.venv_runnables
+        } | self.venv.runnable_deps
 
     @functools.cached_property
     def consts_hash(self) -> str:
