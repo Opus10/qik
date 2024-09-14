@@ -7,6 +7,7 @@ import msgspec
 
 import qik.conf
 import qik.errors
+import qik.uv.cmd
 
 
 class Venv(msgspec.Struct, frozen=True, dict=True):
@@ -27,7 +28,7 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
         return self.dir
 
     @functools.cached_property
-    def lock_file(self) -> str:
+    def lock_file(self) -> pathlib.Path:
         # TODO: Do not return a default lock file here, instead require the user to
         # define it if they're not using a venv plugin
         raise NotImplementedError
@@ -55,13 +56,16 @@ class UV(Venv, frozen=True, dict=True):
         return self.dir.relative_to(qik.conf.root())
 
     @functools.cached_property
-    def lock_file(self) -> str:
+    def lock_file(self) -> pathlib.Path:
         if len(self.lock) > 1:
             raise qik.errors.MultipleLocksFound(
                 f'Multiple lock files found for "{self.name}" venv.'
             )
-
-        return self.lock[0] if self.lock else f"requirements-{self.name}-lock.txt"
+        
+        if not self.lock:
+            return qik.conf.pub_work_dir() / "artifacts" / qik.uv.cmd.lock_cmd_name() / f"requirements-{self.name}-lock.txt"
+        else:
+            return pathlib.Path(self.lock[0])
 
 
 @functools.cache

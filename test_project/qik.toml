@@ -8,7 +8,6 @@ modules = ["a", {name = "b_module", path = "b"}, "nest/c"]
 
 [venvs.default]
 reqs = "requirements.in"
-lock = "requirements-lock.txt"
 
 [caches.remote]
 type = "s3"

@@ -25,7 +25,14 @@ crashtest==0.4.1
 distlib==0.3.8
     # via virtualenv
 django==5.1.1
+    # via
+    #   -r requirements.in
+    #   django-pghistory
+    #   django-pgtrigger
+django-pghistory==3.4.3
     # via -r requirements.in
+django-pgtrigger==4.12.2
+    # via django-pghistory
 dulwich==0.21.7
     # via poetry
 fastjsonschema==2.20.0
@@ -34,7 +41,7 @@ filelock==3.16.0
     # via
     #   cachecontrol
     #   virtualenv
-idna==3.8
+idna==3.9
     # via requests
 installer==0.7.0
     # via poetry
@@ -44,7 +51,7 @@ keyring==24.3.1
     # via poetry
 more-itertools==10.5.0
     # via jaraco-classes
-msgpack==1.0.8
+msgpack==1.1.0
     # via cachecontrol
 packaging==24.1
     # via
@@ -54,7 +61,7 @@ pexpect==4.9.0
     # via poetry
 pkginfo==1.11.1
     # via poetry
-platformdirs==4.3.2
+platformdirs==4.3.3
     # via
     #   poetry
     #   virtualenv
@@ -91,9 +98,9 @@ sqlparse==0.5.1
     # via django
 tomlkit==0.13.2
     # via poetry
-trove-classifiers==2024.7.2
+trove-classifiers==2024.9.12
     # via poetry
-urllib3==2.2.2
+urllib3==2.2.3
     # via
     #   dulwich
     #   requests
@@ -101,3 +108,6 @@ virtualenv==20.26.4
     # via poetry
 xattr==1.1.0
     # via poetry
+
+# The following packages are considered to be unsafe in a requirements file:
+# pip
