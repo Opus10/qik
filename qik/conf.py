@@ -169,6 +169,7 @@ class ActiveVenv(Venv, frozen=True, tag="active"):
 
 
 class UVVenv(Venv, frozen=True, tag="uv"):
+    reqs: str | list[str]  # type: ignore
     python: str | None = None
 
 

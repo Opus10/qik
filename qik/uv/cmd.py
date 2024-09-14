@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import pathlib
 from typing import cast
 
 import qik.conf
@@ -25,15 +26,11 @@ def lock_cmd_factory(
         raise qik.errors.ArgNotSupplied('"venv" arg is required for qik.uv.lock command.')
 
     venv = cast(qik.venv.UV, qik.space.load(venv_name).venv)
-    # if not venv.reqs:
-    #    raise qik.errors.ReqsNotFound(f'Requirements not found for "{venv_name}" venv.')
-
     cmd_name = lock_cmd_name()
     runnable = qik.runnable.Runnable(
         name=f"{cmd_name}?venv={venv_name}",
         cmd=cmd_name,
-        # val=f"mkdir -p {pathlib.Path(venv.rel_lock).parent} && uv pip compile --universal {' '.join(venv.reqs)} -o {venv.rel_lock}",
-        val="hi",
+        val=f"mkdir -p {pathlib.Path(venv.rel_lock).parent} && uv pip compile --universal {' '.join(venv.reqs)} -o {venv.rel_lock}",
         deps=[qik.dep.Pydist("uv"), *(qik.dep.Glob(req) for req in venv.reqs)],
         artifacts=[venv.lock],
         cache="repo",
