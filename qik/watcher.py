@@ -15,13 +15,14 @@ import threading
 from typing import TYPE_CHECKING
 
 import qik.dep
+import qik.space
 import qik.unset
-import qik.venv
 
 if TYPE_CHECKING:
     import watchdog.events as watchdog_events
     import watchdog.observers as watchdog_observers
 
+    import qik.venv
     from qik.runner import Runner
 else:
     import qik.lazy
@@ -70,7 +71,7 @@ def _make_watchdog_handler(
 
         @functools.cached_property
         def venv(self) -> qik.venv.Venv:
-            return qik.venv.load()
+            return qik.space.load().venv
 
         def restart_timer(self, interval: float = 0.1):
             if self.timer is not None:
@@ -122,7 +123,7 @@ def start(runner: Runner):  # pragma: no cover
     observer = watchdog_observers.Observer()
     handler = _make_watchdog_handler(runner=runner)
     observer.schedule(handler, ".", recursive=True)
-    observer.schedule(handler, qik.venv.load().dir, recursive=True)
+    observer.schedule(handler, str(qik.space.load().venv.dir), recursive=True)
     observer.start()
     try:
         while observer.is_alive():

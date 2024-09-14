@@ -20,7 +20,6 @@ import qik.logger
 import qik.runnable
 import qik.shell
 import qik.unset
-import qik.venv
 import qik.watcher
 
 if TYPE_CHECKING:
@@ -250,6 +249,7 @@ class Graph:
 
     def filter(self, runnables: Iterable[Runnable]) -> Self:
         """Return a filtered graph. Include upstream and downstream runnables."""
+        runnables = list(runnables)
         clone = copy.copy(self)
         clone._view = {runnable.name for runnable in runnables if runnable.name in self._nodes}
         clone._view |= {dep for runnable in clone._view for dep in self._upstream[runnable]}

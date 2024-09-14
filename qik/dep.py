@@ -293,7 +293,7 @@ class Collection:
         venv = qik.space.load(self.space).venv if self.space else None
         return (
             {
-                runnable.name: Runnable(name=runnable.name, obj=runnable, strict=True)
+                runnable.name: Runnable(name=runnable.name, obj=runnable, strict=False)
                 for runnable in qik.cmd.load(
                     uv_cmd.install_cmd_name(), venv=venv.name
                 ).runnables.values()
