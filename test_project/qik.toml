@@ -3,11 +3,8 @@ deps = ["python_version"]
 vars = ["aws_access_key_id", "aws_secret_access_key", {name = "aws_endpoint_url", required = false}]
 
 [spaces.default]
-venv = "default"
+venv = { type = "uv", reqs = "requirements.in" }
 modules = ["a", {name = "b_module", path = "b"}, "nest/c"]
-
-[venvs.default]
-reqs = "requirements.in"
 
 [caches.remote]
 type = "s3"

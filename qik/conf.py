@@ -159,9 +159,17 @@ class PluginLocator(BaseLocator, frozen=True):
         return pathlib.Path(spec.origin).parent
 
 
-class Venv(Base, frozen=True):
+class Venv(Base, frozen=True, tag_field="type"):
     reqs: str | list[str] = []
     lock: str | list[str] = []
+
+
+class ActiveVenv(Venv, frozen=True, tag="active"):
+    pass
+
+
+class UVVenv(Venv, frozen=True, tag="uv"):
+    python: str | None = None
 
 
 class Pygraph(Base, frozen=True):
@@ -189,14 +197,14 @@ class Space(Base, frozen=True):
     root: str | None = None
     modules: list[str | ModuleLocator] = []
     fence: list[str] = []
-    venv: str | None = None
+    venv: str | ActiveVenv | UVVenv | None = None
 
 
 class Project(ModuleOrPlugin, frozen=True):
     plugins: list[str | PluginLocator] = []
     deps: list[DepType] = []
     ctx: dict[str, dict[CtxNamespace, dict[str, Any]]] = {}
-    venvs: dict[str, Venv] = {}
+    venvs: dict[str, ActiveVenv | UVVenv] = {}
     caches: dict[str, S3Cache] = {}
     spaces: dict[str, Space] = {}
     pygraph: Pygraph = msgspec.field(default_factory=Pygraph)

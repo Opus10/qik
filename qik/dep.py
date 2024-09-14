@@ -15,7 +15,6 @@ import qik.file
 import qik.hash
 import qik.space
 import qik.unset
-import qik.venv
 
 if TYPE_CHECKING:
     import qik.pygraph.cmd as pygraph_cmd
@@ -191,13 +190,14 @@ class Pydist(BaseDep, frozen=True):
 
     @functools.cached_property
     def since(self) -> list[str]:
-        venv = qik.venv.load()
-        if not venv.lock:
+        # TODO: Use the correct space
+        venv = qik.space.load().venv
+        if not venv.lock_file:
             raise qik.errors.LockFileNotFound(
-                "Must configure venv lock file (venvs.default.lock) when using --since on pydists."
+                "Must configure venv lock file (space.default.venv.lock) when using --since on pydists."
             )
 
-        return venv.lock
+        return [venv.lock_file]
 
 
 class Const(BaseDep, frozen=True):
@@ -290,28 +290,34 @@ class Collection:
 
     @functools.cached_property
     def venv_runnables(self) -> dict[str, Runnable]:
-        venv = qik.space.load(self.space).conf.venv if self.space else None
+        venv = qik.space.load(self.space).venv if self.space else None
         return (
             {
                 runnable.name: Runnable(name=runnable.name, obj=runnable, strict=True)
                 for runnable in qik.cmd.load(
-                    uv_cmd.install_cmd_name(), venv=venv
+                    uv_cmd.install_cmd_name(), venv=venv.name
                 ).runnables.values()
             }
             if venv
             else {}
         )
-    
+
     @functools.cached_property
     def venv_locks(self) -> set[str]:
-        venv = qik.space.load(self.space).venv if self.space else None        
+        venv = qik.space.load(self.space).venv if self.space else None
         return set(venv.lock_files) if venv else set()
 
     @property
     def globs(self) -> set[str]:
-        return {glob for dep in self._deps for glob in dep.globs} | {
-            artifact for runnable in self.runnables.values() for artifact in runnable.obj.artifacts
-        } | self.venv_locks
+        return (
+            {glob for dep in self._deps for glob in dep.globs}
+            | {
+                artifact
+                for runnable in self.runnables.values()
+                for artifact in runnable.obj.artifacts
+            }
+            | self.venv_locks
+        )
 
     @functools.cached_property
     def consts(self) -> set[str]:

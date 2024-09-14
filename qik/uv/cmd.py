@@ -7,7 +7,7 @@ import qik.conf
 import qik.dep
 import qik.errors
 import qik.runnable
-import qik.venv
+import qik.space
 
 
 @functools.cache
@@ -23,7 +23,7 @@ def lock_cmd_factory(
     if not venv_name:
         raise qik.errors.ArgNotSupplied('"venv" arg is required for qik.uv.lock command.')
 
-    venv = qik.venv.load(venv_name)
+    venv = qik.space.load(venv_name).venv
     if not venv.reqs:
         raise qik.errors.ReqsNotFound(f'Requirements not found for "{venv_name}" venv.')
 
@@ -53,7 +53,7 @@ def install_cmd_factory(
     if not venv_name:
         raise qik.errors.ArgNotSupplied('"venv" arg is required for qik.uv.install command.')
 
-    venv = qik.venv.load(venv_name)
+    venv = qik.space.load(venv_name).venv
     cmd_name = install_cmd_name()
     runnable = qik.runnable.Runnable(
         name=f"{cmd_name}?venv={venv_name}",
