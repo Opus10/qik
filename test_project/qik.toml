@@ -25,6 +25,7 @@ exec = 'exit 1'
 
 [commands.pghistory_version]
 exec = "pip freeze | grep django-pghistory"
+cache = "local"
 
 [commands.dep_fail]
 exec = 'echo "hi"; exit 1'

@@ -288,11 +288,30 @@ class Collection:
         self.module = module
         self.space = space
 
+    @functools.cached_property
+    def venv_runnables(self) -> dict[str, Runnable]:
+        venv = qik.space.load(self.space).conf.venv if self.space else None
+        return (
+            {
+                runnable.name: Runnable(name=runnable.name, obj=runnable, strict=True)
+                for runnable in qik.cmd.load(
+                    uv_cmd.install_cmd_name(), venv=venv
+                ).runnables.values()
+            }
+            if venv
+            else {}
+        )
+    
+    @functools.cached_property
+    def venv_locks(self) -> set[str]:
+        venv = qik.space.load(self.space).venv if self.space else None        
+        return set(venv.lock_files) if venv else set()
+
     @property
     def globs(self) -> set[str]:
         return {glob for dep in self._deps for glob in dep.globs} | {
             artifact for runnable in self.runnables.values() for artifact in runnable.obj.artifacts
-        }
+        } | self.venv_locks
 
     @functools.cached_property
     def consts(self) -> set[str]:
@@ -313,20 +332,6 @@ class Collection:
     @property
     def pydists(self) -> set[str]:
         return {pydist for dep in self._deps for pydist in dep.pydists}
-
-    @functools.cached_property
-    def venv_runnables(self) -> dict[str, Runnable]:
-        venv = qik.space.load(self.space).conf.venv if self.space else None
-        return (
-            {
-                runnable.name: Runnable(name=runnable.name, obj=runnable, strict=True)
-                for runnable in qik.cmd.load(
-                    uv_cmd.install_cmd_name(), venv=venv
-                ).runnables.values()
-            }
-            if venv
-            else {}
-        )
 
     @property
     def runnables(self) -> dict[str, Runnable]:

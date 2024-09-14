@@ -28,7 +28,17 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
         return self.dir
 
     @functools.cached_property
-    def lock_file(self) -> pathlib.Path:
+    def lock_file(self) -> str:
+        # TODO: Do not return a default lock file here, instead require the user to
+        # define it if they're not using a venv plugin
+        raise NotImplementedError
+    
+    @functools.cached_property
+    def rel_lock_file(self) -> str:
+        return str(pathlib.Path(self.lock_file).relative_to(qik.conf.root()))
+    
+    @functools.cached_property
+    def lock_files(self) -> list[str]:
         # TODO: Do not return a default lock file here, instead require the user to
         # define it if they're not using a venv plugin
         raise NotImplementedError
@@ -56,16 +66,20 @@ class UV(Venv, frozen=True, dict=True):
         return self.dir.relative_to(qik.conf.root())
 
     @functools.cached_property
-    def lock_file(self) -> pathlib.Path:
-        if len(self.lock) > 1:
+    def lock_files(self) -> list[str]:        
+        if not self.lock:
+            return [str(qik.conf.pub_work_dir() / "artifacts" / qik.uv.cmd.lock_cmd_name() / f"requirements-{self.name}-lock.txt")]
+        else:
+            return self.lock
+
+    @functools.cached_property
+    def lock_file(self) -> str:
+        if len(self.lock_files) > 1:
             raise qik.errors.MultipleLocksFound(
                 f'Multiple lock files found for "{self.name}" venv.'
             )
         
-        if not self.lock:
-            return qik.conf.pub_work_dir() / "artifacts" / qik.uv.cmd.lock_cmd_name() / f"requirements-{self.name}-lock.txt"
-        else:
-            return pathlib.Path(self.lock[0])
+        return self.lock_files[0]
 
 
 @functools.cache
