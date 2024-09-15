@@ -145,7 +145,7 @@ class ModuleLocator(BaseLocator, frozen=True):
     def dir(self) -> pathlib.Path:
         # TODO: While this handles most windows paths, it does not handle literal '/'
         # in paths that are escaped (e.g. my\/file/path)
-        return root() / self.path.replace("/", os.path.sep)
+        return pathlib.Path(self.path.replace("/", os.path.sep))
 
 
 class PluginLocator(BaseLocator, frozen=True):
@@ -381,15 +381,15 @@ def root() -> pathlib.Path:
 
 
 @functools.cache
-def priv_work_dir(relative: bool = False) -> pathlib.Path:
+def priv_work_dir(abs: bool = False) -> pathlib.Path:
     """Get the private work directory."""
-    return root() / "._qik" if not relative else pathlib.Path("._qik")
+    return root() / "._qik" if abs else pathlib.Path("._qik")
 
 
 @functools.cache
-def pub_work_dir(relative: bool = False) -> pathlib.Path:
+def pub_work_dir(abs: bool = False) -> pathlib.Path:
     """Get the public work directory."""
-    return root() / ".qik" if not relative else pathlib.Path(".qik")
+    return root() / ".qik" if abs else pathlib.Path(".qik")
 
 
 @functools.cache

@@ -326,6 +326,7 @@ class Collection:
             runnable.name: runnable
             for dep in self._deps
             for runnable in dep.runnables
+            # TODO: Revisit if we need this filter logic or if it should also work with spaces
             if not self.module or not runnable.obj.module or self.module == runnable.obj.module
         } | self.venv.runnable_deps
 

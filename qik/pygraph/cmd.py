@@ -199,14 +199,12 @@ def lock_cmd_name() -> str:
 
 @functools.cache
 def graph_path() -> pathlib.Path:
-    return qik.conf.pub_work_dir(relative=True) / "artifacts" / build_cmd_name() / "graph.json"
+    return qik.conf.pub_work_dir() / "artifacts" / build_cmd_name() / "graph.json"
 
 
 @functools.cache
-def lock_path(imp: str) -> pathlib.Path:
-    return (
-        qik.conf.pub_work_dir(relative=True) / "artifacts" / lock_cmd_name() / f"lock.{imp}.json"
-    )
+def lock_path(pyimport: str) -> pathlib.Path:
+    return qik.conf.pub_work_dir() / "artifacts" / lock_cmd_name() / f"lock.{pyimport}.json"
 
 
 def load_graph() -> qik.pygraph.core.Graph:

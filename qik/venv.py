@@ -31,17 +31,9 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
     def dir(self) -> pathlib.Path:
         raise NotImplementedError
 
-    @functools.cached_property
-    def rel_dir(self) -> pathlib.Path:
-        return pathlib.Path(self.dir).relative_to(qik.conf.root())
-
     @property
     def lock(self) -> str | None:
         return self.conf.lock
-
-    @functools.cached_property
-    def rel_lock(self) -> str | None:
-        return str(pathlib.Path(self.lock).relative_to(qik.conf.root())) if self.lock else None
 
     @functools.cached_property
     def runnable_deps(self) -> dict[str, qik.dep.Runnable]:
@@ -67,10 +59,6 @@ class Active(Venv, frozen=True, dict=True):
     @property
     def dir(self) -> pathlib.Path:
         return pathlib.Path(sysconfig.get_path("purelib"))
-
-    @property
-    def rel_dir(self) -> pathlib.Path:  # type: ignore
-        return self.dir
 
     @functools.cached_property
     def runnable_deps(self) -> dict[str, qik.dep.Runnable]:
@@ -98,10 +86,6 @@ class UV(Venv, frozen=True, dict=True):
     def lock(self) -> str:
         return super().lock or self.default_lock
 
-    @property
-    def rel_lock(self) -> str:  # type: ignore
-        return super().rel_lock  # type: ignore
-
     @functools.cached_property
     def environ(self) -> dict[str, str]:  # type: ignore
         return os.environ | {
@@ -116,7 +100,7 @@ class UV(Venv, frozen=True, dict=True):
     @functools.cached_property
     def runnable_deps(self) -> dict[str, qik.dep.Runnable]:
         return {
-            runnable.name: qik.dep.Runnable(name=runnable.name, obj=runnable, strict=False)
+            runnable.name: qik.dep.Runnable(name=runnable.name, obj=runnable, strict=True)
             for runnable in qik.cmd.load(
                 qik.uv.cmd.install_cmd_name(), venv=self.name
             ).runnables.values()

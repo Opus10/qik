@@ -195,7 +195,12 @@ class Graph:
         """Filter the graph by the type of cache."""
         cache_types_set = frozenset(c_type.lower() for c_type in cache_types)
         return self.filter(
-            runnable for runnable in self if runnable.get_cache_backend().type in cache_types_set
+            (
+                runnable
+                for runnable in self
+                if runnable.get_cache_backend().type in cache_types_set
+            ),
+            neighbors=False,
         )
 
     def filter_cache_status(self, cache_status: qik.conf.CacheStatus) -> Self:
@@ -205,9 +210,15 @@ class Graph:
             return bool(entry) if cache_status == "warm" else not bool(entry)
 
         return self.filter(
-            runnable
-            for runnable in self
-            if _matches_cache_status(runnable.get_cache_entry(artifacts=False))
+            (
+                runnable
+                for runnable in self
+                if (
+                    runnable.get_cache_backend().type != "none"
+                    and _matches_cache_status(runnable.get_cache_entry(artifacts=False))
+                )
+            ),
+            neighbors=False,
         )
 
     def filter_since(self, git_sha: str) -> Self:
@@ -250,13 +261,14 @@ class Graph:
 
         return self.filter(runnables.values())
 
-    def filter(self, runnables: Iterable[Runnable]) -> Self:
-        """Return a filtered graph. Include upstream and downstream runnables."""
+    def filter(self, runnables: Iterable[Runnable], neighbors: bool = True) -> Self:
+        """Return a filtered graph. Include upstream and downstream runnables by default."""
         runnables = list(runnables)
         clone = copy.copy(self)
         clone._view = {runnable.name for runnable in runnables if runnable.name in self._nodes}
-        clone._view |= {dep for runnable in clone._view for dep in self._upstream[runnable]}
-        clone._view |= {dep for runnable in clone._view for dep in self._downstream[runnable]}
+        if neighbors:
+            clone._view |= {dep for runnable in clone._view for dep in self._upstream[runnable]}
+            clone._view |= {dep for runnable in clone._view for dep in self._downstream[runnable]}
 
         if "nodes" in clone.__dict__:
             del clone.__dict__["nodes"]

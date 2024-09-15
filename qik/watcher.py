@@ -62,7 +62,7 @@ def _make_watchdog_handler(
         @functools.cached_property
         def qik_file_re(self) -> re.Pattern:
             hidden_files = f"({fnmatch.translate('**/.*')})|({fnmatch.translate('.*')})"
-            ignored_patterns = "(._qik)|(.qik)|(__pycache__)"
+            ignored_patterns = "(__pycache__)"
             return re.compile(f"^(?!{hidden_files}|{ignored_patterns}$).*$")
 
         @functools.cached_property
@@ -80,8 +80,16 @@ def _make_watchdog_handler(
             self.timer = threading.Timer(interval, self.handle_events)
             self.timer.start()
 
-        def on_modified(self, event):
-            if not isinstance(event, watchdog_events.FileModifiedEvent):
+        def on_any_event(self, event):
+            if not isinstance(
+                event,
+                (
+                    watchdog_events.FileModifiedEvent,
+                    watchdog_events.FileCreatedEvent,
+                    watchdog_events.FileDeletedEvent,
+                    watchdog_events.FileMovedEvent,
+                ),
+            ):
                 return
 
             with self.lock:
@@ -90,7 +98,7 @@ def _make_watchdog_handler(
                     path = str(src_path.relative_to(self.cwd))
                     if path.endswith("qik.toml"):
                         self.runner.logger.print(
-                            f"{path} config changed. Re-start watcher.",
+                            f"{path} config changed. Please restart watcher.",
                             emoji="construction",
                             color="red",
                         )
@@ -98,17 +106,21 @@ def _make_watchdog_handler(
                     elif self.qik_file_re.match(path):
                         self.changes.add(qik.dep.Glob(path))
                 except ValueError:
-                    path = str(src_path.relative_to(self.venv.dir))
-                    if (pydist := _parse_pydist(path)) and event.event_type == "created":
-                        self.changes.add(qik.dep.Pydist(pydist))
+                    try:
+                        path = str(src_path.relative_to(self.venv.dir))
+                        if (pydist := _parse_pydist(path)) and event.event_type == "created":
+                            self.changes.add(qik.dep.Pydist(pydist))
+                    except ValueError:  # Not part of the venv
+                        pass
 
                 self.restart_timer()
 
         def handle_events(self):
             with self.lock:
                 if self.changes:
-                    if len(self.changes) == 1:
-                        summary = f"Detected changes in {list(self.changes)[0]}."
+                    if len(self.changes) <= 5:
+                        changes = ", ".join(str(c) for c in self.changes)
+                        summary = f"Detected changes in {changes}."
                     else:
                         summary = f"Detected {len(self.changes)} changes."
 

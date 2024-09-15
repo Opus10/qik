@@ -41,7 +41,7 @@ RunStatus: TypeAlias = Literal["success", "failed", "skipped", "pending"]
 
 @functools.cache
 def out_dir() -> pathlib.Path:
-    return qik.conf.priv_work_dir(relative=True) / "out"
+    return qik.conf.priv_work_dir() / "out"
 
 
 class Manifest(msgspec.Struct):
@@ -394,7 +394,7 @@ class Progress(Logger):
                         output = "[dim][italic]Skipped"
 
                 if show:
-                    qik.console.rule(f":{emoji}-emoji: [{color}]{name}", style=color)
+                    qik.console.rule(f":{emoji}-emoji: [{color}]{name}", color=color)
                     output = output or "[dim][italic]No output"
                     qik.console.print(output)
 

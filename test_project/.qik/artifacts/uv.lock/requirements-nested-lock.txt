@@ -7,10 +7,16 @@ certifi==2024.8.30
 charset-normalizer==3.3.2
     # via requests
 django==5.1.1
-    # via django-pgtrigger
-django-pgtrigger==4.12.2
+    # via
+    #   django-pghistory
+    #   django-pgtrigger
+django-pghistory==3.4.3
     # via -r req2.in
-idna==3.9
+django-pgtrigger==4.12.2
+    # via
+    #   -r req2.in
+    #   django-pghistory
+idna==3.10
     # via requests
 pip==24.2
     # via -r req2.in
