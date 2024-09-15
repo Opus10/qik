@@ -73,7 +73,7 @@ def factory(cmd: str, conf: qik.conf.Cmd, **args: str) -> dict[str, Runnable]:
     """
     if "{module" in conf.exec:
         proj = qik.conf.project()
-        if qik.unset.is_not_unset(conf.space):
+        if not isinstance(conf.space, qik.unset.UnsetType):
             spaces = {conf.space: qik.space.load(conf.space).conf}
         else:
             spaces = proj.spaces
@@ -84,7 +84,7 @@ def factory(cmd: str, conf: qik.conf.Cmd, **args: str) -> dict[str, Runnable]:
             for module in space_conf.modules_by_name.values()
         )
     else:
-        space = conf.space if qik.unset.is_not_unset(conf.space) else "default"
+        space = conf.space if not isinstance(conf.space, qik.unset.UnsetType) else "default"
         runnables = [_make_runnable(cmd=cmd, conf=conf, space=space)]
 
     return {runnable.name: runnable for runnable in runnables}
@@ -174,7 +174,11 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
                 raise AssertionError(f'Unexpected cache_when "{other}".')
 
     def get_cache_backend(self) -> qik.cache.Cache:
-        backend = qik.ctx.module("qik").cache if self.cache is qik.unset.UNSET else self.cache
+        backend = (
+            qik.ctx.module("qik").cache
+            if isinstance(self.cache, qik.unset.UnsetType)
+            else self.cache
+        )
         return qik.cache.load(backend)
 
     def get_cache_entry(self, artifacts: bool = True) -> qik.cache.Entry | None:

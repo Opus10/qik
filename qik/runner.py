@@ -119,17 +119,27 @@ class DAGPool:
 class Graph:
     """A graph of runnables."""
 
-    def __init__(self, cmds: Iterable[str], modules: Iterable[str]):
+    def __init__(
+        self,
+        cmds: Iterable[str],
+        *,
+        modules: Iterable[str] | None = None,
+        spaces: Iterable[str] | None = None,
+    ):
         self.cmds = cmds
         self._view = None
-        modules = frozenset(modules)
+        modules = frozenset(modules or [])
+        spaces = frozenset(spaces or [])
 
         # Construct the graph
         self._nodes: dict[str, Runnable] = {
             name: runnable
             for cmd in cmds
             for name, runnable in qik.cmd.load(cmd).runnables.items()
-            if not modules or not runnable.module or runnable.module in modules
+            if (
+                (not modules or not runnable.module or runnable.module in modules)
+                and (not spaces or not runnable.space or runnable.space in spaces)
+            )
         }
         self._graph = {
             "up": collections.defaultdict(set[str]),
@@ -141,7 +151,7 @@ class Graph:
             for dep in runnable.deps_collection.runnables.values():
                 isolated = (
                     dep.isolated
-                    if dep.isolated is not qik.unset.UNSET
+                    if not isinstance(dep.isolated, qik.unset.UnsetType)
                     else qik.ctx.module("qik").isolated
                 )
                 if not isolated or dep.obj.name in self._nodes:
@@ -240,13 +250,6 @@ class Graph:
 
         return self.filter(runnables.values())
 
-    def filter_modules(self, modules: list[str]) -> Self:
-        """Filter the graph by a list of modules."""
-        modules_set = frozenset(modules)
-        return self.filter(
-            runnable for runnable in self if not runnable.module or runnable.module in modules_set
-        )
-
     def filter(self, runnables: Iterable[Runnable]) -> Self:
         """Return a filtered graph. Include upstream and downstream runnables."""
         runnables = list(runnables)
@@ -321,13 +324,12 @@ def _get_graph() -> Graph:
     """Get a filtered graph."""
     qik_ctx = qik.ctx.module("qik")
     cmds = qik_ctx.commands
-    modules = qik_ctx.modules
 
     if not cmds:
         cmds = list(qik.cmd.ls())
 
     try:
-        graph = Graph(cmds, modules=modules)
+        graph = Graph(cmds, modules=qik_ctx.modules, spaces=qik_ctx.spaces)
     except RecursionError as exc:
         raise qik.errors.GraphCycle("Cycle detected in DAG.") from exc
 

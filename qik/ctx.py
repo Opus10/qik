@@ -131,6 +131,7 @@ class QikCtx(msgspec.Struct, forbid_unknown_fields=True, rename="kebab", dict=Tr
     since: str | None = None
     commands: list[str] = []
     modules: list[str] = []
+    spaces: list[str] = []
     cache_status: qik.conf.CacheStatus | None = None
     cache_types: list[str] = []
 
@@ -231,7 +232,7 @@ def _module(
 
     for var_name, var_type in var_struct.__annotations__.items():
         setattr(parsed, var_name, _get_val(var_name, var_type))
-        if getattr(parsed, var_name) is qik.unset.UNSET:
+        if isinstance(getattr(parsed, var_name), qik.unset.UnsetType):
             raise qik.errors.CtxValueNotFound(
                 f'No value supplied for "{namespace}.{module_prefix}{var_name}" ctx.'
             )
@@ -248,7 +249,7 @@ def set_vars(
     curr_vars = module(namespace, module_name)
     old_vars = msgspec.structs.replace(curr_vars)
     for name, val in vars.items():
-        if val is not qik.unset.UNSET:
+        if not isinstance(val, qik.unset.UnsetType):
             setattr(curr_vars, name, val)
 
     try:

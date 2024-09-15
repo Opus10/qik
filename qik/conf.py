@@ -92,7 +92,7 @@ class Var(Base, frozen=True):
     required: bool = True
 
     def __post_init__(self):
-        if not self.required and self.default is qik.unset.UNSET:
+        if not self.required and isinstance(self.default, qik.unset.UnsetType):
             msgspec.structs.force_setattr(self, "default", None)
 
     @property

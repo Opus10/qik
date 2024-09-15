@@ -22,6 +22,13 @@ def main() -> None:
         dest="modules",
     )
     parser.add_argument(
+        "-s",
+        "--space",
+        help="Set space name(s).",
+        action="append",
+        dest="spaces",
+    )
+    parser.add_argument(
         "--watch", action="store_true", help="Watch for changes.", default=qik.unset.UNSET
     )
     parser.add_argument(
@@ -99,6 +106,7 @@ def main() -> None:
             verbosity=args.verbosity,
             commands=args.commands or qik.unset.UNSET,
             modules=args.modules or qik.unset.UNSET,
+            spaces=args.spaces or qik.unset.UNSET,
             cache_types=args.cache_types or qik.unset.UNSET,
         ),
     ):

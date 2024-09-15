@@ -43,7 +43,6 @@ cache-when = "finished"
 exec = "ruff check {module.dir}"
 deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]
 cache = "repo"
-space = "nested"
 
 [commands.ind_lint]
 exec = "ruff check b"
