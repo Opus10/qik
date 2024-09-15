@@ -123,6 +123,7 @@ class Stats:
 class Logger:
     def __init__(self):
         self._reset_state()
+        self.num_runs = 0
 
     def _reset_state(self) -> None:
         self.graph = None
@@ -175,7 +176,8 @@ class Logger:
     ) -> None:
         if runnable:
             if event == "output":
-                self._get_log_file(runnable).write(msg)
+                if msg := msg.strip():
+                    self._get_log_file(runnable).write(msg)
             elif event == "start":
                 self.stats.start(runnable)
             elif event == "finish":
@@ -192,7 +194,10 @@ class Logger:
         )
 
     def handle_run_started(self) -> None:
-        pass
+        if self.num_runs and self.graph:
+            qik.console.rule(color="white")
+
+        self.num_runs += 1
 
     def handle_run_finished(self) -> None:
         pass
@@ -213,16 +218,6 @@ class Logger:
 class Stdout(Logger):
     """Logs command results to stdout."""
 
-    def __init__(self):
-        super().__init__()
-        self.num_runs = 0
-
-    def handle_run_started(self) -> None:
-        if self.num_runs and self.graph:
-            qik.console.rule()
-
-        self.num_runs += 1
-
     def handle_output(
         self,
         msg: str,
@@ -235,7 +230,8 @@ class Stdout(Logger):
     ) -> None:
         """Print output from a runnable."""
         if event == "output":
-            qik.console.print(msg.strip(), emoji=emoji, color=color, highlight=False, style=None)
+            if msg := msg.strip():
+                qik.console.print(msg, emoji=emoji, color=color, highlight=False, style=None)
         elif event == "start" or (event == "finish" and not result):
             qik.console.rule(msg, emoji=emoji, color=color)
         else:
@@ -296,6 +292,8 @@ class Progress(Logger):
         return table
 
     def handle_run_started(self) -> None:
+        super().handle_run_started()
+
         self.status = "pending"
         self.progress = rich_progress.Progress(
             rich_progress.TextColumn("{task.description}"),

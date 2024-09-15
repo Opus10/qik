@@ -250,9 +250,7 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
             if cache_entry:
                 # Run cached command
                 _log_start(cached=True)
-                if cache_entry.log:
-                    logger.print(cache_entry.log, event="output", **print_kwargs)  # type: ignore
-
+                logger.print(cache_entry.log or "", event="output", **print_kwargs)  # type: ignore
                 result = Result.from_cache(cache_entry)
             else:
                 # Run uncached command

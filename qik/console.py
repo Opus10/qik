@@ -17,7 +17,7 @@ if TYPE_CHECKING:
         "fast-forward_button",
         "heavy_minus_sign",
     ]
-    Color: TypeAlias = Literal["cyan", "red", "green", "yellow"]
+    Color: TypeAlias = Literal["cyan", "red", "green", "yellow", "white"]
 else:
     rich_console = qik.lazy.module("rich.console")
 
@@ -43,7 +43,9 @@ def print_exception() -> None:
 def rule(
     msg: str = "", emoji: Emoji | None = None, color: Color | None = None, **kwargs: Any
 ) -> None:
-    get().rule(fmt_msg(msg, emoji=emoji, color=color), align="left", style=color or "rule.line")
+    get().rule(
+        fmt_msg(msg, emoji=emoji, color=color), align="left", style=color or "rule.line", **kwargs
+    )
 
 
 @contextlib.contextmanager
