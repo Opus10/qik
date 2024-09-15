@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import fnmatch
-import functools
 import os
 import pkgutil
 import re
@@ -15,6 +14,7 @@ import qik.conf
 import qik.ctx
 import qik.dep
 import qik.errors
+import qik.func
 import qik.hash
 import qik.shell
 import qik.space
@@ -100,7 +100,7 @@ class Result(msgspec.Struct, frozen=True):
         return cls(log=entry.log, code=entry.manifest.code, hash=entry.manifest.hash)
 
 
-@functools.cache
+@qik.func.cache
 def _glob_to_regex(glob_pattern: str) -> str:
     """Translate a glob to a regex pattern"""
     return fnmatch.translate(glob_pattern).replace("?s:", "^").replace(r"\Z", "$")
@@ -119,24 +119,23 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
     args: dict[str, str] = {}
     space: str | None = None
 
-    @functools.cached_property
+    @qik.func.per_run_cached_property
     def description(self) -> str:
         args = ", ".join(f"{k}={v}" for k, v in self.args.items())
         return f"{self.val}({args})" if args and not self.shell else self.val
 
-    @functools.cached_property
+    @qik.func.cached_property
     def slug(self) -> str:
         return re.sub(r"[^a-zA-Z0-9]", "__", self.name)
 
-    @functools.cached_property
+    @qik.func.cached_property
     def deps_collection(self) -> qik.dep.Collection:
         return qik.dep.Collection(*self.deps, module=self.module, space=self.space)
 
-    @functools.cached_property
+    @qik.func.cached_property
     def venv(self) -> qik.venv.Venv | None:
         return qik.space.load(self.space).venv if self.space else None
 
-    # TODO cache this based on the runner session
     def filter_regex(self, strategy: FilterStrategy) -> re.Pattern | None:
         """Generate the regex used for file-based filtering.
 
@@ -146,7 +145,7 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
         files_regex = ")|(".join(_glob_to_regex(glob) for glob in globs)
         return re.compile(f"({files_regex})", re.M) if files_regex else None
 
-    @functools.cached_property
+    @qik.func.cached_property
     def spec_hash(self) -> str:
         """Hash the runnable spec."""
         return qik.hash.val(msgspec.json.encode(self))

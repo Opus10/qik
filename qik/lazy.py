@@ -1,6 +1,7 @@
-import functools
 import importlib
 from typing import Any, Callable, Final, Generic, TypeVar
+
+import qik.func
 
 T = TypeVar("T")
 _MODULE_TO_OPT_INSTALL: Final = {
@@ -15,7 +16,7 @@ class object(Generic[T]):
     def __init__(self, loader: Callable[[], T]) -> None:
         self._loader = loader
 
-    @functools.cached_property
+    @qik.func.cached_property
     def _object(self) -> T:
         return self._loader()
 

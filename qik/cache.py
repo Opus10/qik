@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import base64
-import functools
 import pathlib
 import threading
 from typing import TYPE_CHECKING, Iterator
@@ -12,6 +11,7 @@ import qik.conf
 import qik.ctx
 import qik.errors
 import qik.file
+import qik.func
 import qik.s3
 import qik.shell
 
@@ -136,7 +136,7 @@ class Uncached(Cache):
         pass
 
 
-@functools.cache
+@qik.func.cache
 def _add_cache_dir_to_git_attributes():
     """Add .qik to .gitattributes so that it appears differently in diff.
 
@@ -209,7 +209,7 @@ class S3(msgspec.Struct, Local, frozen=True, dict=True):
     region_name: str | None = None
     endpoint_url: str | None = None
 
-    @functools.cached_property
+    @qik.func.cached_property
     def client(self) -> qik.s3.Client:
         return qik.s3.Client(
             aws_access_key_id=self.aws_access_key_id,
@@ -256,7 +256,7 @@ def factory(conf: qik.conf.Cache) -> Cache:
             raise qik.errors.InvalidCacheType(f'Invalid cache type - "{other}".')
 
 
-@functools.cache
+@qik.func.cache
 def load(backend: str | None) -> Cache:
     proj = qik.conf.project()
 

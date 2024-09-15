@@ -7,7 +7,6 @@ however coverage is not yet instrumented for it (hence pragma: no covers)
 from __future__ import annotations
 
 import fnmatch
-import functools
 import pathlib
 import re
 import sys
@@ -15,6 +14,7 @@ import threading
 from typing import TYPE_CHECKING
 
 import qik.dep
+import qik.func
 import qik.space
 import qik.unset
 
@@ -24,6 +24,9 @@ if TYPE_CHECKING:
 
     import qik.venv
     from qik.runner import Runner
+
+    class QikEventHandlerProtocol(watchdog_events.FileSystemEventHandler):
+        active_venv: qik.venv.Active | None
 else:
     import qik.lazy
 
@@ -31,7 +34,7 @@ else:
     watchdog_observers = qik.lazy.module("watchdog.observers")
 
 
-@functools.cache
+@qik.func.cache
 def _parse_pydist(path: str) -> None | str:
     match = re.match(r"^(.+)-([^-]+)\.dist-info/RECORD$", path)
 
@@ -41,9 +44,7 @@ def _parse_pydist(path: str) -> None | str:
         return qik.dep._normalize_pydist_name(match.group(1))
 
 
-def _make_watchdog_handler(
-    *, runner: Runner
-) -> watchdog_events.FileSystemEventHandler:  # pragma: no cover
+def _make_watchdog_handler(*, runner: Runner) -> QikEventHandlerProtocol:  # pragma: no cover
     """Create the watchdog event handler.
 
     Watch for both internal project and virtual env changes.
@@ -59,19 +60,22 @@ def _make_watchdog_handler(
             self.runner = runner
             self.lock = threading.Lock()
 
-        @functools.cached_property
+        @qik.func.cached_property
         def qik_file_re(self) -> re.Pattern:
             hidden_files = f"({fnmatch.translate('**/.*')})|({fnmatch.translate('.*')})"
             ignored_patterns = "(__pycache__)"
             return re.compile(f"^(?!{hidden_files}|{ignored_patterns}$).*$")
 
-        @functools.cached_property
+        @qik.func.cached_property
         def cwd(self) -> pathlib.Path:
             return pathlib.Path.cwd()
 
-        @functools.cached_property
-        def venv(self) -> qik.venv.Venv:
-            return qik.space.load().venv
+        @qik.func.cached_property
+        def active_venv(self) -> qik.venv.Active | None:
+            # Find if an active venv is being used by the runner. IF so, we'll watch it.
+            for runnable in self.runner.graph:
+                if isinstance(runnable.venv, qik.venv.Active):
+                    return runnable.venv
 
         def restart_timer(self, interval: float = 0.1):
             if self.timer is not None:
@@ -106,12 +110,13 @@ def _make_watchdog_handler(
                     elif self.qik_file_re.match(path):
                         self.changes.add(qik.dep.Glob(path))
                 except ValueError:
-                    try:
-                        path = str(src_path.relative_to(self.venv.dir))
-                        if (pydist := _parse_pydist(path)) and event.event_type == "created":
-                            self.changes.add(qik.dep.Pydist(pydist))
-                    except ValueError:  # Not part of the venv
-                        pass
+                    if self.active_venv:
+                        try:
+                            path = str(src_path.relative_to(self.active_venv.dir))
+                            if (pydist := _parse_pydist(path)) and event.event_type == "created":
+                                self.changes.add(qik.dep.Pydist(pydist))
+                        except ValueError:  # Not part of the venv
+                            pass
 
                 self.restart_timer()
 
@@ -128,14 +133,16 @@ def _make_watchdog_handler(
                     self.runner.exec(changes=self.changes)
                     self.changes = set()
 
-    return QikEventHandler()
+    return QikEventHandler()  # type: ignore
 
 
 def start(runner: Runner):  # pragma: no cover
     observer = watchdog_observers.Observer()
     handler = _make_watchdog_handler(runner=runner)
     observer.schedule(handler, ".", recursive=True)
-    observer.schedule(handler, str(qik.space.load().venv.dir), recursive=True)
+    if handler.active_venv:
+        observer.schedule(handler, str(handler.active_venv.dir), recursive=True)
+
     observer.start()
     try:
         while observer.is_alive():

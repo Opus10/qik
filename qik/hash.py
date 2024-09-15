@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import collections
-import functools
 import importlib.metadata
 import subprocess
 from typing import TYPE_CHECKING
@@ -12,6 +11,7 @@ import xxhash
 
 import qik.conf
 import qik.errors
+import qik.func
 import qik.shell
 
 if TYPE_CHECKING:
@@ -65,14 +65,14 @@ def globs(*vals: run_deps.Glob | str) -> str:
     return xxhash.xxh128_hexdigest("".join(f"{name}{hash}" for name, hash in hashes.items()))
 
 
-@functools.cache
+@qik.func.cache
 def _pydist_version_overrides() -> dict[str, str]:
     project_conf = qik.conf.project()
     base = collections.defaultdict(str) if project_conf.ignore_missing_pydists else {}
     return base | project_conf.pydist_versions
 
 
-@functools.cache
+@qik.func.per_run_cache
 def _pydist_version(pydist: str) -> str:
     try:
         return importlib.metadata.version(pydist)

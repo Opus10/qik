@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import functools
 import importlib.machinery
 import importlib.util
 import pkgutil
@@ -13,6 +12,7 @@ import msgspec
 from typing_extensions import Self
 
 import qik.conf
+import qik.func
 import qik.shell
 
 if TYPE_CHECKING:
@@ -29,7 +29,7 @@ class Module(msgspec.Struct, array_like=True, omit_defaults=True, frozen=True, d
     imp: str
     is_internal: bool = True
 
-    @functools.cached_property
+    @qik.func.cached_property
     def path(self) -> str:
         return self.imp.replace(".", "/")
 
@@ -52,7 +52,7 @@ class Graph(msgspec.Struct, frozen=True, dict=True):
 
         return self.__dict__["_rx"]
 
-    @functools.cached_property
+    @qik.func.cached_property
     def modules_idx(self) -> dict[str, int]:
         return {module.imp: i for i, module in enumerate(self.modules)}
 

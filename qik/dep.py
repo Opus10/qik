@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools
 import pathlib
 import re
 from typing import TYPE_CHECKING, ClassVar
@@ -12,6 +11,7 @@ import qik.conf
 import qik.ctx
 import qik.errors
 import qik.file
+import qik.func
 import qik.hash
 import qik.space
 import qik.unset
@@ -26,7 +26,7 @@ else:
     pygraph_cmd = qik.lazy.module("qik.pygraph.cmd")
 
 
-@functools.cache
+@qik.func.cache
 def _normalize_pydist_name(pydist: str) -> str:
     pydist = pydist.lower().strip()
     return re.sub(r"[^a-z0-9]+", "-", pydist)
@@ -49,27 +49,27 @@ class BaseDep(msgspec.Struct, frozen=True, tag=True, dict=True):
     def __str__(self) -> str:
         return self.val
 
-    @functools.cached_property
+    @qik.func.cached_property
     def runnables(self) -> list[Runnable]:
         """Return any runnables of the dependency."""
         return []
 
-    @functools.cached_property
+    @qik.func.cached_property
     def globs(self) -> list[str]:
         """Return any glob patterns of the dependency."""
         return []
 
-    @functools.cached_property
+    @qik.func.cached_property
     def pydists(self) -> list[str]:
         """Return any pydists of the dependency."""
         return []
 
-    @functools.cached_property
+    @qik.func.cached_property
     def vals(self) -> list[str]:
         """Return any vals of the dependency."""
         return []
 
-    @functools.cached_property
+    @qik.func.cached_property
     def watch(self) -> list[str]:
         """Return any globs used for --watch option.
 
@@ -83,7 +83,7 @@ class BaseDep(msgspec.Struct, frozen=True, tag=True, dict=True):
         """
         return self.globs
 
-    @functools.cached_property
+    @qik.func.cached_property
     def since(self) -> list[str]:
         """Return any globs used for --since option.
 
@@ -127,7 +127,7 @@ def factory(
 class Glob(BaseDep, frozen=True):
     """A dependent glob pattern"""
 
-    @functools.cached_property
+    @qik.func.cached_property
     def globs(self) -> list[str]:
         return [self.val]
 
@@ -142,7 +142,7 @@ class Val(BaseDep, frozen=True):
         # This dependency is still experimental and only used by qik.pygraph.
         raise NotImplementedError
 
-    @functools.cached_property
+    @qik.func.cached_property
     def watch(self) -> list[str]:
         return [self.file]
 
@@ -158,7 +158,7 @@ class BaseCmd(BaseDep, frozen=True):
     def get_cmd_args(self) -> dict[str, str]:
         return self.args
 
-    @functools.cached_property
+    @qik.func.cached_property
     def runnables(self) -> list[Runnable]:
         """Return any runnables of the dependency."""
         return [
@@ -183,11 +183,11 @@ class Pydist(BaseDep, frozen=True):
     def normalized(self) -> str:
         return _normalize_pydist_name(self.val)
 
-    @functools.cached_property
+    @qik.func.cached_property
     def pydists(self) -> list[str]:
         return [self.val]
 
-    @functools.cached_property
+    @qik.func.cached_property
     def since(self) -> list[str]:
         # TODO: Use the correct space
         venv = qik.space.load().venv
@@ -202,7 +202,7 @@ class Pydist(BaseDep, frozen=True):
 class Const(BaseDep, frozen=True):
     """A constant value."""
 
-    @functools.cached_property
+    @qik.func.cached_property
     def since(self) -> list[str]:
         return ["*qik.toml"]
 
@@ -300,15 +300,15 @@ class Collection:
             | self.venv.glob_deps
         )
 
-    @functools.cached_property
+    @qik.func.cached_property
     def consts(self) -> set[str]:
         return {dep.val for dep in self._deps if isinstance(dep, Const)} | self.venv.const_deps
 
-    @functools.cached_property
+    @qik.func.cached_property
     def watch(self) -> set[str]:
         return {glob for dep in self._deps for glob in dep.watch}
 
-    @functools.cached_property
+    @qik.func.cached_property
     def since(self) -> set[str]:
         return {glob for dep in self._deps for glob in dep.since}
 
@@ -326,11 +326,10 @@ class Collection:
             runnable.name: runnable
             for dep in self._deps
             for runnable in dep.runnables
-            # TODO: Revisit if we need this filter logic or if it should also work with spaces
             if not self.module or not runnable.obj.module or self.module == runnable.obj.module
         } | self.venv.runnable_deps
 
-    @functools.cached_property
+    @qik.func.cached_property
     def consts_hash(self) -> str:
         """Hash all consts."""
         return qik.hash.strs(*self.consts)
@@ -354,7 +353,7 @@ class Collection:
         )
 
 
-@functools.cache
+@qik.func.cache
 def project_deps() -> list[BaseDep]:
     """The base dependencies for the project."""
     proj = qik.conf.project()

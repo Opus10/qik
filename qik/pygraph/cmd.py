@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import collections
-import functools
 import importlib.metadata
 import os
 import pathlib
@@ -15,6 +14,7 @@ import qik.conf
 import qik.dep
 import qik.errors
 import qik.file
+import qik.func
 import qik.hash
 import qik.pygraph.core
 import qik.runnable
@@ -31,17 +31,16 @@ class GraphConfDep(qik.dep.Val, frozen=True, dict=True):
     val: str = "pygraph"
     file: str = ""  # The file is dynamic based on config location
 
-    @functools.cached_property
+    @qik.func.cached_property
     def watch(self) -> list[str]:
         return [qik.conf.location().name]
 
-    # TODO: break this cache on runner invocations
-    @functools.cached_property
+    @qik.func.cached_property
     def vals(self) -> list[str]:  # type: ignore
         return [str(msgspec.json.encode(qik.conf.project().pygraph))]
 
 
-@functools.cache
+@qik.func.cache
 def _graph_conf_dep() -> qik.dep.Val:
     """Serialize the graph config so it can be included as a dependency."""
     return GraphConfDep()
@@ -66,7 +65,7 @@ class PackagesDistributions(msgspec.Struct):
     packages_distributions: dict[str, list[str]]
 
 
-@functools.lru_cache(maxsize=1)
+@qik.func.lru_cache(maxsize=1)
 def _packages_distributions(venv_hash: str) -> dict[str, list[str]]:
     pygraph_conf = qik.conf.project().pygraph
     cache_path = qik.conf.priv_work_dir() / "pygraph" / "packages_distributions.json"
@@ -110,7 +109,7 @@ def lock_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
     if not pyimport:
         raise AssertionError("Unexpected qik.pygraph.lock runnable.")
 
-    graph = load_graph()  # TODO: Use cached runner graph
+    graph = load_graph()
     # TODO: Better error if the module doesn't exist
     upstream = graph.upstream_modules(pyimport, idx=False)
     root = graph.modules[graph.modules_idx[pyimport]]
@@ -185,28 +184,29 @@ def lock_cmd_factory(
     return {runnable.name: runnable}
 
 
-@functools.cache
+@qik.func.cache
 def build_cmd_name() -> str:
     graph_plugin_name = qik.conf.plugin_locator("qik.pygraph", by_pyimport=True).name
     return f"{graph_plugin_name}.build"
 
 
-@functools.cache
+@qik.func.cache
 def lock_cmd_name() -> str:
     graph_plugin_name = qik.conf.plugin_locator("qik.pygraph", by_pyimport=True).name
     return f"{graph_plugin_name}.lock"
 
 
-@functools.cache
+@qik.func.cache
 def graph_path() -> pathlib.Path:
     return qik.conf.pub_work_dir() / "artifacts" / build_cmd_name() / "graph.json"
 
 
-@functools.cache
+@qik.func.cache
 def lock_path(pyimport: str) -> pathlib.Path:
     return qik.conf.pub_work_dir() / "artifacts" / lock_cmd_name() / f"lock.{pyimport}.json"
 
 
+@qik.func.per_run_cache
 def load_graph() -> qik.pygraph.core.Graph:
     """Load the graph."""
     return msgspec.json.decode(graph_path().read_bytes(), type=qik.pygraph.core.Graph)

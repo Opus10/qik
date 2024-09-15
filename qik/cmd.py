@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import functools
 import pkgutil
 from typing import TYPE_CHECKING, Iterator
 
 import msgspec
 
 import qik.conf
+import qik.func
 import qik.unset
 
 if TYPE_CHECKING:
@@ -18,7 +18,7 @@ class Cmd(msgspec.Struct, frozen=True):
     runnables: dict[str, Runnable]
 
 
-@functools.cache
+@qik.func.cache
 def load(cmd: str, **args: str) -> Cmd:
     """Load runnables for a command."""
     cmd_conf = qik.conf.command(cmd)

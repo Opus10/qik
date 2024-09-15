@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import collections
 import contextlib
-import functools
 from typing import IO, TYPE_CHECKING, Iterator, Literal, TypeAlias
 
 import msgspec
@@ -11,6 +10,7 @@ import qik.conf
 import qik.console
 import qik.ctx
 import qik.file
+import qik.func
 
 if TYPE_CHECKING:
     import pathlib
@@ -39,7 +39,7 @@ else:
 RunStatus: TypeAlias = Literal["success", "failed", "skipped", "pending"]
 
 
-@functools.cache
+@qik.func.cache
 def out_dir() -> pathlib.Path:
     return qik.conf.priv_work_dir() / "out"
 

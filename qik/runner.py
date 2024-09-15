@@ -3,7 +3,6 @@ from __future__ import annotations
 import collections
 import concurrent.futures
 import copy
-import functools
 import pathlib
 import sys
 from typing import TYPE_CHECKING, Iterable, Iterator, Literal, TypeAlias
@@ -16,6 +15,7 @@ import qik.console
 import qik.ctx
 import qik.dep
 import qik.errors
+import qik.func
 import qik.logger
 import qik.runnable
 import qik.shell
@@ -179,11 +179,11 @@ class Graph:
 
         return set(_dfs_trav(start_node))
 
-    @functools.cached_property
+    @qik.func.cached_property
     def _upstream(self) -> Edges:
         return {name: self._dfs(name, "up") for name in self.nodes}
 
-    @functools.cached_property
+    @qik.func.cached_property
     def _downstream(self) -> Edges:
         return {name: self._dfs(name, "down") for name in self.nodes}
 
@@ -278,7 +278,7 @@ class Graph:
 
         return clone
 
-    @functools.cached_property
+    @qik.func.cached_property
     def upstream(self) -> Edges:
         return {
             name: {dep for dep in deps if self._view is None or dep in self._view}
@@ -286,7 +286,7 @@ class Graph:
             if self._view is None or name in self._view
         }
 
-    @functools.cached_property
+    @qik.func.cached_property
     def nodes(self) -> dict[str, Runnable]:
         return {
             name: runnable
@@ -319,13 +319,16 @@ class Runner:
 
     def exec(self, *, changes: Iterable[qik.dep.BaseDep] | None = None) -> int:
         """Exec the runner, optionally providing a list of changed dependencies."""
-        orig_graph = self.graph
-        self.graph = (
-            self.graph.filter_changes(changes, strategy="watch") if changes else self.graph
-        )
-        results = DAGPool(graph=self.graph).exec()
-        self.graph = orig_graph
-        return max((result.code for result in results.values() if result), default=0)
+        try:
+            orig_graph = self.graph
+            self.graph = (
+                self.graph.filter_changes(changes, strategy="watch") if changes else self.graph
+            )
+            results = DAGPool(graph=self.graph).exec()
+            self.graph = orig_graph
+            return max((result.code for result in results.values() if result), default=0)
+        finally:
+            qik.func.clear_per_run_cache()
 
     def watch(self) -> None:
         self.logger.print("Watching for changes...", emoji="eyes", color="cyan")

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import concurrent.futures
-import functools
 import os
 import pathlib
 from typing import TYPE_CHECKING
@@ -10,6 +9,7 @@ import boto3.s3
 import msgspec
 
 import qik.file
+import qik.func
 
 if TYPE_CHECKING:
     import boto3
@@ -49,7 +49,7 @@ class Client(msgspec.Struct, frozen=True, dict=True):
     region_name: str | None = None
     endpoint_url: str | None = None
 
-    @functools.cached_property
+    @qik.func.cached_property
     def s3_session(self) -> ServiceResource:
         s3_kwargs = {"endpoint_url": self.endpoint_url} if self.endpoint_url else {}
         return boto3.Session(  # type: ignore

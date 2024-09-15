@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import contextlib
-import functools
 from typing import TYPE_CHECKING, Any, Iterator, Literal, TypeAlias
 
+import qik.func
 import qik.lazy
 
 if TYPE_CHECKING:
@@ -54,6 +54,6 @@ def capture() -> Iterator[None]:
         yield
 
 
-@functools.cache
+@qik.func.cache
 def get() -> rich_console.Console:
     return qik.lazy.object(rich_console.Console)  # type: ignore

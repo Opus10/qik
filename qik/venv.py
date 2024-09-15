@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools
 import os
 import pathlib
 import sysconfig
@@ -11,6 +10,7 @@ import qik.cmd
 import qik.conf
 import qik.dep
 import qik.errors
+import qik.func
 import qik.hash
 import qik.uv.cmd
 
@@ -19,7 +19,7 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
     name: str
     conf: qik.conf.Venv
 
-    @functools.cached_property
+    @qik.func.cached_property
     def reqs(self) -> list[str]:
         return self.conf.reqs if isinstance(self.conf.reqs, list) else [self.conf.reqs]
 
@@ -35,15 +35,15 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
     def lock(self) -> str | None:
         return self.conf.lock
 
-    @functools.cached_property
+    @qik.func.cached_property
     def runnable_deps(self) -> dict[str, qik.dep.Runnable]:
         raise NotImplementedError
 
-    @functools.cached_property
+    @qik.func.cached_property
     def glob_deps(self) -> set[str]:
         return {self.lock} if self.lock else set()
 
-    @functools.cached_property
+    @qik.func.cached_property
     def const_deps(self) -> set[str]:
         """Return the serialized venv as a constant dep."""
         return {msgspec.json.encode(self).decode()}
@@ -60,7 +60,7 @@ class Active(Venv, frozen=True, dict=True):
     def dir(self) -> pathlib.Path:
         return pathlib.Path(sysconfig.get_path("purelib"))
 
-    @functools.cached_property
+    @qik.func.cached_property
     def runnable_deps(self) -> dict[str, qik.dep.Runnable]:
         return {}
 
@@ -73,7 +73,7 @@ class UV(Venv, frozen=True, dict=True):
 
     conf: qik.conf.UVVenv
 
-    @functools.cached_property
+    @qik.func.cached_property
     def default_lock(self) -> str:
         return str(
             qik.conf.pub_work_dir()
@@ -86,18 +86,18 @@ class UV(Venv, frozen=True, dict=True):
     def lock(self) -> str:
         return super().lock or self.default_lock
 
-    @functools.cached_property
+    @qik.func.cached_property
     def environ(self) -> dict[str, str]:  # type: ignore
         return os.environ | {
             "VIRTUAL_ENV": str(self.dir),
             "PATH": f"{self.dir}/bin:{os.environ['PATH']}",
         }
 
-    @functools.cached_property
+    @qik.func.cached_property
     def dir(self) -> pathlib.Path:  # type: ignore
         return qik.conf.priv_work_dir() / "venv" / self.name
 
-    @functools.cached_property
+    @qik.func.cached_property
     def runnable_deps(self) -> dict[str, qik.dep.Runnable]:
         return {
             runnable.name: qik.dep.Runnable(name=runnable.name, obj=runnable, strict=True)

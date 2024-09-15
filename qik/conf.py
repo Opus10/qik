@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import functools
 import importlib.util
 import os.path
 import pathlib
@@ -14,6 +13,7 @@ import msgspec.structs
 import msgspec.toml
 
 import qik.errors
+import qik.func
 import qik.unset
 
 CtxNamespace: TypeAlias = Literal["qik", "project", "modules", "plugins"]
@@ -107,7 +107,7 @@ class ModuleOrPlugin(Base, frozen=True):
     vars: list[str | Var] = []
     commands: dict[str, Cmd] = {}
 
-    @functools.cached_property
+    @qik.func.cached_property
     def vars_dict(self) -> dict[str, Var]:
         return dict((v, Var(v)) if isinstance(v, str) else (v.name, v) for v in self.vars)
 
@@ -115,15 +115,15 @@ class ModuleOrPlugin(Base, frozen=True):
 class BaseLocator(Base, frozen=True):
     name: str
 
-    @functools.cached_property
+    @qik.func.cached_property
     def dir(self) -> pathlib.Path:
         raise NotImplementedError
 
-    @functools.cached_property
+    @qik.func.cached_property
     def pyimport(self) -> str:
         raise NotImplementedError
 
-    @functools.cached_property
+    @qik.func.cached_property
     def conf(self) -> ModuleOrPlugin:
         try:
             return msgspec.toml.decode(
@@ -137,11 +137,11 @@ class BaseLocator(Base, frozen=True):
 class ModuleLocator(BaseLocator, frozen=True):
     path: str
 
-    @functools.cached_property
+    @qik.func.cached_property
     def pyimport(self) -> str:
         return self.path.replace("/", ".")
 
-    @functools.cached_property
+    @qik.func.cached_property
     def dir(self) -> pathlib.Path:
         # TODO: While this handles most windows paths, it does not handle literal '/'
         # in paths that are escaped (e.g. my\/file/path)
@@ -151,7 +151,7 @@ class ModuleLocator(BaseLocator, frozen=True):
 class PluginLocator(BaseLocator, frozen=True):
     pyimport: str  # type: ignore
 
-    @functools.cached_property
+    @qik.func.cached_property
     def dir(self) -> pathlib.Path:
         spec = importlib.util.find_spec(self.pyimport)
         if not spec or not spec.origin:
@@ -201,7 +201,7 @@ class Space(Base, frozen=True):
     fence: list[str] = []
     venv: str | ActiveVenv | UVVenv | None = None
 
-    @functools.cached_property
+    @qik.func.cached_property
     def modules_by_name(self) -> dict[str, ModuleLocator]:
         module_locators = (
             ModuleLocator(name=m.replace("/", "."), path=m) if isinstance(m, str) else m
@@ -209,7 +209,7 @@ class Space(Base, frozen=True):
         )
         return {m.name: m for m in module_locators}
 
-    @functools.cached_property
+    @qik.func.cached_property
     def modules_by_path(self) -> dict[str, ModuleLocator]:
         return {m.path: m for m in self.modules_by_name.values()}
 
@@ -225,7 +225,7 @@ class Project(ModuleOrPlugin, frozen=True):
     pydist_versions: dict[str, str] = {}
     ignore_missing_pydists: bool = False
 
-    @functools.cached_property
+    @qik.func.cached_property
     def modules_by_name(self) -> dict[str, ModuleLocator]:
         return {
             name: locator
@@ -233,18 +233,18 @@ class Project(ModuleOrPlugin, frozen=True):
             for name, locator in space.modules_by_name.items()
         }
 
-    @functools.cached_property
+    @qik.func.cached_property
     def modules_by_path(self) -> dict[str, ModuleLocator]:
         return {m.path: m for m in self.modules_by_name.values()}
 
-    @functools.cached_property
+    @qik.func.cached_property
     def plugins_by_name(self) -> dict[str, PluginLocator]:
         plugin_locators = (
             PluginLocator(name=p, pyimport=p) if isinstance(p, str) else p for p in self.plugins
         )
         return {p.name: p for p in plugin_locators}
 
-    @functools.cached_property
+    @qik.func.cached_property
     def plugins_by_pyimport(self) -> dict[str, PluginLocator]:
         return {p.pyimport: p for p in self.plugins_by_name.values()}
 
@@ -257,7 +257,7 @@ class Pyproject(msgspec.Struct, omit_defaults=True):
     tool: PyprojectTool | None = None
 
 
-@functools.cache
+@qik.func.cache
 def _project() -> tuple[Project, pathlib.Path]:
     """Return the project configuration and file."""
     cwd = pathlib.Path.cwd()
@@ -289,14 +289,14 @@ def _project() -> tuple[Project, pathlib.Path]:
     )
 
 
-@functools.cache
+@qik.func.cache
 def project() -> Project:
     """Get project-level configuration."""
     sys.path.append(str(root()))
     return _project()[0]
 
 
-@functools.cache
+@qik.func.cache
 def module_locator(uri: str, *, by_path: bool = False) -> ModuleLocator:
     """Get module locator."""
     proj = project()
@@ -307,13 +307,13 @@ def module_locator(uri: str, *, by_path: bool = False) -> ModuleLocator:
     return lookup[uri]
 
 
-@functools.cache
+@qik.func.cache
 def module(uri: str, *, by_path: bool = False) -> ModuleOrPlugin:
     """Get module configuration."""
     return module_locator(uri, by_path=by_path).conf
 
 
-@functools.cache
+@qik.func.cache
 def plugin_locator(uri: str, *, by_pyimport: bool = False) -> PluginLocator:
     """Get plugin locator."""
     proj = project()
@@ -324,13 +324,13 @@ def plugin_locator(uri: str, *, by_pyimport: bool = False) -> PluginLocator:
     return lookup[uri]
 
 
-@functools.cache
+@qik.func.cache
 def plugin(uri: str, by_pyimport: bool = False) -> ModuleOrPlugin:
     """Get plugin configuration."""
     return plugin_locator(uri, by_pyimport=by_pyimport).conf
 
 
-@functools.cache
+@qik.func.cache
 def get(name: str | None = None) -> ModuleOrPlugin:
     """Get configuration for a given module, plugin, or project."""
     if not name:
@@ -347,13 +347,13 @@ def get(name: str | None = None) -> ModuleOrPlugin:
                 ) from None
 
 
-@functools.cache
+@qik.func.cache
 def uri_parts(uri: str) -> tuple[str | None, str]:
     """Return the module and name of a URI."""
     return (None, uri) if "." not in uri else tuple(uri.rsplit(".", 1))  # type: ignore
 
 
-@functools.cache
+@qik.func.cache
 def command(uri: str) -> Cmd:
     """Get configuration for a command."""
     module, name = uri_parts(uri)
@@ -364,7 +364,7 @@ def command(uri: str) -> Cmd:
     return conf.commands[name]
 
 
-@functools.cache
+@qik.func.cache
 def space(name: str = "default") -> Space:
     """Get configuration for a space."""
     proj = project()
@@ -374,25 +374,25 @@ def space(name: str = "default") -> Space:
     return proj.spaces.get(name, Space(venv="default"))
 
 
-@functools.cache
+@qik.func.cache
 def root() -> pathlib.Path:
     """Get the absolute root project directory."""
     return _project()[1].parent
 
 
-@functools.cache
+@qik.func.cache
 def priv_work_dir(abs: bool = False) -> pathlib.Path:
     """Get the private work directory."""
     return root() / "._qik" if abs else pathlib.Path("._qik")
 
 
-@functools.cache
+@qik.func.cache
 def pub_work_dir(abs: bool = False) -> pathlib.Path:
     """Get the public work directory."""
     return root() / ".qik" if abs else pathlib.Path(".qik")
 
 
-@functools.cache
+@qik.func.cache
 def location() -> pathlib.Path:
     """Get the root configuration file."""
     return _project()[1]

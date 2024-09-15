@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import contextlib
 import contextvars
-import functools
 import os
 import threading
 from typing import TYPE_CHECKING, Any, Iterator, Literal, TypeVar, overload
@@ -14,6 +13,7 @@ import msgspec
 import qik.arch
 import qik.conf
 import qik.errors
+import qik.func as qik_func
 import qik.unset
 
 if TYPE_CHECKING:
@@ -135,12 +135,12 @@ class QikCtx(msgspec.Struct, forbid_unknown_fields=True, rename="kebab", dict=Tr
     cache_status: qik.conf.CacheStatus | None = None
     cache_types: list[str] = []
 
-    @functools.cached_property
+    @qik_func.cached_property
     def arch(self) -> qik.arch.ArchType:
         return qik.arch.get()
 
 
-@functools.cache
+@qik_func.cache
 def _var_struct(
     namespace: qik.conf.CtxNamespace, module_name: str | None = None
 ) -> type[msgspec.Struct]:
@@ -171,7 +171,7 @@ def module(
     return _module(namespace, name, profile=_PROFILE)
 
 
-@functools.cache
+@qik_func.cache
 def _module(
     namespace: qik.conf.CtxNamespace, name: str | None = None, /, profile: str = "default"
 ) -> QikCtx | msgspec.Struct:
@@ -266,12 +266,12 @@ class _ModuleCtx:
         self._namespace: qik.conf.CtxNamespace = namespace
         self._module_name = module_name
 
-    @functools.cached_property
+    @qik_func.cached_property
     def _prefix(self) -> str:
         mod_name = f".{self._module_name}" if self._module_name else ""
         return f"{self._namespace}{mod_name}"
 
-    @functools.cached_property
+    @qik_func.cached_property
     def _module_ctx(self) -> msgspec.Struct | QikCtx:
         return module(self._namespace, self._module_name)
 
@@ -314,19 +314,19 @@ class Ctx:
                 f'Ctx namespace "{name}" is invalid. Use project, qik, modules, or plugins.'
             ) from exc
 
-    @functools.cached_property
+    @qik_func.cached_property
     def project(self) -> _ModuleCtx:
         return _ModuleCtx("project", None)
 
-    @functools.cached_property
+    @qik_func.cached_property
     def qik(self) -> _ModuleCtx:
         return _ModuleCtx("qik", None)
 
-    @functools.cached_property
+    @qik_func.cached_property
     def modules(self) -> _ModulesCtx:
         return _ModulesCtx("modules")
 
-    @functools.cached_property
+    @qik_func.cached_property
     def plugins(self) -> _ModulesCtx:
         return _ModulesCtx("plugins")
 
