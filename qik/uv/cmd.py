@@ -35,6 +35,7 @@ def lock_cmd_factory(
         artifacts=[venv.lock],
         cache="repo",
         args={"venv": venv_name},
+        space=None,
     )
     return {runnable.name: runnable}
 
@@ -64,6 +65,7 @@ def install_cmd_factory(
             qik.dep.Glob(venv.lock),
         ],
         artifacts=[],
+        cache="local",
         args={"venv": venv_name},
         space=None,
     )
