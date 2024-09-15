@@ -3,7 +3,7 @@ deps = ["python_version"]
 vars = ["aws_access_key_id", "aws_secret_access_key", {name = "aws_endpoint_url", required = false}]
 
 [spaces.default]
-venv = { type = "active", reqs = "requirements.in" }
+venv = { type = "uv", reqs = "requirements.in" }
 modules = ["a", {name = "b_module", path = "b"}]
 
 [spaces.nested]
