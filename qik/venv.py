@@ -11,6 +11,7 @@ import qik.cmd
 import qik.conf
 import qik.dep
 import qik.errors
+import qik.hash
 import qik.uv.cmd
 
 
@@ -49,6 +50,11 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
     @functools.cached_property
     def glob_deps(self) -> set[str]:
         return {self.lock} if self.lock else set()
+
+    @functools.cached_property
+    def const_deps(self) -> set[str]:
+        """Return the serialized venv as a constant dep."""
+        return {msgspec.json.encode(self).decode()}
 
 
 class Active(Venv, frozen=True, dict=True):

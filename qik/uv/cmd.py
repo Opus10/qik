@@ -53,11 +53,12 @@ def install_cmd_factory(
         raise qik.errors.ArgNotSupplied('"venv" arg is required for qik.uv.install command.')
 
     venv = cast(qik.venv.UV, qik.space.load(venv_name).venv)
+    venv_python = f"--python '{venv.conf.python}'" if venv.conf.python else ""
     cmd_name = install_cmd_name()
     runnable = qik.runnable.Runnable(
         name=f"{cmd_name}?venv={venv_name}",
         cmd=cmd_name,
-        val=f"uv venv {venv.rel_dir} && uv pip sync {venv.rel_lock} --python {venv.rel_dir}/bin/python",
+        val=f"uv venv {venv.rel_dir} {venv_python} && uv pip sync {venv.rel_lock} --python {venv.rel_dir}/bin/python",
         deps=[
             qik.dep.Cmd(lock_cmd_name(), args={"venv": venv_name}),
             qik.dep.Glob(venv.lock),

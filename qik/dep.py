@@ -191,12 +191,12 @@ class Pydist(BaseDep, frozen=True):
     def since(self) -> list[str]:
         # TODO: Use the correct space
         venv = qik.space.load().venv
-        if not venv.lock_file:
+        if not venv.lock:
             raise qik.errors.LockFileNotFound(
                 "Must configure venv lock file (space.default.venv.lock) when using --since on pydists."
             )
 
-        return [venv.lock_file]
+        return [venv.lock]
 
 
 class Const(BaseDep, frozen=True):
@@ -302,7 +302,7 @@ class Collection:
 
     @functools.cached_property
     def consts(self) -> set[str]:
-        return {dep.val for dep in self._deps if isinstance(dep, Const)}
+        return {dep.val for dep in self._deps if isinstance(dep, Const)} | self.venv.const_deps
 
     @functools.cached_property
     def watch(self) -> set[str]:

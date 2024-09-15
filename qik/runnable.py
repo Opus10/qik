@@ -60,7 +60,7 @@ def _make_runnable(
         artifacts=[qik.ctx.format(artifact) for artifact in conf.artifacts],
         cache=qik.ctx.format(conf.cache),
         cache_when=qik.ctx.format(conf.cache_when),
-        space="default",
+        space=conf.space,
     )
 
 

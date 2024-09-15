@@ -82,6 +82,7 @@ class Cmd(Base, frozen=True):
     cache_when: CacheWhen | qik.unset.UnsetType = qik.unset.UNSET
     factory: str = ""
     hidden: bool = False
+    space: str = "default"
 
 
 class Var(Base, frozen=True):
