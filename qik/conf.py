@@ -82,7 +82,7 @@ class Cmd(Base, frozen=True):
     cache_when: CacheWhen | qik.unset.UnsetType = qik.unset.UNSET
     factory: str = ""
     hidden: bool = False
-    space: str = "default"
+    space: str | qik.unset.UnsetType = qik.unset.UNSET
 
 
 class Var(Base, frozen=True):
@@ -201,6 +201,18 @@ class Space(Base, frozen=True):
     fence: list[str] = []
     venv: str | ActiveVenv | UVVenv | None = None
 
+    @functools.cached_property
+    def modules_by_name(self) -> dict[str, ModuleLocator]:
+        module_locators = (
+            ModuleLocator(name=m.replace("/", "."), path=m) if isinstance(m, str) else m
+            for m in self.modules
+        )
+        return {m.name: m for m in module_locators}
+
+    @functools.cached_property
+    def modules_by_path(self) -> dict[str, ModuleLocator]:
+        return {m.path: m for m in self.modules_by_name.values()}
+
 
 class Project(ModuleOrPlugin, frozen=True):
     plugins: list[str | PluginLocator] = []
@@ -215,12 +227,11 @@ class Project(ModuleOrPlugin, frozen=True):
 
     @functools.cached_property
     def modules_by_name(self) -> dict[str, ModuleLocator]:
-        module_locators = (
-            ModuleLocator(name=m.replace("/", "."), path=m) if isinstance(m, str) else m
-            for s in self.spaces.values()
-            for m in s.modules
-        )
-        return {m.name: m for m in module_locators}
+        return {
+            name: locator
+            for space in self.spaces.values()
+            for name, locator in space.modules_by_name.items()
+        }
 
     @functools.cached_property
     def modules_by_path(self) -> dict[str, ModuleLocator]:

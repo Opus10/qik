@@ -46,6 +46,7 @@ def _make_runnable(
     *,
     cmd: str,
     conf: qik.conf.Cmd,
+    space: str | None,
     module: qik.conf.ModuleLocator | None = None,
 ) -> Runnable:
     return Runnable(
@@ -60,7 +61,7 @@ def _make_runnable(
         artifacts=[qik.ctx.format(artifact) for artifact in conf.artifacts],
         cache=qik.ctx.format(conf.cache),
         cache_when=qik.ctx.format(conf.cache_when),
-        space=conf.space,
+        space=space,
     )
 
 
@@ -71,12 +72,20 @@ def factory(cmd: str, conf: qik.conf.Cmd, **args: str) -> dict[str, Runnable]:
     yet support args. Only custom runnables do.
     """
     if "{module" in conf.exec:
+        proj = qik.conf.project()
+        if qik.unset.is_not_unset(conf.space):
+            spaces = {conf.space: qik.space.load(conf.space).conf}
+        else:
+            spaces = proj.spaces
+
         runnables = (
-            _make_runnable(cmd=cmd, conf=conf, module=module)
-            for module in qik.conf.project().modules_by_name.values()
+            _make_runnable(cmd=cmd, conf=conf, module=module, space=space)
+            for space, space_conf in spaces.items()
+            for module in space_conf.modules_by_name.values()
         )
     else:
-        runnables = [_make_runnable(cmd=cmd, conf=conf)]
+        space = conf.space if qik.unset.is_not_unset(conf.space) else "default"
+        runnables = [_make_runnable(cmd=cmd, conf=conf, space=space)]
 
     return {runnable.name: runnable for runnable in runnables}
 
