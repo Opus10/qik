@@ -37,12 +37,10 @@ if TYPE_CHECKING:
 class DepsCollection:
     """A filterable and hashable collection of dependencies for a runnable."""
 
-    def __init__(
-        self,
-        *deps: str | pathlib.Path | qik.dep.BaseDep,
-        runnable: Runnable
-    ):
-        self._deps = [dep if isinstance(dep, qik.dep.BaseDep) else qik.dep.Glob(str(dep)) for dep in deps]
+    def __init__(self, *deps: str | pathlib.Path | qik.dep.BaseDep, runnable: Runnable):
+        self._deps = [
+            dep if isinstance(dep, qik.dep.BaseDep) else qik.dep.Glob(str(dep)) for dep in deps
+        ]
         self.module = runnable.module
         self.venv = runnable.venv
 
@@ -60,7 +58,9 @@ class DepsCollection:
 
     @qik.func.cached_property
     def consts(self) -> set[str]:
-        return {dep.val for dep in self._deps if isinstance(dep, qik.dep.Const)} | self.venv.const_deps
+        return {
+            dep.val for dep in self._deps if isinstance(dep, qik.dep.Const)
+        } | self.venv.const_deps
 
     @qik.func.cached_property
     def watch(self) -> set[str]:
@@ -290,7 +290,9 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
 
         qik.file.write(
             path,
-            msgspec.json.encode(qik.dep.Serialized(globs=globs or [], pydists=pydists or [], hash=hash_val)),
+            msgspec.json.encode(
+                qik.dep.Serialized(globs=globs or [], pydists=pydists or [], hash=hash_val)
+            ),
         )
 
     def _uncached_exec(self, logger: qik.logger.Logger) -> Result:

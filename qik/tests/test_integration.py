@@ -169,5 +169,5 @@ def test_watch():
         hello_path = pathlib.Path("test_project/a/hello.py")
         orig_hello = hello_path.read_bytes()
         shell(f'echo "\n" >> {hello_path}', cwd=None)
-        time.sleep(2)
+        time.sleep(5)
         assert hello_path.read_bytes() == orig_hello

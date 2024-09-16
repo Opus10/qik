@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import Iterator
 
 import collections
 import functools
@@ -10,6 +9,7 @@ import pathlib
 import re
 import sysconfig
 import threading
+from typing import Iterator
 
 import msgspec
 
@@ -47,7 +47,7 @@ def _always_iterable(obj, base_type=(str, bytes)):
 
 
 def _top_level_declared(dist):
-    return (dist.read_text('top_level.txt') or '').split()
+    return (dist.read_text("top_level.txt") or "").split()
 
 
 def _top_level_inferred(dist):
@@ -58,14 +58,14 @@ def _top_level_inferred(dist):
 
     @_pass_none
     def importable_name(name):
-        return '.' not in name
+        return "." not in name
 
     return filter(importable_name, opt_names)
 
 
 @qik.func.cache
 def _normalize_pydist_name(name: str) -> str:
-    return re.sub(r"[-_.]+", "-", name).lower().replace('-', '_')
+    return re.sub(r"[-_.]+", "-", name).lower().replace("-", "_")
 
 
 @qik.func.cache
@@ -105,7 +105,9 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
             try:
                 return _pydist_version_overrides()[_normalize_pydist_name(name)]
             except KeyError as exc:
-                raise qik.errors.DistributionNotFound(f'Distribution "{name}" not found in {self.alias}.') from exc
+                raise qik.errors.DistributionNotFound(
+                    f'Distribution "{name}" not found in {self.alias}.'
+                ) from exc
 
     def packages_distributions(self) -> dict[str, list[str]]:
         """Obtain a mapping of modules to their associated python distributions.
@@ -117,15 +119,24 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
         with self.__dict__["_packages_distributions_lock"]:
             if self.__dict__["_packages_distributions"][0] != venv_hash:
                 pygraph_conf = qik.conf.project().pygraph
-                cache_path = qik.conf.priv_work_dir() / "venv" / ".packages_distributions" / f"{self.name}.json"
+                cache_path = (
+                    qik.conf.priv_work_dir()
+                    / "venv"
+                    / ".packages_distributions"
+                    / f"{self.name}.json"
+                )
                 overrides = (
                     {}
                     if not pygraph_conf.ignore_missing_module_pydists
                     else collections.defaultdict(lambda: [""])
                 )
-                overrides |= {module: [dist] for module, dist in pygraph_conf.module_pydists.items()}
+                overrides |= {
+                    module: [dist] for module, dist in pygraph_conf.module_pydists.items()
+                }
                 try:
-                    cached_val = msgspec.json.decode(cache_path.read_bytes(), type=PackagesDistributions)
+                    cached_val = msgspec.json.decode(
+                        cache_path.read_bytes(), type=PackagesDistributions
+                    )
                     if cached_val.venv_hash == venv_hash:
                         return overrides | cached_val.packages_distributions
                 except FileNotFoundError:
@@ -134,7 +145,7 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
                 pkg_to_dist = collections.defaultdict(list)
                 for dist in self.distributions():
                     for pkg in _top_level_declared(dist) or _top_level_inferred(dist):
-                        pkg_to_dist[pkg].append(dist.metadata['Name'])
+                        pkg_to_dist[pkg].append(dist.metadata["Name"])
 
                 cached_val = PackagesDistributions(
                     venv_hash=venv_hash,
@@ -142,7 +153,10 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
                 )
                 qik.file.write(cache_path, msgspec.json.encode(cached_val))
 
-                self.__dict__["_packages_distributions"] = (venv_hash, overrides | cached_val.packages_distributions)
+                self.__dict__["_packages_distributions"] = (
+                    venv_hash,
+                    overrides | cached_val.packages_distributions,
+                )
 
             return self.__dict__["_packages_distributions"][1]
 
@@ -157,7 +171,7 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
     @property
     def dir(self) -> pathlib.Path:
         raise NotImplementedError
-    
+
     @property
     def site_packages_dir(self) -> pathlib.Path:
         raise NotImplementedError
@@ -189,7 +203,7 @@ class Active(Venv, frozen=True, dict=True):
 
     @property
     def alias(self) -> str:
-        return f'active virtual environment'
+        return "active virtual environment"
 
     @property
     def dir(self) -> pathlib.Path:
@@ -256,7 +270,7 @@ class UV(Venv, frozen=True, dict=True):
                 uv_cmd.install_cmd_name(), venv=self.name
             ).runnables.values()
         }
-    
+
 
 _ACTIVE: Active = Active(name=".active", conf=qik.conf.ActiveVenv())
 

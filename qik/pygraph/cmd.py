@@ -1,11 +1,6 @@
 from __future__ import annotations
 
-import collections
-import importlib.metadata
-import os
 import pathlib
-import sysconfig
-import threading
 from typing import TYPE_CHECKING, Iterator
 
 import msgspec
@@ -118,7 +113,9 @@ def lock_cmd_factory(
     pyimport = args.get("pyimport")
     space = args.get("space")
     if not pyimport or not space:
-        raise qik.errors.ArgNotSupplied('"pyimport" and "space" args are required for qik.pygraph.lock command.')
+        raise qik.errors.ArgNotSupplied(
+            '"pyimport" and "space" args are required for qik.pygraph.lock command.'
+        )
 
     cmd_name = lock_cmd_name()
     artifact = str(lock_path(pyimport))

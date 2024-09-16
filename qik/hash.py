@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import collections
-import importlib.metadata
 import subprocess
 from typing import TYPE_CHECKING
 
