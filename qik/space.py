@@ -14,6 +14,8 @@ class Space(msgspec.Struct, frozen=True, dict=True):
     def venv(self) -> qik.venv.Venv:
         if isinstance(self.conf.venv, str):
             return load(self.conf.venv).venv
+        elif self.conf.venv is None:
+            return qik.venv.active()
         else:
             return qik.venv.factory(self.name, conf=self.conf.venv)
 

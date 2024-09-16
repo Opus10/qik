@@ -176,9 +176,9 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
     def site_packages_dir(self) -> pathlib.Path:
         raise NotImplementedError
 
-    @property
-    def lock(self) -> str | None:
-        return self.conf.lock
+    @qik.func.cached_property
+    def lock(self) -> list[str]:
+        return self.conf.lock if isinstance(self.conf.lock, list) else [self.conf.lock]
 
     @qik.func.cached_property
     def runnable_deps(self) -> dict[str, qik.dep.Runnable]:
@@ -186,12 +186,33 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
 
     @qik.func.cached_property
     def glob_deps(self) -> set[str]:
-        return {self.lock} if self.lock else set()
+        if isinstance(self.lock, list):
+            return set(self.lock)
+        elif isinstance(self.lock, str):
+            return {self.lock}
+        else:
+            return set()
 
     @qik.func.cached_property
     def const_deps(self) -> set[str]:
         """Return the serialized venv as a constant dep."""
         return {msgspec.json.encode(self).decode()}
+
+    @property
+    def since_deps(self) -> set[str]:
+        if not self.lock:
+            raise qik.errors.LockFileNotFound(f"No lock configured for {self.alias}.")
+
+        return set(self.lock)
+
+
+class ActiveConf(qik.conf.Venv, frozen=True):
+    reqs: str | list[str] = []
+
+    @property
+    def lock(self) -> str | list[str]:  # type: ignore
+        lock = qik.conf.project().active_venv_lock
+        return lock if isinstance(lock, list) else [lock]
 
 
 class Active(Venv, frozen=True, dict=True):
@@ -199,7 +220,7 @@ class Active(Venv, frozen=True, dict=True):
     The active virtual environment.
     """
 
-    conf: qik.conf.ActiveVenv
+    conf: ActiveConf
 
     @property
     def alias(self) -> str:
@@ -237,9 +258,15 @@ class UV(Venv, frozen=True, dict=True):
             / f"requirements-{self.name}-lock.txt"
         )
 
-    @property
-    def lock(self) -> str:
-        return super().lock or self.default_lock
+    @qik.func.cached_property
+    def lock(self) -> list[str]:
+        super_lock = super().lock
+        if len(super_lock) > 1:
+            raise qik.errors.UVMultipleLocks(
+                f"Cannot have more than one lock file for {self.alias}."
+            )
+
+        return [self.default_lock] if not super_lock else super_lock
 
     @qik.func.cached_property
     def environ(self) -> dict[str, str]:  # type: ignore
@@ -272,13 +299,16 @@ class UV(Venv, frozen=True, dict=True):
         }
 
 
-_ACTIVE: Active = Active(name=".active", conf=qik.conf.ActiveVenv())
+_ACTIVE: Active = Active(name=".active", conf=ActiveConf())
 
 
-def factory(name: str = "default", *, conf: qik.conf.Venv | None = None) -> Venv:
-    if conf is None or isinstance(conf, qik.conf.ActiveVenv):
-        return _ACTIVE
-    elif isinstance(conf, qik.conf.UVVenv):
+def active() -> Active:
+    """Return the active venv."""
+    return _ACTIVE
+
+
+def factory(name: str, *, conf: qik.conf.Venv) -> Venv:
+    if isinstance(conf, qik.conf.UVVenv):
         return UV(name=name, conf=conf)
     else:
-        raise qik.errors.VenvNotFound(f'Venv named "{name}" not configured in qik.venvs.')
+        raise AssertionError(f'Unexpected venv conf type "{conf.__class__}".')

@@ -41,6 +41,7 @@ class DepsCollection:
         self._deps = [
             dep if isinstance(dep, qik.dep.BaseDep) else qik.dep.Glob(str(dep)) for dep in deps
         ]
+        self.runnable = runnable
         self.module = runnable.module
         self.venv = runnable.venv
 
@@ -68,7 +69,8 @@ class DepsCollection:
 
     @qik.func.cached_property
     def since(self) -> set[str]:
-        return {glob for dep in self._deps for glob in dep.since}
+        venv_since = self.venv.since_deps if self.runnable.space else set()
+        return {glob for dep in self._deps for glob in dep.since} | venv_since
 
     @property
     def vals(self) -> set[str]:
@@ -215,7 +217,7 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
 
     @qik.func.cached_property
     def venv(self) -> qik.venv.Venv:
-        return qik.space.load(self.space).venv if self.space else qik.venv.factory()
+        return qik.space.load(self.space).venv if self.space else qik.venv.active()
 
     def filter_regex(self, strategy: FilterStrategy) -> re.Pattern | None:
         """Generate the regex used for file-based filtering.

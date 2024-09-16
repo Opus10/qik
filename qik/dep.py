@@ -185,18 +185,6 @@ class Pydist(BaseDep, frozen=True):
     def pydists(self) -> list[str]:
         return [self.val]
 
-    @qik.func.cached_property
-    def since(self) -> list[str]:
-        # TODO: Use the correct space
-        # venv = qik.space.load().venv
-        # if not venv.lock:
-        #     raise qik.errors.LockFileNotFound(
-        #         "Must configure venv lock file (space.default.venv.lock) when using --since on pydists."
-        #     )
-
-        # return [venv.lock]
-        return []
-
 
 class Const(BaseDep, frozen=True):
     """A constant value."""

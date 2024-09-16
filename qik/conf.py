@@ -161,16 +161,11 @@ class PluginLocator(BaseLocator, frozen=True):
 
 
 class Venv(Base, frozen=True, tag_field="type"):
-    reqs: str | list[str] = []
-    lock: str | None = None
-
-
-class ActiveVenv(Venv, frozen=True, tag="active"):
-    pass
+    reqs: str | list[str]
+    lock: str | list[str] = []
 
 
 class UVVenv(Venv, frozen=True, tag="uv"):
-    reqs: str | list[str]  # type: ignore
     python: str | None = None
 
 
@@ -199,7 +194,7 @@ class Space(Base, frozen=True):
     root: str | None = None
     modules: list[str | ModuleLocator] = []
     fence: list[str] = []
-    venv: str | ActiveVenv | UVVenv | None = None
+    venv: str | UVVenv | None = None
 
     @qik.func.cached_property
     def modules_by_name(self) -> dict[str, ModuleLocator]:
@@ -218,12 +213,13 @@ class Project(ModuleOrPlugin, frozen=True):
     plugins: list[str | PluginLocator] = []
     deps: list[DepType] = []
     ctx: dict[str, dict[CtxNamespace, dict[str, Any]]] = {}
-    venvs: dict[str, ActiveVenv | UVVenv] = {}
+    venvs: dict[str, UVVenv] = {}
     caches: dict[str, S3Cache] = {}
     spaces: dict[str, Space] = {}
     pygraph: Pygraph = msgspec.field(default_factory=Pygraph)
     pydist_versions: dict[str, str] = {}
     ignore_missing_pydists: bool = False
+    active_venv_lock: str | list[str] = []
 
     @qik.func.cached_property
     def modules_by_name(self) -> dict[str, ModuleLocator]:
