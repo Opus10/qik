@@ -94,7 +94,9 @@ class BaseDep(msgspec.Struct, frozen=True, tag=True, dict=True):
 
 
 def factory(
-    conf: qik.conf.BaseDep | str | pathlib.Path, module: qik.conf.ModuleLocator | None = None
+    conf: qik.conf.BaseDep | str | pathlib.Path,
+    module: qik.conf.ModuleLocator | None = None,
+    space: str | None = None,
 ) -> BaseDep:
     """A factory for creating dependencies from a configuration."""
 
@@ -111,7 +113,7 @@ def factory(
         case qik.conf.ValDep():
             return Val(_fmt(conf.key), file=_fmt(conf.file))
         case qik.conf.PygraphDep():
-            return Pygraph(_fmt(conf.pyimport))
+            return Pygraph(_fmt(conf.pyimport), space=space)
         case qik.conf.CmdDep():
             return Cmd(_fmt(conf.name), strict=conf.strict, isolated=conf.isolated)
         case qik.conf.ConstDep():
@@ -148,12 +150,12 @@ class Val(BaseDep, frozen=True):
 class BaseCmd(BaseDep, frozen=True):
     strict: bool = False
     isolated: bool | qik.unset.UnsetType = qik.unset.UNSET
-    args: dict[str, str] = {}
+    args: dict[str, str | None] = {}
 
     def get_cmd_name(self) -> str:
         raise NotImplementedError
 
-    def get_cmd_args(self) -> dict[str, str]:
+    def get_cmd_args(self) -> dict[str, str | None]:
         return self.args
 
     @qik.func.cached_property
@@ -198,12 +200,13 @@ class Pygraph(BaseCmd, frozen=True):
     """A python module and its associated imports."""
 
     strict: ClassVar[bool] = True  # type: ignore
+    space: str | None = None
 
     def get_cmd_name(self) -> str:
         return pygraph_cmd.lock_cmd_name()
 
-    def get_cmd_args(self) -> dict[str, str]:
-        return {"pyimport": self.val, "space": "default"}
+    def get_cmd_args(self) -> dict[str, str | None]:
+        return {"pyimport": self.val, "space": self.space}
 
     @property
     def globs(self) -> list[str]:  # type: ignore

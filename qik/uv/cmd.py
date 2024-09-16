@@ -21,20 +21,20 @@ def lock_cmd_name() -> str:
 def lock_cmd_factory(
     cmd: str, conf: qik.conf.Cmd, **args: str
 ) -> dict[str, qik.runnable.Runnable]:
-    venv_name = args.get("venv")
-    if not venv_name:
-        raise qik.errors.ArgNotSupplied('"venv" arg is required for qik.uv.lock command.')
+    space = args.get("space")
+    if not space:
+        raise qik.errors.ArgNotSupplied('"space" arg is required for qik.uv.lock command.')
 
-    venv = cast(qik.venv.UV, qik.space.load(venv_name).venv)
+    venv = cast(qik.venv.UV, qik.space.load(space).venv)
     cmd_name = lock_cmd_name()
     runnable = qik.runnable.Runnable(
-        name=f"{cmd_name}?venv={venv_name}",
+        name=f"{cmd_name}?space={space}",
         cmd=cmd_name,
         val=f"mkdir -p {pathlib.Path(venv.lock[0]).parent} && uv pip compile --universal {' '.join(venv.reqs)} -o {venv.lock[0]}",
         deps=[*(qik.dep.Glob(req) for req in venv.reqs), *qik.dep.project_deps()],
         artifacts=venv.lock,
         cache="repo",
-        args={"venv": venv_name},
+        args={"space": space},
         space=None,
     )
     return {runnable.name: runnable}
@@ -49,25 +49,25 @@ def install_cmd_name() -> str:
 def install_cmd_factory(
     cmd: str, conf: qik.conf.Cmd, **args: str
 ) -> dict[str, qik.runnable.Runnable]:
-    venv_name = args.get("venv")
-    if not venv_name:
-        raise qik.errors.ArgNotSupplied('"venv" arg is required for qik.uv.install command.')
+    space = args.get("space")
+    if not space:
+        raise qik.errors.ArgNotSupplied('"space" arg is required for qik.uv.install command.')
 
-    venv = cast(qik.venv.UV, qik.space.load(venv_name).venv)
+    venv = cast(qik.venv.UV, qik.space.load(space).venv)
     venv_python = f"--python '{venv.conf.python}'" if venv.conf.python else ""
     cmd_name = install_cmd_name()
     runnable = qik.runnable.Runnable(
-        name=f"{cmd_name}?venv={venv_name}",
+        name=f"{cmd_name}?space={space}",
         cmd=cmd_name,
         val=f"uv venv {venv.dir} {venv_python} && uv pip sync {venv.lock[0]} --python {venv.dir}/bin/python",
         deps=[
-            qik.dep.Cmd(lock_cmd_name(), args={"venv": venv_name}, strict=True),
+            qik.dep.Cmd(lock_cmd_name(), args={"space": space}, strict=True),
             qik.dep.Glob(venv.lock[0]),
             *qik.dep.project_deps(),
         ],
         artifacts=[],
         cache="local",
-        args={"venv": venv_name},
+        args={"space": space},
         space=None,
     )
     return {runnable.name: runnable}

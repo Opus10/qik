@@ -137,7 +137,7 @@ def _make_runnable(
         cmd=cmd,
         val=qik.ctx.format(conf.exec, module=module),
         deps=[
-            *(qik.dep.factory(dep, module=module) for dep in conf.deps),
+            *(qik.dep.factory(dep, module=module, space=space) for dep in conf.deps),
             *qik.dep.project_deps(),
         ],
         module=module.name if module else None,

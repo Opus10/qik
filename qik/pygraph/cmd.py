@@ -110,18 +110,21 @@ def build_cmd_factory(
 def lock_cmd_factory(
     cmd: str, conf: qik.conf.Cmd, **args: str
 ) -> dict[str, qik.runnable.Runnable]:
-    pyimport = args.get("pyimport")
-    space = args.get("space")
-    if not pyimport or not space:
+    if "pyimport" not in args or "space" not in args:
         raise qik.errors.ArgNotSupplied(
             '"pyimport" and "space" args are required for qik.pygraph.lock command.'
         )
 
+    pyimport = args["pyimport"]
+    space = args["space"]
+    name = f"{lock_cmd_name()}?pyimport={pyimport}"
+    if space:
+        name += f"&space={space}"
+
     cmd_name = lock_cmd_name()
     artifact = str(lock_path(pyimport))
-
     runnable = qik.runnable.Runnable(
-        name=f"{cmd_name}?pyimport={pyimport}&space={space}",
+        name=name,
         cmd=cmd_name,
         val="qik.pygraph.cmd.lock_cmd",
         shell=False,

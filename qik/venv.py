@@ -203,7 +203,7 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
         if not self.lock:
             raise qik.errors.LockFileNotFound(f"No lock configured for {self.alias}.")
 
-        return set(self.lock)
+        return set().union(self.reqs, self.lock)
 
 
 class ActiveConf(qik.conf.Venv, frozen=True):
@@ -294,7 +294,7 @@ class UV(Venv, frozen=True, dict=True):
         return {
             runnable.name: qik.dep.Runnable(name=runnable.name, obj=runnable, strict=True)
             for runnable in qik.cmd.load(
-                uv_cmd.install_cmd_name(), venv=self.name
+                uv_cmd.install_cmd_name(), space=self.name
             ).runnables.values()
         }
 

@@ -4,7 +4,11 @@ vars = ["aws_access_key_id", "aws_secret_access_key", {name = "aws_endpoint_url"
 
 [spaces.default]
 venv = { type = "uv", reqs = "requirements.in" }
-modules = ["a", {name = "b_module", path = "b"}, "nest/c"]
+modules = ["a", {name = "b_module", path = "b"}]
+
+[spaces.other]
+venv = { type = "uv", reqs = "req2.in" }
+modules = ["nest/c"]
 
 [caches.remote]
 type = "s3"
@@ -23,6 +27,7 @@ exec = 'exit 1'
 [commands.pghistory_version]
 exec = "pip freeze | grep django-pgtrigger && python --version"
 cache = "local"
+space = "other"
 
 [commands.dep_fail]
 exec = 'echo "hi"; exit 1'
@@ -44,6 +49,7 @@ cache = "repo"
 exec = "ruff check b"
 deps = [{type = "pygraph", pyimport = "b"}, {type = "pygraph", pyimport = "nest.c"}]
 cache = "repo"
+space = "other"
 
 [commands.modular_format]
 exec = "ruff format {module.dir}"

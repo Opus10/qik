@@ -6,8 +6,6 @@
 #
 asgiref==3.8.1
     # via django
-beautifulsoup4==4.12.3
-    # via -r requirements.in
 build==1.2.2
     # via
     #   pip-tools
@@ -105,8 +103,6 @@ requests-toolbelt==1.0.0
     # via poetry
 shellingham==1.5.4
     # via poetry
-soupsieve==2.6
-    # via beautifulsoup4
 sqlparse==0.5.1
     # via django
 tomlkit==0.13.2
