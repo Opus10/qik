@@ -112,7 +112,7 @@ def _make_watchdog_handler(*, runner: Runner) -> QikEventHandlerProtocol:  # pra
                 except ValueError:
                     if self.active_venv:
                         try:
-                            path = str(src_path.relative_to(self.active_venv.dir))
+                            path = str(src_path.relative_to(self.active_venv.site_packages_dir))
                             if (pydist := _parse_pydist(path)) and event.event_type == "created":
                                 self.changes.add(qik.dep.Pydist(pydist))
                         except ValueError:  # Not part of the venv
@@ -141,7 +141,7 @@ def start(runner: Runner):  # pragma: no cover
     handler = _make_watchdog_handler(runner=runner)
     observer.schedule(handler, ".", recursive=True)
     if handler.active_venv:
-        observer.schedule(handler, str(handler.active_venv.dir), recursive=True)
+        observer.schedule(handler, str(handler.active_venv.site_packages_dir), recursive=True)
 
     observer.start()
     try:

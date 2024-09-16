@@ -14,20 +14,101 @@ import qik.conf
 import qik.ctx
 import qik.dep
 import qik.errors
+import qik.file
 import qik.func
 import qik.hash
 import qik.shell
 import qik.space
 import qik.unset
+import qik.venv
 
 if TYPE_CHECKING:
     Direction: TypeAlias = Literal["up", "down"]
     Edges: TypeAlias = dict[str, set[str]]
     FilterStrategy: TypeAlias = Literal["since", "watch"]
 
+    import pathlib
+
     import qik.cache
     import qik.logger
     import qik.venv
+
+
+class DepsCollection:
+    """A filterable and hashable collection of dependencies for a runnable."""
+
+    def __init__(
+        self,
+        *deps: str | pathlib.Path | qik.dep.BaseDep,
+        runnable: Runnable
+    ):
+        self._deps = [dep if isinstance(dep, qik.dep.BaseDep) else qik.dep.Glob(str(dep)) for dep in deps]
+        self.module = runnable.module
+        self.venv = runnable.venv
+
+    @property
+    def globs(self) -> set[str]:
+        return (
+            {glob for dep in self._deps for glob in dep.globs}
+            | {
+                artifact
+                for runnable in self.runnables.values()
+                for artifact in runnable.obj.artifacts
+            }
+            | self.venv.glob_deps
+        )
+
+    @qik.func.cached_property
+    def consts(self) -> set[str]:
+        return {dep.val for dep in self._deps if isinstance(dep, qik.dep.Const)} | self.venv.const_deps
+
+    @qik.func.cached_property
+    def watch(self) -> set[str]:
+        return {glob for dep in self._deps for glob in dep.watch}
+
+    @qik.func.cached_property
+    def since(self) -> set[str]:
+        return {glob for dep in self._deps for glob in dep.since}
+
+    @property
+    def vals(self) -> set[str]:
+        return {val for dep in self._deps for val in dep.vals}
+
+    @property
+    def pydists(self) -> set[str]:
+        return {pydist for dep in self._deps for pydist in dep.pydists}
+
+    @property
+    def runnables(self) -> dict[str, qik.dep.Runnable]:
+        return {
+            runnable.name: runnable
+            for dep in self._deps
+            for runnable in dep.runnables
+            if not self.module or not runnable.obj.module or self.module == runnable.obj.module
+        } | self.venv.runnable_deps
+
+    @qik.func.cached_property
+    def consts_hash(self) -> str:
+        """Hash all consts."""
+        return qik.hash.strs(*self.consts)
+
+    def hash_vals(self) -> str:
+        """Hash file values."""
+        return qik.hash.strs(*self.vals)
+
+    def hash_pydists(self) -> str:
+        """Hash python distributions."""
+        return qik.hash.pydists(*self.pydists, venv=self.venv)
+
+    def hash_globs(self) -> str:
+        """Hash glob pattern."""
+        return qik.hash.globs(*self.globs)
+
+    def hash(self) -> str:
+        """The full hash."""
+        return qik.hash.strs(
+            self.consts_hash, self.hash_vals(), self.hash_globs(), self.hash_pydists()
+        )
 
 
 def _get_exec_env() -> dict[str, str]:
@@ -129,12 +210,12 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
         return re.sub(r"[^a-zA-Z0-9]", "__", self.name)
 
     @qik.func.cached_property
-    def deps_collection(self) -> qik.dep.Collection:
-        return qik.dep.Collection(*self.deps, module=self.module, space=self.space)
+    def deps_collection(self) -> DepsCollection:
+        return DepsCollection(*self.deps, runnable=self)
 
     @qik.func.cached_property
-    def venv(self) -> qik.venv.Venv | None:
-        return qik.space.load(self.space).venv if self.space else None
+    def venv(self) -> qik.venv.Venv:
+        return qik.space.load(self.space).venv if self.space else qik.venv.factory()
 
     def filter_regex(self, strategy: FilterStrategy) -> re.Pattern | None:
         """Generate the regex used for file-based filtering.
@@ -189,6 +270,28 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
     def cache_result(self, result: Result) -> None:
         if self.should_cache(result.code):
             self.get_cache_backend().set(self, result)
+
+    def store_deps(
+        self,
+        path: pathlib.Path,
+        *,
+        globs: list[str] | None = None,
+        pydists: list[str] | None = None,
+        hash: bool = True,
+    ) -> None:
+        """Store serialized dependencies for a runnable."""
+        if hash:
+            hash_val = DepsCollection(
+                *[*(globs or []), *[qik.dep.Pydist(val=pydist) for pydist in pydists or []]],
+                runnable=self,
+            ).hash()
+        else:
+            hash_val = None
+
+        qik.file.write(
+            path,
+            msgspec.json.encode(qik.dep.Serialized(globs=globs or [], pydists=pydists or [], hash=hash_val)),
+        )
 
     def _uncached_exec(self, logger: qik.logger.Logger) -> Result:
         """Run a command without wrapped caching."""

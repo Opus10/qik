@@ -60,50 +60,6 @@ def build_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
     return 0, ""
 
 
-class PackagesDistributions(msgspec.Struct):
-    venv_hash: str
-    packages_distributions: dict[str, list[str]]
-
-
-@qik.func.lru_cache(maxsize=1)
-def _packages_distributions(venv_hash: str) -> dict[str, list[str]]:
-    pygraph_conf = qik.conf.project().pygraph
-    cache_path = qik.conf.priv_work_dir() / "pygraph" / "packages_distributions.json"
-    overrides = (
-        {}
-        if not pygraph_conf.ignore_missing_module_pydists
-        else collections.defaultdict(lambda: [""])
-    )
-    overrides |= {module: [dist] for module, dist in pygraph_conf.module_pydists.items()}
-    try:
-        cached_val = msgspec.json.decode(cache_path.read_bytes(), type=PackagesDistributions)
-        if cached_val.venv_hash == venv_hash:
-            return overrides | cached_val.packages_distributions
-    except FileNotFoundError:
-        pass
-
-    cached_val = PackagesDistributions(
-        venv_hash=venv_hash,
-        packages_distributions=importlib.metadata.packages_distributions(),  # type: ignore
-    )
-    qik.file.write(cache_path, msgspec.json.encode(cached_val))
-
-    return overrides | cached_val.packages_distributions
-
-
-_PACKAGES_DISTRIBUTIONS_LOCK = threading.Lock()
-
-
-def packages_distributions() -> dict[str, list[str]]:
-    """Obtain a mapping of modules to their associated python distributions.
-
-    This is an expensive command, so use an underlying cache when possible.
-    """
-    venv_hash = qik.hash.strs(*os.listdir(sysconfig.get_path("purelib")))
-    with _PACKAGES_DISTRIBUTIONS_LOCK:
-        return _packages_distributions(venv_hash)
-
-
 def lock_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
     pyimport = runnable.args.get("pyimport")
     if not pyimport:
@@ -113,7 +69,7 @@ def lock_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
     # TODO: Better error if the module doesn't exist
     upstream = graph.upstream_modules(pyimport, idx=False)
     root = graph.modules[graph.modules_idx[pyimport]]
-    distributions = packages_distributions()
+    distributions = runnable.venv.packages_distributions()
 
     def _gen_upstream_globs() -> Iterator[str]:
         for module in [root, *upstream]:
@@ -132,7 +88,7 @@ def lock_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
                         f'No distribution found for module "{module.imp}"'
                     ) from exc
 
-    qik.dep.store(
+    runnable.store_deps(
         lock_path(pyimport),
         globs=sorted(_gen_upstream_globs()),
         pydists=sorted(_gen_upstream_pydists()),
@@ -160,14 +116,15 @@ def lock_cmd_factory(
     cmd: str, conf: qik.conf.Cmd, **args: str
 ) -> dict[str, qik.runnable.Runnable]:
     pyimport = args.get("pyimport")
-    if not pyimport:
-        raise qik.errors.ArgNotSupplied('"pyimport" arg is required for qik.pygraph.lock command.')
+    space = args.get("space")
+    if not pyimport or not space:
+        raise qik.errors.ArgNotSupplied('"pyimport" and "space" args are required for qik.pygraph.lock command.')
 
     cmd_name = lock_cmd_name()
     artifact = str(lock_path(pyimport))
 
     runnable = qik.runnable.Runnable(
-        name=f"{cmd_name}?pyimport={pyimport}",
+        name=f"{cmd_name}?pyimport={pyimport}&space={space}",
         cmd=cmd_name,
         val="qik.pygraph.cmd.lock_cmd",
         shell=False,
@@ -179,6 +136,7 @@ def lock_cmd_factory(
         ],
         artifacts=[artifact],
         cache="repo",
+        space=space,
         args={"pyimport": pyimport},
     )
     return {runnable.name: runnable}

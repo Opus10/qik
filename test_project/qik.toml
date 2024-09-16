@@ -4,11 +4,7 @@ vars = ["aws_access_key_id", "aws_secret_access_key", {name = "aws_endpoint_url"
 
 [spaces.default]
 venv = { type = "uv", reqs = "requirements.in" }
-modules = ["a", {name = "b_module", path = "b"}]
-
-[spaces.nested]
-venv = { type = "uv", reqs = "req2.in", python = ">3.12" }
-modules = ["nest/c"]
+modules = ["a", {name = "b_module", path = "b"}, "nest/c"]
 
 [caches.remote]
 type = "s3"

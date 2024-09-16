@@ -16,6 +16,7 @@ import qik.shell
 
 if TYPE_CHECKING:
     import qik.dep as run_deps
+    import qik.venv
 
 
 def globs(*vals: run_deps.Glob | str) -> str:
@@ -65,27 +66,9 @@ def globs(*vals: run_deps.Glob | str) -> str:
     return xxhash.xxh128_hexdigest("".join(f"{name}{hash}" for name, hash in hashes.items()))
 
 
-@qik.func.cache
-def _pydist_version_overrides() -> dict[str, str]:
-    project_conf = qik.conf.project()
-    base = collections.defaultdict(str) if project_conf.ignore_missing_pydists else {}
-    return base | project_conf.pydist_versions
-
-
-@qik.func.per_run_cache
-def _pydist_version(pydist: str) -> str:
-    try:
-        return importlib.metadata.version(pydist)
-    except importlib.metadata.PackageNotFoundError:
-        try:
-            return _pydist_version_overrides()[pydist]
-        except KeyError as exc:
-            raise qik.errors.DistributionNotFound(f'Distribution "{pydist}" not found.') from exc
-
-
-def pydists(*vals: str) -> str:
+def pydists(*vals: str, venv: qik.venv.Venv) -> str:
     return xxhash.xxh128_hexdigest(
-        "".join(f"{pydist}{_pydist_version(pydist)}" for pydist in sorted(vals))
+        "".join(f"{pydist}{venv.version(pydist)}" for pydist in sorted(vals))
     )
 
 

@@ -13,9 +13,7 @@ import qik.errors
 import qik.file
 import qik.func
 import qik.hash
-import qik.space
 import qik.unset
-import qik.venv
 
 if TYPE_CHECKING:
     import qik.pygraph.cmd as pygraph_cmd
@@ -190,13 +188,14 @@ class Pydist(BaseDep, frozen=True):
     @qik.func.cached_property
     def since(self) -> list[str]:
         # TODO: Use the correct space
-        venv = qik.space.load().venv
-        if not venv.lock:
-            raise qik.errors.LockFileNotFound(
-                "Must configure venv lock file (space.default.venv.lock) when using --since on pydists."
-            )
+        # venv = qik.space.load().venv
+        # if not venv.lock:
+        #     raise qik.errors.LockFileNotFound(
+        #         "Must configure venv lock file (space.default.venv.lock) when using --since on pydists."
+        #     )
 
-        return [venv.lock]
+        # return [venv.lock]
+        return []
 
 
 class Const(BaseDep, frozen=True):
@@ -216,7 +215,7 @@ class Pygraph(BaseCmd, frozen=True):
         return pygraph_cmd.lock_cmd_name()
 
     def get_cmd_args(self) -> dict[str, str]:
-        return {"pyimport": self.val}
+        return {"pyimport": self.val, "space": "default"}
 
     @property
     def globs(self) -> list[str]:  # type: ignore
@@ -246,111 +245,12 @@ class Load(BaseDep, frozen=True):
         return deps.globs if deps else self.default
 
 
-def store(
-    path: pathlib.Path,
-    *,
-    globs: list[str] | None = None,
-    pydists: list[str] | None = None,
-    hash: bool = True,
-) -> None:
-    if hash:
-        hash_val = Collection(
-            *[*(globs or []), *[Pydist(val=pydist) for pydist in pydists or []]]
-        ).hash()
-    else:
-        hash_val = None
-
-    qik.file.write(
-        path,
-        msgspec.json.encode(Serialized(globs=globs or [], pydists=pydists or [], hash=hash_val)),
-    )
-
-
 class Serialized(msgspec.Struct, frozen=True, omit_defaults=True):
     """A serialized representation of dependencies, meant to be loaded from a file."""
 
     globs: list[str] = []
     pydists: list[str] = []
     hash: str | None = None
-
-
-class Collection:
-    """A filterable and hashable collection of dependencies."""
-
-    def __init__(
-        self,
-        *deps: str | pathlib.Path | BaseDep,
-        module: str | None = None,
-        space: str | None = None,
-    ):
-        self._deps = [dep if isinstance(dep, BaseDep) else Glob(str(dep)) for dep in deps]
-        self.module = module
-        self.space = space
-        self.venv = qik.space.load(self.space).venv if self.space else qik.venv.factory()
-
-    @property
-    def globs(self) -> set[str]:
-        return (
-            {glob for dep in self._deps for glob in dep.globs}
-            | {
-                artifact
-                for runnable in self.runnables.values()
-                for artifact in runnable.obj.artifacts
-            }
-            | self.venv.glob_deps
-        )
-
-    @qik.func.cached_property
-    def consts(self) -> set[str]:
-        return {dep.val for dep in self._deps if isinstance(dep, Const)} | self.venv.const_deps
-
-    @qik.func.cached_property
-    def watch(self) -> set[str]:
-        return {glob for dep in self._deps for glob in dep.watch}
-
-    @qik.func.cached_property
-    def since(self) -> set[str]:
-        return {glob for dep in self._deps for glob in dep.since}
-
-    @property
-    def vals(self) -> set[str]:
-        return {val for dep in self._deps for val in dep.vals}
-
-    @property
-    def pydists(self) -> set[str]:
-        return {pydist for dep in self._deps for pydist in dep.pydists}
-
-    @property
-    def runnables(self) -> dict[str, Runnable]:
-        return {
-            runnable.name: runnable
-            for dep in self._deps
-            for runnable in dep.runnables
-            if not self.module or not runnable.obj.module or self.module == runnable.obj.module
-        } | self.venv.runnable_deps
-
-    @qik.func.cached_property
-    def consts_hash(self) -> str:
-        """Hash all consts."""
-        return qik.hash.strs(*self.consts)
-
-    def hash_vals(self) -> str:
-        """Hash file values."""
-        return qik.hash.strs(*self.vals)
-
-    def hash_pydists(self) -> str:
-        """Hash python distributions."""
-        return qik.hash.pydists(*self.pydists)
-
-    def hash_globs(self) -> str:
-        """Hash glob pattern."""
-        return qik.hash.globs(*self.globs)
-
-    def hash(self) -> str:
-        """The full hash."""
-        return qik.hash.strs(
-            self.consts_hash, self.hash_vals(), self.hash_globs(), self.hash_pydists()
-        )
 
 
 @qik.func.cache

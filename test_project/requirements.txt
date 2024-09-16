@@ -6,8 +6,12 @@
 #
 asgiref==3.8.1
     # via django
+beautifulsoup4==4.12.3
+    # via -r requirements.in
 build==1.2.2
-    # via poetry
+    # via
+    #   pip-tools
+    #   poetry
 cachecontrol[filecache]==0.14.0
     # via poetry
 certifi==2024.8.30
@@ -18,6 +22,8 @@ charset-normalizer==3.3.2
     # via requests
 cleo==2.1.0
     # via poetry
+click==8.1.7
+    # via pip-tools
 crashtest==0.4.1
     # via
     #   cleo
@@ -53,12 +59,16 @@ more-itertools==10.5.0
     # via jaraco-classes
 msgpack==1.1.0
     # via cachecontrol
+msgspec==0.18.6
+    # via -r requirements.in
 packaging==24.1
     # via
     #   build
     #   poetry
 pexpect==4.9.0
     # via poetry
+pip-tools==7.4.1
+    # via -r requirements.in
 pkginfo==1.11.1
     # via poetry
 platformdirs==4.3.3
@@ -82,6 +92,7 @@ pycparser==2.22
 pyproject-hooks==1.1.0
     # via
     #   build
+    #   pip-tools
     #   poetry
 rapidfuzz==3.9.7
     # via cleo
@@ -94,6 +105,8 @@ requests-toolbelt==1.0.0
     # via poetry
 shellingham==1.5.4
     # via poetry
+soupsieve==2.6
+    # via beautifulsoup4
 sqlparse==0.5.1
     # via django
 tomlkit==0.13.2
@@ -106,8 +119,11 @@ urllib3==2.2.3
     #   requests
 virtualenv==20.26.4
     # via poetry
+wheel==0.44.0
+    # via pip-tools
 xattr==1.1.0
     # via poetry
 
 # The following packages are considered to be unsafe in a requirements file:
 # pip
+# setuptools

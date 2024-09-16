@@ -2,4 +2,4 @@ pip
 django-pgtrigger
 django-pghistory
 requests
-
+beautifulsoup4

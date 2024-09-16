@@ -2,4 +2,6 @@ poetry
 django
 django-pghistory
 pip
-
+beautifulsoup4
+msgspec
+pip-tools

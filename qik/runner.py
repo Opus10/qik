@@ -51,7 +51,9 @@ class DAGPool:
         futures: dict[str, concurrent.futures.Future] = {}
 
         def _skip(name: str):
-            del in_degree[name]
+            if name in in_degree:
+                del in_degree[name]
+
             failed.add(name)
             results[name] = None
             self.logger.print(
