@@ -139,8 +139,8 @@ class Graph:
             for cmd in cmds
             for name, runnable in qik.cmd.load(cmd).runnables.items()
             if (
-                (not modules or not runnable.module or runnable.module in modules)
-                and (not spaces or not runnable.space or runnable.space in spaces)
+                (not modules or runnable.module in modules)
+                and (not spaces or runnable.space in spaces)
             )
         }
         self._graph = {

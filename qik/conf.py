@@ -199,8 +199,7 @@ class Space(Base, frozen=True):
     @qik.func.cached_property
     def modules_by_name(self) -> dict[str, ModuleLocator]:
         module_locators = (
-            ModuleLocator(name=m.replace("/", "."), path=m) if isinstance(m, str) else m
-            for m in self.modules
+            ModuleLocator(name=m, path=m) if isinstance(m, str) else m for m in self.modules
         )
         return {m.name: m for m in module_locators}
 

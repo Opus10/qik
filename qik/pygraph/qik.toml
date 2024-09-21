@@ -5,3 +5,6 @@ hidden = true
 [commands.lock]
 factory = "qik.pygraph.cmd.lock_cmd_factory"
 hidden = true
+
+[commands.check]
+factory = "qik.pygraph.cmd.check_cmd_factory"

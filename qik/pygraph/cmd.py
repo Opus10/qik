@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import pathlib
-from typing import TYPE_CHECKING, Iterator
+import re
+from typing import TYPE_CHECKING, Iterable, Iterator
 
 import msgspec
 
@@ -13,6 +14,7 @@ import qik.func
 import qik.hash
 import qik.pygraph.core
 import qik.runnable
+import qik.space
 
 if TYPE_CHECKING:
     import grimp.exceptions as grimp_exceptions
@@ -91,6 +93,59 @@ def lock_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
     return 0, ""
 
 
+def _generate_fence_regex(imps: Iterable[str]) -> re.Pattern:
+    escaped_substrings = (re.escape(s) for s in imps)
+    pattern = "|".join(escaped_substrings)
+    return re.compile(f"^(?!({pattern})).*$", re.MULTILINE)
+
+
+def check_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
+    graph = load_graph()
+    # TODO: Handle custom PYTHONPATH env var
+    fence_imps = [f.replace("/", ".") for f in runnable.space_obj.conf.fence]
+    imps: set[tuple[qik.pygraph.core.Module, qik.pygraph.core.Module]] = set().union(
+        *(graph.upstream_imports(imp) for imp in fence_imps)
+    )
+
+    internal_imps = "\n".join(
+        f"{dest.imp} imported from {src.imp}" for src, dest in imps if dest.is_internal
+    )
+    internal_fence_re = _generate_fence_regex(fence_imps)
+    internal_violations = [
+        violation.group() for violation in re.finditer(internal_fence_re, internal_imps)
+    ]
+
+    external_imps = "\n".join(
+        f"{dest.imp} imported from {src.imp}" for src, dest in imps if not dest.is_internal
+    )
+    external_fence_re = _generate_fence_regex(
+        (external_imp for external_imp, _ in runnable.venv.packages_distributions().items())
+    )
+    external_violations = [
+        violation.group() for violation in re.finditer(external_fence_re, external_imps)
+    ]
+
+    ret_code = 0 if not internal_violations and not external_violations else 1
+    if ret_code == 1:
+        stdout = ""
+        if internal_violations:
+            stdout += (
+                f'Found {len(internal_violations)} internal import violations for "{runnable.space}" space:\n'
+                + "\n".join(internal_violations)
+            ) + "\n\n"
+        if external_violations:
+            stdout += (
+                f'Found {len(external_violations)} external import violations for "{runnable.space}" space:\n'
+                + "\n".join(external_violations)
+            )
+    else:
+        stdout = (
+            f'No import violations found across {len(imps)} imports in "{runnable.space}" space'
+        )
+
+    return ret_code, stdout.strip()
+
+
 def build_cmd_factory(
     cmd: str, conf: qik.conf.Cmd, **args: str
 ) -> dict[str, qik.runnable.Runnable]:
@@ -142,6 +197,28 @@ def lock_cmd_factory(
     return {runnable.name: runnable}
 
 
+def check_cmd_factory(
+    cmd: str, conf: qik.conf.Cmd, **args: str
+) -> dict[str, qik.runnable.Runnable]:
+    cmd_name = check_cmd_name()
+    return {
+        f"{cmd_name}#{space}": qik.runnable.Runnable(
+            name=f"{cmd_name}#{space}",
+            cmd=cmd_name,
+            val="qik.pygraph.cmd.check_cmd",
+            shell=False,
+            deps=[
+                qik.dep.Cmd(build_cmd_name()),
+                *(qik.dep.Glob(fence_val) for fence_val in conf.fence),
+            ],
+            cache=None,
+            space=space,
+        )
+        for space, conf in qik.conf.project().spaces.items()
+        if conf.fence
+    }
+
+
 @qik.func.cache
 def build_cmd_name() -> str:
     graph_plugin_name = qik.conf.plugin_locator("qik.pygraph", by_pyimport=True).name
@@ -152,6 +229,12 @@ def build_cmd_name() -> str:
 def lock_cmd_name() -> str:
     graph_plugin_name = qik.conf.plugin_locator("qik.pygraph", by_pyimport=True).name
     return f"{graph_plugin_name}.lock"
+
+
+@qik.func.cache
+def check_cmd_name() -> str:
+    graph_plugin_name = qik.conf.plugin_locator("qik.pygraph", by_pyimport=True).name
+    return f"{graph_plugin_name}.check"
 
 
 @qik.func.cache

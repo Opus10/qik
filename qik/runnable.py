@@ -216,8 +216,12 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
         return DepsCollection(*self.deps, runnable=self)
 
     @qik.func.cached_property
+    def space_obj(self) -> qik.space.Space:
+        return qik.space.load(self.space)
+
+    @qik.func.cached_property
     def venv(self) -> qik.venv.Venv:
-        return qik.space.load(self.space).venv if self.space else qik.venv.active()
+        return self.space_obj.venv if self.space else qik.venv.active()
 
     def filter_regex(self, strategy: FilterStrategy) -> re.Pattern | None:
         """Generate the regex used for file-based filtering.

@@ -45,7 +45,7 @@ dulwich==0.21.7
     # via poetry
 fastjsonschema==2.20.0
     # via poetry
-filelock==3.16.0
+filelock==3.16.1
     # via
     #   cachecontrol
     #   virtualenv
@@ -81,7 +81,7 @@ pip-tools==7.4.1
     # via -r requirements.in
 pkginfo==1.11.1
     # via poetry
-platformdirs==4.3.3
+platformdirs==4.3.6
     # via
     #   poetry
     #   virtualenv
@@ -117,7 +117,7 @@ requests-toolbelt==1.0.0
     # via poetry
 secretstorage==3.3.3 ; sys_platform == 'linux'
     # via keyring
-setuptools==75.0.0
+setuptools==75.1.0
     # via pip-tools
 shellingham==1.5.4
     # via poetry
@@ -133,7 +133,7 @@ urllib3==2.2.3
     # via
     #   dulwich
     #   requests
-virtualenv==20.26.4
+virtualenv==20.26.5
     # via poetry
 wheel==0.44.0
     # via pip-tools
