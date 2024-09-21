@@ -177,10 +177,10 @@ class Repo(Cache):
 
 
 class Local(Cache):
-    """A local cache in the .qik directory."""
+    """A local cache in the ._qik directory."""
 
     def base_path(self, *, runnable: Runnable, hash: str) -> pathlib.Path:
-        return qik.conf.priv_work_dir() / "cache" / f"{runnable.slug}-{hash}"
+        return qik.conf.priv_work_dir() / "cache" / runnable.cmd
 
     def restore_artifacts(self, *, runnable: Runnable, hash: str, artifacts: list[str]) -> None:
         base_path = self.base_path(runnable=runnable, hash=hash)
@@ -209,6 +209,9 @@ class S3(msgspec.Struct, Local, frozen=True, dict=True):
     region_name: str | None = None
     endpoint_url: str | None = None
 
+    def remote_path(self, *, runnable: Runnable, hash: str) -> pathlib.Path:
+        return pathlib.Path(self.prefix) / f"{runnable.slug}-{hash}"
+
     @qik.func.cached_property
     def client(self) -> qik.s3.Client:
         return qik.s3.Client(
@@ -221,20 +224,20 @@ class S3(msgspec.Struct, Local, frozen=True, dict=True):
 
     def on_miss(self, *, runnable: Runnable, hash: str) -> None:
         super().pre_get(runnable=runnable, hash=hash)
-        base_path = self.base_path(runnable=runnable, hash=hash)
+
         self.client.download_dir(
             bucket_name=self.bucket,
-            prefix=pathlib.Path(self.prefix) / base_path.name,
-            dir=base_path,
+            prefix=self.remote_path(runnable=runnable, hash=hash),
+            dir=self.base_path(runnable=runnable, hash=hash),
         )
 
     def post_set(self, *, runnable: Runnable, hash: str, manifest: Manifest) -> None:
         super().post_set(runnable=runnable, hash=hash, manifest=manifest)
-        base_path = self.base_path(runnable=runnable, hash=hash)
+
         self.client.upload_dir(
             bucket_name=self.bucket,
-            prefix=pathlib.Path(self.prefix) / base_path.name,
-            dir=base_path,
+            prefix=self.remote_path(runnable=runnable, hash=hash),
+            dir=self.base_path(runnable=runnable, hash=hash),
         )
 
 

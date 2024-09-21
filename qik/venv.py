@@ -91,6 +91,8 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
         self.__dict__["_packages_distributions_lock"] = threading.Lock()
         self.__dict__["_packages_distributions"] = (None, None)
 
+    # TODO: Consider caching distributions and all versions in a similar manner as
+    # the packages_distributions cache.
     def distributions(self, **kwargs) -> Iterator[importlib.metadata.Distribution]:
         return importlib.metadata.distributions(path=[str(self.site_packages_dir)], **kwargs)  # type: ignore
 
