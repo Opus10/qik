@@ -151,7 +151,7 @@ def _var_struct(
         conf = qik.conf.get(module_name)
         return msgspec.defstruct(
             "VarStruct",
-            [(v.name, v.py_type, v.default) for v in conf.vars_dict.values()],
+            [(v.name, v.py_type, v.default) for v in conf.vars_dict.values()],  # type: ignore
             forbid_unknown_fields=True,
             rename="kebab",
         )

@@ -179,8 +179,8 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
         raise NotImplementedError
 
     @qik.func.cached_property
-    def lock(self) -> list[str]:
-        return self.conf.lock if isinstance(self.conf.lock, list) else [self.conf.lock]
+    def lock(self) -> str | None:
+        return self.conf.lock
 
     @qik.func.cached_property
     def runnable_deps(self) -> dict[str, qik.dep.Runnable]:
@@ -188,12 +188,7 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
 
     @qik.func.cached_property
     def glob_deps(self) -> set[str]:
-        if isinstance(self.lock, list):
-            return set(self.lock)
-        elif isinstance(self.lock, str):
-            return {self.lock}
-        else:
-            return set()
+        return {self.lock} if self.lock else set()
 
     @qik.func.cached_property
     def const_deps(self) -> set[str]:
@@ -212,9 +207,8 @@ class ActiveConf(qik.conf.Venv, frozen=True):
     reqs: str | list[str] = []
 
     @property
-    def lock(self) -> str | list[str]:  # type: ignore
-        lock = qik.conf.project().active_venv_lock
-        return lock if isinstance(lock, list) else [lock]
+    def lock(self) -> str | None:  # type: ignore
+        return qik.conf.project().active_venv_lock
 
 
 class Active(Venv, frozen=True, dict=True):

@@ -1,3 +1,5 @@
+vars = ["hello_world"]
+
 [commands.lock]
 factory = "qik.uv.cmd.lock_cmd_factory"
 hidden = true

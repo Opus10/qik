@@ -183,7 +183,7 @@ class PluginLocator(BaseLocator, frozen=True):
 class Venv(BasePluggable, frozen=True, tag_field="type"):
     plugin_type_name: ClassVar[str] = "venv"
     reqs: str | list[str]
-    lock: str | list[str] = []
+    lock: str | None = None
 
 
 class Pygraph(Base, frozen=True):
@@ -225,7 +225,7 @@ class Project(ModuleOrPlugin, frozen=True):
     pygraph: Pygraph = msgspec.field(default_factory=Pygraph)
     pydist_versions: dict[str, str] = {}
     ignore_missing_pydists: bool = False
-    active_venv_lock: str | list[str] = []
+    active_venv_lock: str | None = None
 
     @qik.func.cached_property
     def modules_by_name(self) -> dict[str, ModuleLocator]:
@@ -358,6 +358,7 @@ def _project() -> tuple[Project, pathlib.Path]:
         raise qik.errors.ConfigNotFound("Could not locate qik.toml configuration file.")
 
 
+@qik.func.cache
 def project() -> Project:
     sys.path.append(str(root()))
     return _project()[0]

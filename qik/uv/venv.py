@@ -30,14 +30,9 @@ class UVVenv(qik.venv.Venv, frozen=True, dict=True):
         )
 
     @qik.func.cached_property
-    def lock(self) -> list[str]:
+    def lock(self) -> str:
         super_lock = super().lock
-        if len(super_lock) > 1:
-            raise qik.errors.UVMultipleLocks(
-                f"Cannot have more than one lock file for {self.alias}."
-            )
-
-        return [self.default_lock] if not super_lock else super_lock
+        return self.default_lock if not super_lock else super_lock
 
     @qik.func.cached_property
     def environ(self) -> dict[str, str]:  # type: ignore

@@ -31,9 +31,9 @@ def lock_cmd_factory(
     runnable = qik.runnable.Runnable(
         name=f"{cmd_name}?space={space}",
         cmd=cmd_name,
-        val=f"mkdir -p {pathlib.Path(venv.lock[0]).parent} && uv pip compile --universal {' '.join(venv.reqs)} -o {venv.lock[0]}",
+        val=f"mkdir -p {pathlib.Path(venv.lock[0]).parent} && uv pip compile --universal {' '.join(venv.reqs)} -o {venv.lock}",
         deps=[*(qik.dep.Glob(req) for req in venv.reqs), *qik.dep.project_deps()],
-        artifacts=venv.lock,
+        artifacts=[venv.lock],
         cache="repo",
         args={"space": space},
         space=None,
@@ -60,10 +60,10 @@ def install_cmd_factory(
     runnable = qik.runnable.Runnable(
         name=f"{cmd_name}?space={space}",
         cmd=cmd_name,
-        val=f"uv venv {venv.dir} {venv_python} && uv pip sync {venv.lock[0]} --python {venv.dir}/bin/python",
+        val=f"uv venv {venv.dir} {venv_python} && uv pip sync {venv.lock} --python {venv.dir}/bin/python",
         deps=[
             qik.dep.Cmd(lock_cmd_name(), args={"space": space}, strict=True),
-            qik.dep.Glob(venv.lock[0]),
+            qik.dep.Glob(venv.lock),
             *qik.dep.project_deps(),
         ],
         artifacts=[],

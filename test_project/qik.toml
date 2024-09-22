@@ -1,4 +1,4 @@
-plugins = [{name = "graph", pyimport = "qik.pygraph"}, {name = "uv", pyimport = "qik.uv"}, "qik.s3"]
+plugins = [{name = "graph", pyimport = "qik.pygraph"}, "qik.uv", "qik.s3"]
 deps = ["python_version"]
 vars = ["aws_access_key_id", "aws_secret_access_key", {name = "aws_endpoint_url", required = false}]
 
@@ -21,6 +21,9 @@ endpoint-url = "{ctx.project.aws_endpoint_url}"
 
 [ctx.ci.qik]
 workers = 1
+
+[ctx.default.plugins."qik.uv"]
+hello_world = "worl"
 
 [commands.fail]
 exec = 'exit 1'
