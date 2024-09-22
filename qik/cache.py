@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import pathlib
+import pkgutil
 import threading
 from typing import TYPE_CHECKING, Iterator
 
@@ -12,7 +13,6 @@ import qik.ctx
 import qik.errors
 import qik.file
 import qik.func
-import qik.s3
 import qik.shell
 
 if TYPE_CHECKING:
@@ -198,50 +198,8 @@ class Local(Cache):
         return artifacts
 
 
-class S3(msgspec.Struct, Local, frozen=True, dict=True):
-    """A custom cache using the S3 backend"""
 
-    bucket: str
-    prefix: str = ""
-    aws_access_key_id: str | None = None
-    aws_secret_access_key: str | None = None
-    aws_session_token: str | None = None
-    region_name: str | None = None
-    endpoint_url: str | None = None
-
-    def remote_path(self, *, runnable: Runnable, hash: str) -> pathlib.Path:
-        return pathlib.Path(self.prefix) / f"{runnable.slug}-{hash}"
-
-    @qik.func.cached_property
-    def client(self) -> qik.s3.Client:
-        return qik.s3.Client(
-            aws_access_key_id=self.aws_access_key_id,
-            aws_secret_access_key=self.aws_secret_access_key,
-            aws_session_token=self.aws_session_token,
-            region_name=self.region_name,
-            endpoint_url=self.endpoint_url,
-        )
-
-    def on_miss(self, *, runnable: Runnable, hash: str) -> None:
-        super().pre_get(runnable=runnable, hash=hash)
-
-        self.client.download_dir(
-            bucket_name=self.bucket,
-            prefix=self.remote_path(runnable=runnable, hash=hash),
-            dir=self.base_path(runnable=runnable, hash=hash),
-        )
-
-    def post_set(self, *, runnable: Runnable, hash: str, manifest: Manifest) -> None:
-        super().post_set(runnable=runnable, hash=hash, manifest=manifest)
-
-        self.client.upload_dir(
-            bucket_name=self.bucket,
-            prefix=self.remote_path(runnable=runnable, hash=hash),
-            dir=self.base_path(runnable=runnable, hash=hash),
-        )
-
-
-def factory(conf: qik.conf.Cache) -> Cache:
+def factory(conf: qik.conf.BaseCache) -> Cache:
     match conf:
         case qik.conf.S3Cache():
             endpoint_url = qik.ctx.format(conf.endpoint_url)
@@ -260,10 +218,10 @@ def factory(conf: qik.conf.Cache) -> Cache:
 
 
 @qik.func.cache
-def load(backend: str | None) -> Cache:
+def load(name: str | None) -> Cache:
     proj = qik.conf.project()
 
-    match backend:
+    match name:
         case "repo":
             return Repo()
         case "local":
@@ -272,6 +230,7 @@ def load(backend: str | None) -> Cache:
             return Uncached()
         case custom:
             if conf := proj.caches.get(custom):
-                return factory(conf)
+                factory = qik.conf.get_cache_type_factory(conf)
+                return pkgutil.resolve_name(factory)(name, conf)
             else:
                 raise qik.errors.UnconfiguredCache(f'Unconfigured cache - "{custom}"')

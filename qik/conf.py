@@ -6,8 +6,10 @@ import importlib
 import importlib.util
 import os.path
 import pathlib
+import sys
+import operator
 from types import UnionType
-from typing import Any, Literal, TypeAlias, TypeVar
+from typing import Any, Literal, TypeAlias, TypeVar, Union
 
 import msgspec.structs
 import msgspec.toml
@@ -20,7 +22,6 @@ import qik.unset
 CtxNamespace: TypeAlias = Literal["qik", "project", "modules", "plugins"]
 VarType: TypeAlias = str | bool | int
 VAR_T = TypeVar("VAR_T", str, bool, int, None)
-CacheBackend: TypeAlias = Literal["s3"]
 CacheWhen: TypeAlias = Literal["success", "failed", "finished"]
 CacheStatus: TypeAlias = Literal["warm", "code"]
 
@@ -41,6 +42,13 @@ def register_venv_type(venv_type: type[BaseVenv], factory: str) -> None:
 
 def register_cmd(cmd: Cmd) -> None:
     _PLUGIN_CMDS.append(cmd)
+
+
+def get_cache_type_factory(conf: BaseCache) -> str:
+    if entry := _PLUGIN_CACHE_TYPES.get(str(conf.__struct_config__.tag)):
+        return entry[1]
+    else:
+        raise qik.errors.InvalidCacheType(f'Cache type "{conf.__struct_config__.tag}" not provided by any plugin.')
 
 
 class Base(
@@ -199,17 +207,7 @@ class BaseCache(Base, frozen=True, tag_field="type"):
     pass
 
 
-class S3Cache(BaseCache, frozen=True, tag="s3"):
-    bucket: str
-    prefix: str = ""
-    aws_access_key_id: str | None = None
-    aws_secret_access_key: str | None = None
-    aws_session_token: str | None = None
-    region_name: str | None = None
-    endpoint_url: str | None = None
-
-
-class BaseSpace(Base, frozen=True):
+class Space(Base, frozen=True):
     root: str | None = None
     modules: list[str | ModuleLocator] = []
     fence: list[str] = []
@@ -233,7 +231,7 @@ class BaseProject(ModuleOrPlugin, frozen=True):
     ctx: dict[str, dict[CtxNamespace, dict[str, Any]]] = {}
     venvs: dict[str, BaseVenv] = {}
     caches: dict[str, BaseCache] = {}
-    spaces: dict[str, BaseSpace] = {}
+    spaces: dict[str, Space] = {}
     pygraph: Pygraph = msgspec.field(default_factory=Pygraph)
     pydist_versions: dict[str, str] = {}
     ignore_missing_pydists: bool = False
@@ -279,26 +277,35 @@ def _load_plugins(conf: ProjectPlugins) -> None:
 
         try:
             importlib.import_module(f"{pyimport}.qikplugin")
-        except ImportError:
-            raise qik.errors.PluginNotFound(
-                f"Plugin '{pyimport}' could not be imported. "
-                f"Make sure it's installed and has a 'qikplugin' module."
-            )
+        except ModuleNotFoundError as e:
+            # A ModuleNotFoundError is raised if the plugin is not installed
+            # or if the plugin itself has issues importing code. Distinguish
+            # between the two.
+            if pyimport in e.args[0]:
+                raise qik.errors.PluginNotFound(
+                    f"Plugin '{pyimport}' could not be imported. "
+                    f"Make sure it's installed and has a 'qikplugin' module."
+                )
+            else:
+                # TODO: Show that this is an unexpected error. Currently CLI
+                # users get a raw stack trace.
+                raise
 
 
 def _parse_project_config(contents: bytes) -> BaseProject:
     """Dynamically generate a Project config class based on installed plugins."""
-    class Space(BaseSpace, frozen=True):
+    class DynamicSpace(Space, frozen=True):
         venv: str | UVVenv | None = None
 
     # Must register as part of the global namespace in order for msgspec to
     # recognize dynamic nested type.
-    globals()['Space'] = Space
+    globals()['DynamicSpace'] = DynamicSpace
+    globals()['DynamicCacheTypes'] = Union[(BaseCache, *(cls for cls, _ in _PLUGIN_CACHE_TYPES.values()))]
 
     class Project(BaseProject, frozen=True):
         venvs: dict[str, UVVenv] = {}  # type: ignore
-        caches: dict[str, S3Cache] = {}  # type: ignore
-        spaces: dict[str, Space] = {}  # type: ignore
+        caches: dict[str, DynamicCacheTypes] = {}  # type: ignore
+        spaces: dict[str, DynamicSpace] = {}  # type: ignore
 
     return msgspec.toml.decode(contents, type=Project)
 
@@ -325,6 +332,7 @@ def _project() -> tuple[BaseProject, pathlib.Path]:
 
 
 def project() -> BaseProject:
+    sys.path.append(str(root()))
     return _project()[0]
 
 
@@ -397,13 +405,13 @@ def command(uri: str) -> Cmd:
 
 
 @qik.func.cache
-def space(name: str = "default") -> BaseSpace:
+def space(name: str = "default") -> Space:
     """Get configuration for a space."""
     proj = project()
     if name != "default" and name not in proj.spaces:
         raise qik.errors.SpaceNotFound(f'Space "{name}" not configured.')
 
-    return proj.spaces.get(name, BaseSpace(venv="default"))
+    return proj.spaces.get(name, Space(venv="default"))
 
 
 @qik.func.cache

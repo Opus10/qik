@@ -85,7 +85,7 @@ class PackagesDistributions(msgspec.Struct):
 
 class Venv(msgspec.Struct, frozen=True, dict=True):
     name: str
-    conf: qik.conf.Venv
+    conf: qik.conf.BaseVenv
 
     def __post_init__(self):
         self.__dict__["_packages_distributions_lock"] = threading.Lock()
@@ -208,7 +208,7 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
         return set().union(self.reqs, self.lock)
 
 
-class ActiveConf(qik.conf.Venv, frozen=True):
+class ActiveConf(qik.conf.BaseVenv, frozen=True):
     reqs: str | list[str] = []
 
     @property
@@ -309,7 +309,7 @@ def active() -> Active:
     return _ACTIVE
 
 
-def factory(name: str, *, conf: qik.conf.Venv) -> Venv:
+def factory(name: str, *, conf: qik.conf.BaseVenv) -> Venv:
     if isinstance(conf, qik.conf.UVVenv):
         return UV(name=name, conf=conf)
     else:

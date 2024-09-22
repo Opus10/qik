@@ -49,6 +49,7 @@ class DAGPool:
         results: dict[str, Result | None] = {}
         failed: set[str] = set()
         futures: dict[str, concurrent.futures.Future] = {}
+        exception: Exception | None = None
 
         def _skip(name: str):
             if name in in_degree:
@@ -65,13 +66,14 @@ class DAGPool:
                 result=None,
             )
 
-        def _finish(future: concurrent.futures.Future):
+        def _finish(future: concurrent.futures.Future) -> Exception | None:
             name = next(name for name, val in futures.items() if val == future)
+            exception: Exception | None = None
             try:
-                result: Result = future.result()
-            except Exception:
-                failed.add(name)
-                raise
+                result = future.result()
+            except Exception as exc:
+                result = qik.runnable.Result(log=str(exc), code=1, hash='')
+                exception = exc
 
             results[name] = result
             if result.code != 0:
@@ -85,6 +87,8 @@ class DAGPool:
 
             del in_degree[name]
             del futures[name]
+
+            return exception
 
         while in_degree:
             ready_tasks = (name for name, degree in in_degree.items() if degree == 0)
@@ -102,11 +106,14 @@ class DAGPool:
                 break
 
             for future in finished:
-                _finish(future)
+                exception = _finish(future) or exception
 
         for name, future in futures.items():
             future.cancel()
             results[name] = None
+
+        if exception:
+            raise exception
 
         return results
 
@@ -380,5 +387,5 @@ def exec() -> Graph:
 
         return graph
     except Exception as exc:
-        qik.errors.print(exc)
+        qik.errors.print(exc, prefix="Runtime error - ")
         sys.exit(1)

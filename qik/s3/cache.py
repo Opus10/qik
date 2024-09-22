@@ -8,12 +8,16 @@ from typing import TYPE_CHECKING
 import boto3.s3
 import msgspec
 
+import qik.cache
+import qik.ctx
 import qik.file
 import qik.func
 
 if TYPE_CHECKING:
     import boto3
     from boto3.resources.base import ServiceResource
+    from qik.s3.qikplugin import S3Conf
+    from qik.runnable import Runnable
 else:
     import qik.lazy
 
@@ -95,3 +99,60 @@ class Client(msgspec.Struct, frozen=True, dict=True):
             for future in concurrent.futures.as_completed(futures):
                 # TODO: Better handle partial upload failures
                 future.result()
+
+
+class S3Cache(msgspec.Struct, qik.cache.Local, frozen=True, dict=True):
+    """A custom cache using the S3 backend"""
+
+    bucket: str
+    prefix: str = ""
+    aws_access_key_id: str | None = None
+    aws_secret_access_key: str | None = None
+    aws_session_token: str | None = None
+    region_name: str | None = None
+    endpoint_url: str | None = None
+
+    def remote_path(self, *, runnable: Runnable, hash: str) -> pathlib.Path:
+        return pathlib.Path(self.prefix) / f"{runnable.slug}-{hash}"
+
+    @qik.func.cached_property
+    def client(self) -> Client:
+        return Client(
+            aws_access_key_id=self.aws_access_key_id,
+            aws_secret_access_key=self.aws_secret_access_key,
+            aws_session_token=self.aws_session_token,
+            region_name=self.region_name,
+            endpoint_url=self.endpoint_url,
+        )
+
+    def on_miss(self, *, runnable: Runnable, hash: str) -> None:
+        super().pre_get(runnable=runnable, hash=hash)
+
+        self.client.download_dir(
+            bucket_name=self.bucket,
+            prefix=self.remote_path(runnable=runnable, hash=hash),
+            dir=self.base_path(runnable=runnable, hash=hash),
+        )
+
+    def post_set(self, *, runnable: Runnable, hash: str, manifest: qik.cache.Manifest) -> None:
+        super().post_set(runnable=runnable, hash=hash, manifest=manifest)
+
+        self.client.upload_dir(
+            bucket_name=self.bucket,
+            prefix=self.remote_path(runnable=runnable, hash=hash),
+            dir=self.base_path(runnable=runnable, hash=hash),
+        )
+
+
+def factory(name: str, conf: S3Conf) -> S3Cache:
+    endpoint_url = qik.ctx.format(conf.endpoint_url)
+    endpoint_url = None if endpoint_url == "None" else endpoint_url
+    return S3Cache(
+        bucket=qik.ctx.format(conf.bucket),
+        prefix=qik.ctx.format(conf.prefix),
+        aws_access_key_id=qik.ctx.format(conf.aws_access_key_id),
+        aws_secret_access_key=qik.ctx.format(conf.aws_secret_access_key),
+        aws_session_token=qik.ctx.format(conf.aws_session_token),
+        region_name=qik.ctx.format(conf.region_name),
+        endpoint_url=endpoint_url,
+    )

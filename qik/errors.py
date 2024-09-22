@@ -110,21 +110,21 @@ class DistributionNotFound(RunnableError):
     code = "dep0"
 
 
-def fmt_msg(exc: Exception) -> str:
+def fmt_msg(exc: Exception, prefix: str = "") -> str:
     err_kwargs = (
         {} if isinstance(exc, RunnableError) else {"emoji": "broken_heart", "color": "red"}
     )
     if isinstance(exc, Error):
         return qik.console.fmt_msg(
-            f"{exc.args[0]} [reset][dim]See https://qik.build/en/stable/errors/#{exc.code}[/dim]",
+            f"{prefix}{exc.args[0]} [reset][dim]See https://qik.build/en/stable/errors/#{exc.code}[/dim]",
             **err_kwargs,  # type: ignore
         )
     else:
         return qik.console.fmt_msg("An unexpected error happened", **err_kwargs)  # type: ignore
 
 
-def print(exc: Exception) -> None:
-    msg = fmt_msg(exc)
+def print(exc: Exception, prefix: str = "") -> None:
+    msg = fmt_msg(exc, prefix=prefix)
     qik.console.get().print(msg)
     if not isinstance(exc, Error) or qik_ctx.module("qik").verbosity >= 3:
         qik.console.print_exception()
