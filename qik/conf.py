@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import importlib
 import importlib.util
 import os.path
 import pathlib
 import sys
-import operator
 from types import UnionType
 from typing import Any, Literal, TypeAlias, TypeVar, Union
 
@@ -27,28 +25,39 @@ CacheStatus: TypeAlias = Literal["warm", "code"]
 
 
 # Dynamic config classes and objects registered by plugins
-_PLUGIN_CACHE_TYPES: dict[str, tuple[type[BaseCache], str]] = {}
-_PLUGIN_VENV_TYPES: dict[str, tuple[type[BaseVenv], str]] = {}
-_PLUGIN_CMDS: list[Cmd] = []
+_PLUGIN_CACHE_TYPES: dict[str, tuple[type[Cache], str]] = {}
+_PLUGIN_DEP_TYPES: dict[str, tuple[type[Dep], str]] = {}
+_PLUGIN_VENV_TYPES: dict[str, tuple[type[Venv], str]] = {}
 
 
-def register_cache_type(cache_type: type[BaseCache], factory: str) -> None:
+def register_cache_type(cache_type: type[Cache], factory: str) -> None:
     _PLUGIN_CACHE_TYPES[str(cache_type.__struct_config__.tag)] = (cache_type, factory)
 
 
-def register_venv_type(venv_type: type[BaseVenv], factory: str) -> None:
+def register_dep_type(dep_type: type[Dep], factory: str) -> None:
+    _PLUGIN_DEP_TYPES[str(dep_type.__struct_config__.tag)] = (dep_type, factory)
+
+
+def register_venv_type(venv_type: type[Venv], factory: str) -> None:
     _PLUGIN_VENV_TYPES[str(venv_type.__struct_config__.tag)] = (venv_type, factory)
 
 
-def register_cmd(cmd: Cmd) -> None:
-    _PLUGIN_CMDS.append(cmd)
-
-
-def get_cache_type_factory(conf: BaseCache) -> str:
+def get_cache_type_factory(conf: Cache) -> str:
     if entry := _PLUGIN_CACHE_TYPES.get(str(conf.__struct_config__.tag)):
         return entry[1]
     else:
-        raise qik.errors.InvalidCacheType(f'Cache type "{conf.__struct_config__.tag}" not provided by any plugin.')
+        raise qik.errors.InvalidCacheType(
+            f'Cache type "{conf.__struct_config__.tag}" not provided by any plugin.'
+        )
+
+
+def get_dep_type_factory(conf: Dep) -> str:
+    if entry := _PLUGIN_DEP_TYPES.get(str(conf.__struct_config__.tag)):
+        return entry[1]
+    else:
+        raise qik.errors.InvalidDepType(
+            f'Dep type "{conf.__struct_config__.tag}" not provided by any plugin.'
+        )
 
 
 class Base(
@@ -62,48 +71,41 @@ class Base(
     pass
 
 
-class BaseDep(Base, frozen=True):
+class Dep(Base, frozen=True):
     pass
 
 
-class GlobDep(BaseDep, tag="glob", frozen=True):
+class GlobDep(Dep, tag="glob", frozen=True):
     pattern: str
 
 
-class ConstDep(BaseDep, tag="const", frozen=True):
+class ConstDep(Dep, tag="const", frozen=True):
     val: str
 
 
-class ValDep(BaseDep, tag="val", frozen=True):
+class ValDep(Dep, tag="val", frozen=True):
     key: str
     file: str
 
 
-class CmdDep(BaseDep, tag="command", frozen=True):
+class CmdDep(Dep, tag="command", frozen=True):
     name: str
     strict: bool = False
     isolated: bool | qik.unset.UnsetType = qik.unset.UNSET
 
 
-class PydistDep(BaseDep, tag="pydist", frozen=True):
+class PydistDep(Dep, tag="pydist", frozen=True):
     name: str
 
 
-class PygraphDep(BaseDep, tag="pygraph", frozen=True):
-    pyimport: str
-
-
-class LoadDep(BaseDep, tag="load", frozen=True):
+class LoadDep(Dep, tag="load", frozen=True):
     path: str
     default: list[str] = []
 
 
-DepType: TypeAlias = str | GlobDep | CmdDep | PydistDep | PygraphDep | ConstDep | LoadDep
-
-
 class Cmd(Base, frozen=True):
     exec: str = ""
-    deps: list[DepType] = []
+    deps: list[str | Dep] = []
     artifacts: list[str] = []
     cache: str | qik.unset.UnsetType = qik.unset.UNSET
     cache_when: CacheWhen | qik.unset.UnsetType = qik.unset.UNSET
@@ -187,12 +189,12 @@ class PluginLocator(BaseLocator, frozen=True):
         return pathlib.Path(spec.origin).parent
 
 
-class BaseVenv(Base, frozen=True, tag_field="type"):
+class Venv(Base, frozen=True, tag_field="type"):
     reqs: str | list[str]
     lock: str | list[str] = []
 
 
-class UVVenv(BaseVenv, frozen=True, tag="uv"):
+class UVVenv(Venv, frozen=True, tag="uv"):
     python: str | None = None
 
 
@@ -203,7 +205,7 @@ class Pygraph(Base, frozen=True):
     module_pydists: dict[str, str] = {}
 
 
-class BaseCache(Base, frozen=True, tag_field="type"):
+class Cache(Base, frozen=True, tag_field="type"):
     pass
 
 
@@ -211,7 +213,7 @@ class Space(Base, frozen=True):
     root: str | None = None
     modules: list[str | ModuleLocator] = []
     fence: list[str] = []
-    venv: str | BaseVenv | None = None
+    venv: str | Venv | None = None
 
     @qik.func.cached_property
     def modules_by_name(self) -> dict[str, ModuleLocator]:
@@ -225,12 +227,12 @@ class Space(Base, frozen=True):
         return {m.path: m for m in self.modules_by_name.values()}
 
 
-class BaseProject(ModuleOrPlugin, frozen=True):
+class Project(ModuleOrPlugin, frozen=True):
     plugins: list[str | PluginLocator] = []
-    deps: list[DepType] = []
+    deps: list[str | Dep] = []
     ctx: dict[str, dict[CtxNamespace, dict[str, Any]]] = {}
-    venvs: dict[str, BaseVenv] = {}
-    caches: dict[str, BaseCache] = {}
+    venvs: dict[str, Venv] = {}
+    caches: dict[str, Cache] = {}
     spaces: dict[str, Space] = {}
     pygraph: Pygraph = msgspec.field(default_factory=Pygraph)
     pydist_versions: dict[str, str] = {}
@@ -259,7 +261,7 @@ class BaseProject(ModuleOrPlugin, frozen=True):
     @qik.func.cached_property
     def plugins_by_pyimport(self) -> dict[str, PluginLocator]:
         return {p.pyimport: p for p in self.plugins_by_name.values()}
-    
+
 
 class ProjectPlugins(msgspec.Struct, frozen=True):
     """Parses the root qik.toml file for plugins.
@@ -267,6 +269,7 @@ class ProjectPlugins(msgspec.Struct, frozen=True):
     Allows us to dynamically determine the structure of the config based on installed
     plugins.
     """
+
     plugins: list[str | PluginLocator] = []
 
 
@@ -285,33 +288,61 @@ def _load_plugins(conf: ProjectPlugins) -> None:
                 raise qik.errors.PluginNotFound(
                     f"Plugin '{pyimport}' could not be imported. "
                     f"Make sure it's installed and has a 'qikplugin' module."
-                )
+                ) from e
             else:
                 # TODO: Show that this is an unexpected error. Currently CLI
                 # users get a raw stack trace.
                 raise
 
 
-def _parse_project_config(contents: bytes) -> BaseProject:
+def _parse_project_config(contents: bytes) -> Project:
     """Dynamically generate a Project config class based on installed plugins."""
+
+    DynamicCacheTypes = Union[(Cache, *(cls for cls, _ in _PLUGIN_CACHE_TYPES.values()))]
+    DynamicDeps = Union[
+        (
+            str,
+            GlobDep,
+            CmdDep,
+            PydistDep,
+            ConstDep,
+            LoadDep,
+            *(cls for cls, _ in _PLUGIN_DEP_TYPES.values()),
+        )
+    ]
+
     class DynamicSpace(Space, frozen=True):
         venv: str | UVVenv | None = None
 
+    DynamicCmd = msgspec.defstruct(
+        "DynamicCmd", [("deps", list[DynamicDeps], [])], bases=(Cmd,), frozen=True
+    )
+
     # Must register as part of the global namespace in order for msgspec to
     # recognize dynamic nested type.
-    globals()['DynamicSpace'] = DynamicSpace
-    globals()['DynamicCacheTypes'] = Union[(BaseCache, *(cls for cls, _ in _PLUGIN_CACHE_TYPES.values()))]
+    globals()["DynamicSpace"] = DynamicSpace
+    globals()["DynamicCmd"] = DynamicCmd
+    globals()["DynamicCacheTypes"] = DynamicCacheTypes
+    globals()["DynamicDeps"] = DynamicDeps
 
-    class Project(BaseProject, frozen=True):
-        venvs: dict[str, UVVenv] = {}  # type: ignore
-        caches: dict[str, DynamicCacheTypes] = {}  # type: ignore
-        spaces: dict[str, DynamicSpace] = {}  # type: ignore
+    DynamicProject = msgspec.defstruct(
+        "DynamicProject",
+        [
+            ("deps", list[DynamicDeps], []),
+            ("venvs", dict[str, UVVenv], {}),
+            ("caches", dict[str, DynamicCacheTypes], {}),
+            ("spaces", dict[str, DynamicSpace], {}),
+            ("commands", dict[str, DynamicCmd], {}),
+        ],
+        bases=(Project,),
+        frozen=True,
+    )
 
-    return msgspec.toml.decode(contents, type=Project)
+    return msgspec.toml.decode(contents, type=DynamicProject)  # type: ignore
 
 
 @qik.func.cache
-def _project() -> tuple[BaseProject, pathlib.Path]:
+def _project() -> tuple[Project, pathlib.Path]:
     """Return the project configuration and file."""
     cwd = pathlib.Path.cwd()
     qik_toml: pathlib.Path | None = None
@@ -331,7 +362,7 @@ def _project() -> tuple[BaseProject, pathlib.Path]:
         raise qik.errors.ConfigNotFound("Could not locate qik.toml configuration file.")
 
 
-def project() -> BaseProject:
+def project() -> Project:
     sys.path.append(str(root()))
     return _project()[0]
 

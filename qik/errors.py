@@ -53,11 +53,15 @@ class SpaceNotFound(RunnerError):
 
 
 class UnconfiguredCache(RunnerError):
-    code = "cache0"
+    code = "conf9"
 
 
 class InvalidCacheType(RunnerError):
-    code = "cache1"
+    code = "conf10"
+
+
+class InvalidDepType(RunnerError):
+    code = "conf11"
 
 
 class CtxProfileNotFound(RunnerError):

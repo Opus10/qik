@@ -66,9 +66,7 @@ exec = 'echo "two"'
 deps = [{type = "command", name = "one"}]
 ```
 
-## Caching
-
-<a id="cache0"></a>
+<a id="conf9"></a>
 
 #### Unconfigured Cache
 
@@ -80,7 +78,7 @@ type = "s3"
 ...
 ```
 
-<a id="cache1"></a>
+<a id="conf10"></a>
 
 #### Invalid Cache Type
 
@@ -89,6 +87,18 @@ type = "s3"
 ```toml
 [caches.remote]
 type = "invalid"
+...
+```
+
+<a id="conf11"></a>
+
+#### Invalid Dep Type
+
+`Invalid dep type - "{name}"` means the dep type is not supported by qik or a plugin. For example:
+
+```toml
+[commands.cmd_name]
+deps = [{type = "invalid", name = "dep_name"}]
 ...
 ```
 

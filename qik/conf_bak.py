@@ -35,38 +35,38 @@ class Base(
     pass
 
 
-class BaseDep(Base, frozen=True):
+class Dep(Base, frozen=True):
     pass
 
 
-class GlobDep(BaseDep, tag="glob", frozen=True):
+class GlobDep(Dep, tag="glob", frozen=True):
     pattern: str
 
 
-class ConstDep(BaseDep, tag="const", frozen=True):
+class ConstDep(Dep, tag="const", frozen=True):
     val: str
 
 
-class ValDep(BaseDep, tag="val", frozen=True):
+class ValDep(Dep, tag="val", frozen=True):
     key: str
     file: str
 
 
-class CmdDep(BaseDep, tag="command", frozen=True):
+class CmdDep(Dep, tag="command", frozen=True):
     name: str
     strict: bool = False
     isolated: bool | qik.unset.UnsetType = qik.unset.UNSET
 
 
-class PydistDep(BaseDep, tag="pydist", frozen=True):
+class PydistDep(Dep, tag="pydist", frozen=True):
     name: str
 
 
-class PygraphDep(BaseDep, tag="pygraph", frozen=True):
+class PygraphDep(Dep, tag="pygraph", frozen=True):
     pyimport: str
 
 
-class LoadDep(BaseDep, tag="load", frozen=True):
+class LoadDep(Dep, tag="load", frozen=True):
     path: str
     default: list[str] = []
 

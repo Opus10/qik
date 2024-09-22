@@ -198,25 +198,6 @@ class Local(Cache):
         return artifacts
 
 
-
-def factory(conf: qik.conf.BaseCache) -> Cache:
-    match conf:
-        case qik.conf.S3Cache():
-            endpoint_url = qik.ctx.format(conf.endpoint_url)
-            endpoint_url = None if endpoint_url == "None" else endpoint_url
-            return S3(
-                bucket=qik.ctx.format(conf.bucket),
-                prefix=qik.ctx.format(conf.prefix),
-                aws_access_key_id=qik.ctx.format(conf.aws_access_key_id),
-                aws_secret_access_key=qik.ctx.format(conf.aws_secret_access_key),
-                aws_session_token=qik.ctx.format(conf.aws_session_token),
-                region_name=qik.ctx.format(conf.region_name),
-                endpoint_url=endpoint_url,
-            )
-        case other:
-            raise qik.errors.InvalidCacheType(f'Invalid cache type - "{other}".')
-
-
 @qik.func.cache
 def load(name: str | None) -> Cache:
     proj = qik.conf.project()

@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import qik.conf
 
-class S3Conf(qik.conf.BaseCache, frozen=True, tag="s3"):
+
+class S3Conf(qik.conf.Cache, frozen=True, tag="s3"):
     bucket: str
     prefix: str = ""
     aws_access_key_id: str | None = None

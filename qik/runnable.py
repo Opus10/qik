@@ -37,9 +37,9 @@ if TYPE_CHECKING:
 class DepsCollection:
     """A filterable and hashable collection of dependencies for a runnable."""
 
-    def __init__(self, *deps: str | pathlib.Path | qik.dep.BaseDep, runnable: Runnable):
+    def __init__(self, *deps: str | pathlib.Path | qik.dep.Dep, runnable: Runnable):
         self._deps = [
-            dep if isinstance(dep, qik.dep.BaseDep) else qik.dep.Glob(str(dep)) for dep in deps
+            dep if isinstance(dep, qik.dep.Dep) else qik.dep.Glob(str(dep)) for dep in deps
         ]
         self.runnable = runnable
         self.module = runnable.module
@@ -194,7 +194,7 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
     cmd: str
     val: str
     shell: bool = True
-    deps: list[qik.dep.BaseDep] = []
+    deps: list[qik.dep.Dep] = []
     artifacts: list[str] = []
     module: str | None = None
     cache: str | None | qik.unset.UnsetType = qik.unset.UNSET

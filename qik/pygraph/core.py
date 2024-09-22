@@ -6,13 +6,16 @@ import importlib.machinery
 import importlib.util
 import pkgutil
 import sys
-from typing import TYPE_CHECKING, Iterator, Literal, overload
+from typing import TYPE_CHECKING, ClassVar, Iterator, Literal, overload
 
 import msgspec
 from typing_extensions import Self
 
 import qik.conf
+import qik.ctx
+import qik.dep
 import qik.func
+import qik.pygraph.qikplugin
 import qik.shell
 
 if TYPE_CHECKING:
@@ -149,3 +152,33 @@ def build() -> Graph:
         )
 
     return Graph(modules=modules, edges=sorted(rx_g.edge_list())).bind(rx_g)
+
+
+class PygraphDep(qik.dep.BaseCmd, frozen=True):
+    """A python module and its associated imports."""
+
+    strict: ClassVar[bool] = True  # type: ignore
+    space: str | None = None
+
+    def get_cmd_name(self) -> str:
+        # TODO: refactor this
+        import qik.pygraph.cmd as pygraph_cmd
+
+        return pygraph_cmd.lock_cmd_name()
+
+    def get_cmd_args(self) -> dict[str, str | None]:
+        return {"pyimport": self.val, "space": self.space}
+
+    @property
+    def globs(self) -> list[str]:  # type: ignore
+        import qik.pygraph.cmd as pygraph_cmd
+
+        return [str(pygraph_cmd.lock_path(self.val))]
+
+
+def dep_factory(
+    conf: qik.pygraph.qikplugin.PygraphDepConf,
+    module: qik.conf.ModuleLocator | None = None,
+    space: str | None = None,
+) -> PygraphDep:
+    return PygraphDep(qik.ctx.format(conf.pyimport, module=module), space=space)

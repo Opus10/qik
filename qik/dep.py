@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import pathlib
+import pkgutil
 import re
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING
 
 import msgspec
 
@@ -39,7 +40,7 @@ class Runnable(msgspec.Struct, frozen=True):
     isolated: bool | qik.unset.UnsetType = qik.unset.UNSET
 
 
-class BaseDep(msgspec.Struct, frozen=True, tag=True, dict=True):
+class Dep(msgspec.Struct, frozen=True, tag=True, dict=True):
     """A base dependency."""
 
     val: str
@@ -94,10 +95,10 @@ class BaseDep(msgspec.Struct, frozen=True, tag=True, dict=True):
 
 
 def factory(
-    conf: qik.conf.BaseDep | str | pathlib.Path,
+    conf: qik.conf.Dep | str | pathlib.Path,
     module: qik.conf.ModuleLocator | None = None,
     space: str | None = None,
-) -> BaseDep:
+) -> Dep:
     """A factory for creating dependencies from a configuration."""
 
     def _fmt(val: str) -> str:
@@ -112,8 +113,6 @@ def factory(
             return Pydist(_fmt(conf.name))
         case qik.conf.ValDep():
             return Val(_fmt(conf.key), file=_fmt(conf.file))
-        case qik.conf.PygraphDep():
-            return Pygraph(_fmt(conf.pyimport), space=space)
         case qik.conf.CmdDep():
             return Cmd(_fmt(conf.name), strict=conf.strict, isolated=conf.isolated)
         case qik.conf.ConstDep():
@@ -121,10 +120,11 @@ def factory(
         case qik.conf.LoadDep():
             return Load(_fmt(conf.path), default=conf.default)
         case other:
-            raise AssertionError(f'Unexpected dep cls "{other}"')
+            factory = qik.conf.get_dep_type_factory(other)
+            return pkgutil.resolve_name(factory)(conf, module=module, space=space)
 
 
-class Glob(BaseDep, frozen=True):
+class Glob(Dep, frozen=True):
     """A dependent glob pattern"""
 
     @qik.func.cached_property
@@ -132,7 +132,7 @@ class Glob(BaseDep, frozen=True):
         return [self.val]
 
 
-class Val(BaseDep, frozen=True):
+class Val(Dep, frozen=True):
     """A value from a file."""
 
     file: str
@@ -147,7 +147,7 @@ class Val(BaseDep, frozen=True):
         return [self.file]
 
 
-class BaseCmd(BaseDep, frozen=True):
+class BaseCmd(Dep, frozen=True):
     strict: bool = False
     isolated: bool | qik.unset.UnsetType = qik.unset.UNSET
     args: dict[str, str | None] = {}
@@ -176,7 +176,7 @@ class Cmd(BaseCmd, frozen=True):
         return self.val
 
 
-class Pydist(BaseDep, frozen=True):
+class Pydist(Dep, frozen=True):
     """A python distribution dependency."""
 
     @property
@@ -188,7 +188,7 @@ class Pydist(BaseDep, frozen=True):
         return [self.val]
 
 
-class Const(BaseDep, frozen=True):
+class Const(Dep, frozen=True):
     """A constant value."""
 
     @qik.func.cached_property
@@ -196,24 +196,7 @@ class Const(BaseDep, frozen=True):
         return ["*qik.toml"]
 
 
-class Pygraph(BaseCmd, frozen=True):
-    """A python module and its associated imports."""
-
-    strict: ClassVar[bool] = True  # type: ignore
-    space: str | None = None
-
-    def get_cmd_name(self) -> str:
-        return pygraph_cmd.lock_cmd_name()
-
-    def get_cmd_args(self) -> dict[str, str | None]:
-        return {"pyimport": self.val, "space": self.space}
-
-    @property
-    def globs(self) -> list[str]:  # type: ignore
-        return [str(pygraph_cmd.lock_path(self.val))]
-
-
-class Load(BaseDep, frozen=True):
+class Load(Dep, frozen=True):
     """Load serialized dependencies from a file."""
 
     default: list[str] = []  # The default globs if the file doesn't exist
@@ -245,7 +228,7 @@ class Serialized(msgspec.Struct, frozen=True, omit_defaults=True):
 
 
 @qik.func.cache
-def project_deps() -> list[BaseDep]:
+def project_deps() -> list[Dep]:
     """The base dependencies for the project."""
     proj = qik.conf.project()
     return [factory(dep) for dep in proj.deps]

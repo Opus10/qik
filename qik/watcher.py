@@ -56,7 +56,7 @@ def _make_watchdog_handler(*, runner: Runner) -> QikEventHandlerProtocol:  # pra
     class QikEventHandler(watchdog_events.FileSystemEventHandler):
         def __init__(self):
             self.timer: threading.Timer | None = None
-            self.changes: set[qik.dep.BaseDep] = set()
+            self.changes: set[qik.dep.Dep] = set()
             self.runner = runner
             self.lock = threading.Lock()
 

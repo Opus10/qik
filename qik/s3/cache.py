@@ -16,8 +16,9 @@ import qik.func
 if TYPE_CHECKING:
     import boto3
     from boto3.resources.base import ServiceResource
-    from qik.s3.qikplugin import S3Conf
+
     from qik.runnable import Runnable
+    from qik.s3.qikplugin import S3Conf
 else:
     import qik.lazy
 

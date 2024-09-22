@@ -72,7 +72,7 @@ class DAGPool:
             try:
                 result = future.result()
             except Exception as exc:
-                result = qik.runnable.Result(log=str(exc), code=1, hash='')
+                result = qik.runnable.Result(log=str(exc), code=1, hash="")
                 exception = exc
 
             results[name] = result
@@ -248,7 +248,7 @@ class Graph:
         return self.filter_changes(changes, strategy="since")
 
     def filter_changes(
-        self, deps: Iterable[qik.dep.BaseDep], strategy: qik.runnable.FilterStrategy
+        self, deps: Iterable[qik.dep.Dep], strategy: qik.runnable.FilterStrategy
     ) -> Self:
         """Filter the graph by a list of changed dependencies."""
         runnables: dict[str, Runnable] = {}
@@ -326,7 +326,7 @@ class Runner:
             else qik.logger.Progress()
         )
 
-    def exec(self, *, changes: Iterable[qik.dep.BaseDep] | None = None) -> int:
+    def exec(self, *, changes: Iterable[qik.dep.Dep] | None = None) -> int:
         """Exec the runner, optionally providing a list of changed dependencies."""
         try:
             orig_graph = self.graph
