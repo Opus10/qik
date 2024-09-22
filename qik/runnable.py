@@ -108,11 +108,6 @@ class DepsCollection:
 
     def hash(self) -> str:
         """The full hash."""
-        if self.runnable.name == "graph.lock?pyimport=b&space=default":
-            print('computing hash', qik.hash.strs(
-                self.consts_hash, self.hash_vals(), self.hash_globs(), self.hash_pydists()
-            ))
-
         return qik.hash.strs(
             self.consts_hash, self.hash_vals(), self.hash_globs(), self.hash_pydists()
         )
