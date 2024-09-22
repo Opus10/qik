@@ -6,7 +6,7 @@ import importlib.machinery
 import importlib.util
 import pkgutil
 import sys
-from typing import TYPE_CHECKING, ClassVar, Iterator, Literal, overload
+from typing import TYPE_CHECKING, Iterator, Literal, overload
 
 import msgspec
 from typing_extensions import Self
