@@ -48,7 +48,7 @@ cache = "repo"
 
 [commands.ind_lint]
 exec = "ruff check b"
-deps = [{type = "pygraph", pyimport = "b"}, {type = "pygraph", pyimport = "nest.c"}]
+deps = [{type = "command", name = "modular_lint"}, {type = "pygraph", pyimport = "b"}, {type = "pygraph", pyimport = "nest.c"}]
 cache = "repo"
 space = "other"
 
