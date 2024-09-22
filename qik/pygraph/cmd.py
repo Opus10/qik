@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pathlib
 import re
 from typing import TYPE_CHECKING, Iterable, Iterator
 
@@ -13,6 +12,7 @@ import qik.file
 import qik.func
 import qik.hash
 import qik.pygraph.core
+import qik.pygraph.utils
 import qik.runnable
 import qik.space
 
@@ -50,7 +50,7 @@ def build_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
     except grimp_exceptions.SourceSyntaxError as exc:
         return 1, f"Cannot build import graph - {exc}"
 
-    path = graph_path()
+    path = qik.pygraph.utils.graph_path()
 
     serialized = msgspec.json.encode(graph)
     qik.file.write(path, serialized)
@@ -86,7 +86,7 @@ def lock_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
                     ) from exc
 
     runnable.store_deps(
-        lock_path(pyimport),
+        qik.pygraph.utils.lock_path(pyimport),
         globs=sorted(_gen_upstream_globs()),
         pydists=sorted(_gen_upstream_pydists()),
     )
@@ -149,14 +149,14 @@ def check_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
 def build_cmd_factory(
     cmd: str, conf: qik.conf.Cmd, **args: str
 ) -> dict[str, qik.runnable.Runnable]:
-    build_graph_cmd_name = build_cmd_name()
+    build_graph_cmd_name = qik.pygraph.utils.build_cmd_name()
     runnable = qik.runnable.Runnable(
         name=build_graph_cmd_name,
         cmd=build_graph_cmd_name,
         val="qik.pygraph.cmd.build_cmd",
         shell=False,
         deps=[qik.dep.Glob("**.py"), _graph_conf_dep(), *qik.dep.project_deps()],
-        artifacts=[str(graph_path())],
+        artifacts=[str(qik.pygraph.utils.graph_path())],
         cache="repo",
     )
     return {runnable.name: runnable}
@@ -172,19 +172,19 @@ def lock_cmd_factory(
 
     pyimport = args["pyimport"]
     space = args["space"]
-    name = f"{lock_cmd_name()}?pyimport={pyimport}"
+    name = f"{qik.pygraph.utils.lock_cmd_name()}?pyimport={pyimport}"
     if space:
         name += f"&space={space}"
 
-    cmd_name = lock_cmd_name()
-    artifact = str(lock_path(pyimport))
+    cmd_name = qik.pygraph.utils.lock_cmd_name()
+    artifact = str(qik.pygraph.utils.lock_path(pyimport))
     runnable = qik.runnable.Runnable(
         name=name,
         cmd=cmd_name,
         val="qik.pygraph.cmd.lock_cmd",
         shell=False,
         deps=[
-            qik.dep.Cmd(build_cmd_name()),
+            qik.dep.Cmd(qik.pygraph.utils.build_cmd_name()),
             qik.dep.Load(artifact, default=["**.py"]),
             _graph_conf_dep(),
             *qik.dep.project_deps(),
@@ -200,7 +200,7 @@ def lock_cmd_factory(
 def check_cmd_factory(
     cmd: str, conf: qik.conf.Cmd, **args: str
 ) -> dict[str, qik.runnable.Runnable]:
-    cmd_name = check_cmd_name()
+    cmd_name = qik.pygraph.utils.check_cmd_name()
     return {
         f"{cmd_name}#{space}": qik.runnable.Runnable(
             name=f"{cmd_name}#{space}",
@@ -208,7 +208,7 @@ def check_cmd_factory(
             val="qik.pygraph.cmd.check_cmd",
             shell=False,
             deps=[
-                qik.dep.Cmd(build_cmd_name()),
+                qik.dep.Cmd(qik.pygraph.utils.build_cmd_name()),
                 *(qik.dep.Glob(fence_val) for fence_val in conf.fence),
             ],
             cache=None,
@@ -219,35 +219,9 @@ def check_cmd_factory(
     }
 
 
-@qik.func.cache
-def build_cmd_name() -> str:
-    graph_plugin_name = qik.conf.plugin_locator("qik.pygraph", by_pyimport=True).name
-    return f"{graph_plugin_name}.build"
-
-
-@qik.func.cache
-def lock_cmd_name() -> str:
-    graph_plugin_name = qik.conf.plugin_locator("qik.pygraph", by_pyimport=True).name
-    return f"{graph_plugin_name}.lock"
-
-
-@qik.func.cache
-def check_cmd_name() -> str:
-    graph_plugin_name = qik.conf.plugin_locator("qik.pygraph", by_pyimport=True).name
-    return f"{graph_plugin_name}.check"
-
-
-@qik.func.cache
-def graph_path() -> pathlib.Path:
-    return qik.conf.pub_work_dir() / "artifacts" / build_cmd_name() / "graph.json"
-
-
-@qik.func.cache
-def lock_path(pyimport: str) -> pathlib.Path:
-    return qik.conf.pub_work_dir() / "artifacts" / lock_cmd_name() / f"lock.{pyimport}.json"
-
-
 @qik.func.per_run_cache
 def load_graph() -> qik.pygraph.core.Graph:
     """Load the graph."""
-    return msgspec.json.decode(graph_path().read_bytes(), type=qik.pygraph.core.Graph)
+    return msgspec.json.decode(
+        qik.pygraph.utils.graph_path().read_bytes(), type=qik.pygraph.core.Graph
+    )

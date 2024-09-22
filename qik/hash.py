@@ -60,7 +60,13 @@ def globs(*vals: run_deps.Glob | str) -> str:
             modified_hashes_lines = qik.shell.exec(cmd, check=True, lines=True)
 
         for i, name in enumerate(modified):
-            hashes[name] = modified_hashes_lines[i]
+            # TODO: Occasionally we can get a list index out of range error here. It seems
+            # to be due to a race condition. Re-raise it for now with more context in hopes
+            # of better debugging it.
+            try:
+                hashes[name] = modified_hashes_lines[i]
+            except IndexError as e:
+                raise RuntimeError(f"Unexpected error when computing hash. {modified}") from e
 
     return xxhash.xxh128_hexdigest("".join(f"{name}{hash}" for name, hash in hashes.items()))
 

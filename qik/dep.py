@@ -17,12 +17,7 @@ import qik.hash
 import qik.unset
 
 if TYPE_CHECKING:
-    import qik.pygraph.cmd as pygraph_cmd
     import qik.runnable
-else:
-    import qik.lazy
-
-    pygraph_cmd = qik.lazy.module("qik.pygraph.cmd")
 
 
 @qik.func.cache
