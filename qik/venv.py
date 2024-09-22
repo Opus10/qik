@@ -241,76 +241,9 @@ class Active(Venv, frozen=True, dict=True):
         return {}
 
 
-class UV(Venv, frozen=True, dict=True):
-    """
-    TODO: Move this Venv definition into qik.uv.venv module
-    once we have a plugin system in place.
-    """
-
-    conf: qik.conf.UVVenv
-
-    @qik.func.cached_property
-    def default_lock(self) -> str:
-        import qik.uv.cmd as uv_cmd
-
-        return str(
-            qik.conf.pub_work_dir()
-            / "artifacts"
-            / uv_cmd.lock_cmd_name()
-            / f"requirements-{self.name}-lock.txt"
-        )
-
-    @qik.func.cached_property
-    def lock(self) -> list[str]:
-        super_lock = super().lock
-        if len(super_lock) > 1:
-            raise qik.errors.UVMultipleLocks(
-                f"Cannot have more than one lock file for {self.alias}."
-            )
-
-        return [self.default_lock] if not super_lock else super_lock
-
-    @qik.func.cached_property
-    def environ(self) -> dict[str, str]:  # type: ignore
-        return os.environ | {
-            "VIRTUAL_ENV": str(self.dir),
-            "PATH": f"{self.dir}/bin:{os.environ['PATH']}",
-        }
-
-    @qik.func.cached_property
-    def dir(self) -> pathlib.Path:  # type: ignore
-        return qik.conf.priv_work_dir() / "venv" / self.name
-
-    @qik.func.cached_property
-    def site_packages_dir(self) -> pathlib.Path:  # type: ignore
-        for path in pathlib.Path(self.dir).glob("lib/python*/site-packages"):
-            return path
-
-        # TODO: Turn this into a qik runtime error
-        raise AssertionError(f'Could not find site packages dir of venv "{self.name}"')
-
-    @qik.func.cached_property
-    def runnable_deps(self) -> dict[str, qik.dep.Runnable]:
-        import qik.uv.cmd as uv_cmd
-
-        return {
-            runnable.name: qik.dep.Runnable(name=runnable.name, obj=runnable, strict=True)
-            for runnable in qik.cmd.load(
-                uv_cmd.install_cmd_name(), space=self.name
-            ).runnables.values()
-        }
-
-
 _ACTIVE: Active = Active(name=".active", conf=ActiveConf())
 
 
 def active() -> Active:
     """Return the active venv."""
     return _ACTIVE
-
-
-def factory(name: str, *, conf: qik.conf.Venv) -> Venv:
-    if isinstance(conf, qik.conf.UVVenv):
-        return UV(name=name, conf=conf)
-    else:
-        raise AssertionError(f'Unexpected venv conf type "{conf.__class__}".')

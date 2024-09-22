@@ -64,6 +64,10 @@ class InvalidDepType(RunnerError):
     code = "conf11"
 
 
+class InvalidVenvType(RunnerError):
+    code = "conf12"
+
+
 class CtxProfileNotFound(RunnerError):
     code = "ctx0"
 

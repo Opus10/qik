@@ -9,6 +9,7 @@ import qik.errors
 import qik.func
 import qik.runnable
 import qik.space
+import qik.uv.venv
 import qik.venv
 
 
@@ -25,7 +26,7 @@ def lock_cmd_factory(
     if not space:
         raise qik.errors.ArgNotSupplied('"space" arg is required for qik.uv.lock command.')
 
-    venv = cast(qik.venv.UV, qik.space.load(space).venv)
+    venv = cast(qik.uv.venv.UVVenv, qik.space.load(space).venv)
     cmd_name = lock_cmd_name()
     runnable = qik.runnable.Runnable(
         name=f"{cmd_name}?space={space}",
@@ -53,7 +54,7 @@ def install_cmd_factory(
     if not space:
         raise qik.errors.ArgNotSupplied('"space" arg is required for qik.uv.install command.')
 
-    venv = cast(qik.venv.UV, qik.space.load(space).venv)
+    venv = cast(qik.uv.venv.UVVenv, qik.space.load(space).venv)
     venv_python = f"--python '{venv.conf.python}'" if venv.conf.python else ""
     cmd_name = install_cmd_name()
     runnable = qik.runnable.Runnable(

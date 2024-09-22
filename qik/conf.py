@@ -60,6 +60,15 @@ def get_dep_type_factory(conf: Dep) -> str:
         )
 
 
+def get_venv_type_factory(conf: Venv) -> str:
+    if entry := _PLUGIN_VENV_TYPES.get(str(conf.__struct_config__.tag)):
+        return entry[1]
+    else:
+        raise qik.errors.InvalidVenvType(
+            f'Venv type "{conf.__struct_config__.tag}" not provided by any plugin.'
+        )
+
+
 class Base(
     msgspec.Struct,
     frozen=True,
@@ -194,10 +203,6 @@ class Venv(Base, frozen=True, tag_field="type"):
     lock: str | list[str] = []
 
 
-class UVVenv(Venv, frozen=True, tag="uv"):
-    python: str | None = None
-
-
 class Pygraph(Base, frozen=True):
     ignore_type_checking: bool = False
     ignore_pydists: bool = False
@@ -299,6 +304,7 @@ def _parse_project_config(contents: bytes) -> Project:
     """Dynamically generate a Project config class based on installed plugins."""
 
     DynamicCacheTypes = Union[(Cache, *(cls for cls, _ in _PLUGIN_CACHE_TYPES.values()))]
+    DynamicVenvTypes = Union[(Venv, *(cls for cls, _ in _PLUGIN_VENV_TYPES.values()))]
     DynamicDeps = Union[
         (
             str,
@@ -311,9 +317,12 @@ def _parse_project_config(contents: bytes) -> Project:
         )
     ]
 
-    class DynamicSpace(Space, frozen=True):
-        venv: str | UVVenv | None = None
-
+    DynamicSpace = msgspec.defstruct(
+        "DynamicSpace",
+        [("venv", DynamicVenvTypes | str | None, None)],  # type: ignore
+        bases=(Space,),
+        frozen=True,
+    )
     DynamicCmd = msgspec.defstruct(
         "DynamicCmd", [("deps", list[DynamicDeps], [])], bases=(Cmd,), frozen=True
     )
@@ -329,7 +338,7 @@ def _parse_project_config(contents: bytes) -> Project:
         "DynamicProject",
         [
             ("deps", list[DynamicDeps], []),
-            ("venvs", dict[str, UVVenv], {}),
+            ("venvs", dict[str, DynamicVenvTypes], {}),
             ("caches", dict[str, DynamicCacheTypes], {}),
             ("spaces", dict[str, DynamicSpace], {}),
             ("commands", dict[str, DynamicCmd], {}),

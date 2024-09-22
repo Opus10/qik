@@ -102,6 +102,18 @@ deps = [{type = "invalid", name = "dep_name"}]
 ...
 ```
 
+<a id="conf12"></a>
+
+#### Invalid Venv Type
+
+`Invalid venv type - "{name}"` means the venv type is not supported by qik or a plugin. For example:
+
+```toml
+[spaces.default]
+venv = {type = "invalid", name = "name"}
+...
+```
+
 ## Context
 
 <a id="ctx0"></a>
