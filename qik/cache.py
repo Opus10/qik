@@ -211,7 +211,7 @@ def load(name: str | None) -> Cache:
             return Uncached()
         case custom:
             if conf := proj.caches.get(custom):
-                factory = qik.conf.get_cache_type_factory(conf)
+                factory = qik.conf.get_type_factory(conf)
                 return pkgutil.resolve_name(factory)(name, conf)
             else:
                 raise qik.errors.UnconfiguredCache(f'Unconfigured cache - "{custom}"')

@@ -115,7 +115,7 @@ def factory(
         case qik.conf.LoadDep():
             return Load(_fmt(conf.path), default=conf.default)
         case other:
-            factory = qik.conf.get_dep_type_factory(other)
+            factory = qik.conf.get_type_factory(other)
             return pkgutil.resolve_name(factory)(conf, module=module, space=space)
 
 

@@ -13,4 +13,4 @@ class S3Conf(qik.conf.Cache, frozen=True, tag="s3"):
     endpoint_url: str | None = None
 
 
-qik.conf.register_cache_type(S3Conf, "qik.s3.cache.factory")
+qik.conf.register_type(S3Conf, "qik.s3.cache.factory")

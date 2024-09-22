@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import collections
 import importlib.util
 import os.path
 import pathlib
 import sys
 from types import UnionType
-from typing import Any, Literal, TypeAlias, TypeVar, Union
+from typing import Any, ClassVar, Literal, TypeAlias, TypeVar, Union
 
 import msgspec.structs
 import msgspec.toml
@@ -25,47 +26,24 @@ CacheStatus: TypeAlias = Literal["warm", "code"]
 
 
 # Dynamic config classes and objects registered by plugins
-_PLUGIN_CACHE_TYPES: dict[str, tuple[type[Cache], str]] = {}
-_PLUGIN_DEP_TYPES: dict[str, tuple[type[Dep], str]] = {}
-_PLUGIN_VENV_TYPES: dict[str, tuple[type[Venv], str]] = {}
+_PLUGIN_TYPES: dict[str, dict[str, tuple[type[BasePluggable], str]]] = collections.defaultdict(
+    dict
+)
 
 
-def register_cache_type(cache_type: type[Cache], factory: str) -> None:
-    _PLUGIN_CACHE_TYPES[str(cache_type.__struct_config__.tag)] = (cache_type, factory)
+def register_type(cache_type: type[BasePluggable], factory: str) -> None:
+    _PLUGIN_TYPES[cache_type.plugin_type_name][str(cache_type.__struct_config__.tag)] = (
+        cache_type,
+        factory,
+    )
 
 
-def register_dep_type(dep_type: type[Dep], factory: str) -> None:
-    _PLUGIN_DEP_TYPES[str(dep_type.__struct_config__.tag)] = (dep_type, factory)
-
-
-def register_venv_type(venv_type: type[Venv], factory: str) -> None:
-    _PLUGIN_VENV_TYPES[str(venv_type.__struct_config__.tag)] = (venv_type, factory)
-
-
-def get_cache_type_factory(conf: Cache) -> str:
-    if entry := _PLUGIN_CACHE_TYPES.get(str(conf.__struct_config__.tag)):
+def get_type_factory(conf: BasePluggable) -> str:
+    if entry := _PLUGIN_TYPES[conf.plugin_type_name].get(str(conf.__struct_config__.tag)):
         return entry[1]
     else:
         raise qik.errors.InvalidCacheType(
-            f'Cache type "{conf.__struct_config__.tag}" not provided by any plugin.'
-        )
-
-
-def get_dep_type_factory(conf: Dep) -> str:
-    if entry := _PLUGIN_DEP_TYPES.get(str(conf.__struct_config__.tag)):
-        return entry[1]
-    else:
-        raise qik.errors.InvalidDepType(
-            f'Dep type "{conf.__struct_config__.tag}" not provided by any plugin.'
-        )
-
-
-def get_venv_type_factory(conf: Venv) -> str:
-    if entry := _PLUGIN_VENV_TYPES.get(str(conf.__struct_config__.tag)):
-        return entry[1]
-    else:
-        raise qik.errors.InvalidVenvType(
-            f'Venv type "{conf.__struct_config__.tag}" not provided by any plugin.'
+            f'{conf.plugin_type_name.title()} type "{conf.__struct_config__.tag}" not provided by any plugin.'
         )
 
 
@@ -80,8 +58,12 @@ class Base(
     pass
 
 
-class Dep(Base, frozen=True):
-    pass
+class BasePluggable(Base, frozen=True):
+    plugin_type_name: ClassVar[str]
+
+
+class Dep(BasePluggable, frozen=True):
+    plugin_type_name: ClassVar[str] = "dep"
 
 
 class GlobDep(Dep, tag="glob", frozen=True):
@@ -198,7 +180,8 @@ class PluginLocator(BaseLocator, frozen=True):
         return pathlib.Path(spec.origin).parent
 
 
-class Venv(Base, frozen=True, tag_field="type"):
+class Venv(BasePluggable, frozen=True, tag_field="type"):
+    plugin_type_name: ClassVar[str] = "venv"
     reqs: str | list[str]
     lock: str | list[str] = []
 
@@ -210,8 +193,8 @@ class Pygraph(Base, frozen=True):
     module_pydists: dict[str, str] = {}
 
 
-class Cache(Base, frozen=True, tag_field="type"):
-    pass
+class Cache(BasePluggable, frozen=True, tag_field="type"):
+    plugin_type_name: ClassVar[str] = "cache"
 
 
 class Space(Base, frozen=True):
@@ -303,8 +286,12 @@ def _load_plugins(conf: ProjectPlugins) -> None:
 def _parse_project_config(contents: bytes) -> Project:
     """Dynamically generate a Project config class based on installed plugins."""
 
-    DynamicCacheTypes = Union[(Cache, *(cls for cls, _ in _PLUGIN_CACHE_TYPES.values()))]
-    DynamicVenvTypes = Union[(Venv, *(cls for cls, _ in _PLUGIN_VENV_TYPES.values()))]
+    dep_plugin_types = _PLUGIN_TYPES["dep"]
+    cache_plugin_types = _PLUGIN_TYPES["cache"]
+    venv_plugin_types = _PLUGIN_TYPES["venv"]
+
+    DynamicCacheTypes = Union[(Cache, *(cls for cls, _ in cache_plugin_types.values()))]
+    DynamicVenvTypes = Union[(Venv, *(cls for cls, _ in venv_plugin_types.values()))]
     DynamicDeps = Union[
         (
             str,
@@ -313,7 +300,7 @@ def _parse_project_config(contents: bytes) -> Project:
             PydistDep,
             ConstDep,
             LoadDep,
-            *(cls for cls, _ in _PLUGIN_DEP_TYPES.values()),
+            *(cls for cls, _ in dep_plugin_types.values()),
         )
     ]
 

@@ -19,7 +19,7 @@ class Space(msgspec.Struct, frozen=True, dict=True):
         elif self.conf.venv is None:
             return qik.venv.active()
         else:
-            factory = qik.conf.get_venv_type_factory(self.conf.venv)
+            factory = qik.conf.get_type_factory(self.conf.venv)
             return pkgutil.resolve_name(factory)(self.name, self.conf.venv)
 
 

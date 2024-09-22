@@ -7,4 +7,4 @@ class PygraphDepConf(qik.conf.Dep, tag="pygraph", frozen=True):
     pyimport: str
 
 
-qik.conf.register_dep_type(PygraphDepConf, "qik.pygraph.dep.factory")
+qik.conf.register_type(PygraphDepConf, "qik.pygraph.dep.factory")
