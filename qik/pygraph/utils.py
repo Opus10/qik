@@ -33,5 +33,6 @@ def graph_path() -> pathlib.Path:
 
 
 @qik.func.cache
-def lock_path(pyimport: str) -> pathlib.Path:
-    return qik.conf.pub_work_dir() / "artifacts" / lock_cmd_name() / f"lock.{pyimport}.json"
+def lock_path(pyimport: str, space: str | None = None) -> pathlib.Path:
+    file_name = f"lock.{pyimport}.{space}.json" if space else f"lock.{pyimport}.json"
+    return qik.conf.pub_work_dir() / "artifacts" / lock_cmd_name() / file_name

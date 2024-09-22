@@ -25,7 +25,7 @@ class PygraphDep(qik.dep.BaseCmd, frozen=True):
 
     @property
     def globs(self) -> list[str]:  # type: ignore
-        return [str(qik.pygraph.utils.lock_path(self.val))]
+        return [str(qik.pygraph.utils.lock_path(self.val, self.space))]
 
 
 def factory(

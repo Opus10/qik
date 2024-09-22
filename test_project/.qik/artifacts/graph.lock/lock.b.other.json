@@ -1,0 +1,1 @@
+{"globs":["a/hello.py","a/hello/**.py","b.py","b/**.py","b/bb.py","b/bb/**.py","b/bb/aa.py","b/bb/aa/**.py","b/hello.py","b/hello/**.py"],"pydists":["msgspec","requests"],"hash":"d50eb3df4b9fea59394829b3c6fdeac1"}

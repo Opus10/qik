@@ -86,7 +86,7 @@ def lock_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
                     ) from exc
 
     runnable.store_deps(
-        qik.pygraph.utils.lock_path(pyimport),
+        qik.pygraph.utils.lock_path(pyimport, runnable.space),
         globs=sorted(_gen_upstream_globs()),
         pydists=sorted(_gen_upstream_pydists()),
     )
@@ -177,7 +177,7 @@ def lock_cmd_factory(
         name += f"&space={space}"
 
     cmd_name = qik.pygraph.utils.lock_cmd_name()
-    artifact = str(qik.pygraph.utils.lock_path(pyimport))
+    artifact = str(qik.pygraph.utils.lock_path(pyimport, space))
     runnable = qik.runnable.Runnable(
         name=name,
         cmd=cmd_name,
