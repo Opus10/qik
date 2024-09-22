@@ -19,13 +19,13 @@ class Cmd(msgspec.Struct, frozen=True):
 
 
 @qik.func.cache
-def load(cmd: str, **args: str) -> Cmd:
+def load(name: str, **args: str) -> Cmd:
     """Load runnables for a command."""
-    cmd_conf = qik.conf.command(cmd)
+    cmd_conf = qik.conf.command(name)
     runnables = pkgutil.resolve_name(cmd_conf.factory or "qik.runnable.factory")(
-        cmd, cmd_conf, **args
+        name, cmd_conf, **args
     )
-    return Cmd(name=cmd, runnables=runnables)
+    return Cmd(name=name, runnables=runnables)
 
 
 def ls() -> Iterator[str]:

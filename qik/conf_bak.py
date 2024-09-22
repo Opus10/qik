@@ -2,17 +2,16 @@
 
 from __future__ import annotations
 
-import importlib
 import importlib.util
 import os.path
 import pathlib
+import sys
 from types import UnionType
 from typing import Any, Literal, TypeAlias, TypeVar
 
 import msgspec.structs
 import msgspec.toml
 
-import qik.conf
 import qik.errors
 import qik.func
 import qik.unset
@@ -23,24 +22,6 @@ VAR_T = TypeVar("VAR_T", str, bool, int, None)
 CacheBackend: TypeAlias = Literal["s3"]
 CacheWhen: TypeAlias = Literal["success", "failed", "finished"]
 CacheStatus: TypeAlias = Literal["warm", "code"]
-
-
-# Dynamic config classes and objects registered by plugins
-_PLUGIN_CACHE_TYPES: dict[str, tuple[type[BaseCache], str]] = {}
-_PLUGIN_VENV_TYPES: dict[str, tuple[type[BaseVenv], str]] = {}
-_PLUGIN_CMDS: list[Cmd] = []
-
-
-def register_cache_type(cache_type: type[BaseCache], factory: str) -> None:
-    _PLUGIN_CACHE_TYPES[str(cache_type.__struct_config__.tag)] = (cache_type, factory)
-
-
-def register_venv_type(venv_type: type[BaseVenv], factory: str) -> None:
-    _PLUGIN_VENV_TYPES[str(venv_type.__struct_config__.tag)] = (venv_type, factory)
-
-
-def register_cmd(cmd: Cmd) -> None:
-    _PLUGIN_CMDS.append(cmd)
 
 
 class Base(
@@ -179,12 +160,12 @@ class PluginLocator(BaseLocator, frozen=True):
         return pathlib.Path(spec.origin).parent
 
 
-class BaseVenv(Base, frozen=True, tag_field="type"):
+class Venv(Base, frozen=True, tag_field="type"):
     reqs: str | list[str]
     lock: str | list[str] = []
 
 
-class UVVenv(BaseVenv, frozen=True, tag="uv"):
+class UVVenv(Venv, frozen=True, tag="uv"):
     python: str | None = None
 
 
@@ -195,11 +176,11 @@ class Pygraph(Base, frozen=True):
     module_pydists: dict[str, str] = {}
 
 
-class BaseCache(Base, frozen=True, tag_field="type"):
+class Cache(Base, frozen=True, tag_field="type"):
     pass
 
 
-class S3Cache(BaseCache, frozen=True, tag="s3"):
+class S3Cache(Cache, frozen=True, tag="s3"):
     bucket: str
     prefix: str = ""
     aws_access_key_id: str | None = None
@@ -209,11 +190,11 @@ class S3Cache(BaseCache, frozen=True, tag="s3"):
     endpoint_url: str | None = None
 
 
-class BaseSpace(Base, frozen=True):
+class Space(Base, frozen=True):
     root: str | None = None
     modules: list[str | ModuleLocator] = []
     fence: list[str] = []
-    venv: str | BaseVenv | None = None
+    venv: str | UVVenv | None = None
 
     @qik.func.cached_property
     def modules_by_name(self) -> dict[str, ModuleLocator]:
@@ -227,13 +208,13 @@ class BaseSpace(Base, frozen=True):
         return {m.path: m for m in self.modules_by_name.values()}
 
 
-class BaseProject(ModuleOrPlugin, frozen=True):
+class Project(ModuleOrPlugin, frozen=True):
     plugins: list[str | PluginLocator] = []
     deps: list[DepType] = []
     ctx: dict[str, dict[CtxNamespace, dict[str, Any]]] = {}
-    venvs: dict[str, BaseVenv] = {}
-    caches: dict[str, BaseCache] = {}
-    spaces: dict[str, BaseSpace] = {}
+    venvs: dict[str, UVVenv] = {}
+    caches: dict[str, S3Cache] = {}
+    spaces: dict[str, Space] = {}
     pygraph: Pygraph = msgspec.field(default_factory=Pygraph)
     pydist_versions: dict[str, str] = {}
     ignore_missing_pydists: bool = False
@@ -261,50 +242,18 @@ class BaseProject(ModuleOrPlugin, frozen=True):
     @qik.func.cached_property
     def plugins_by_pyimport(self) -> dict[str, PluginLocator]:
         return {p.pyimport: p for p in self.plugins_by_name.values()}
-    
-
-class ProjectPlugins(msgspec.Struct, frozen=True):
-    """Parses the root qik.toml file for plugins.
-
-    Allows us to dynamically determine the structure of the config based on installed
-    plugins.
-    """
-    plugins: list[str | PluginLocator] = []
 
 
-def _load_plugins(conf: ProjectPlugins) -> None:
-    """Load plugins and return the Project configuration."""
-    for plugin in conf.plugins:
-        pyimport = plugin if isinstance(plugin, str) else plugin.pyimport
-
-        try:
-            importlib.import_module(f"{pyimport}.qikplugin")
-        except ImportError:
-            raise qik.errors.PluginNotFound(
-                f"Plugin '{pyimport}' could not be imported. "
-                f"Make sure it's installed and has a 'qikplugin' module."
-            )
+class PyprojectTool(msgspec.Struct):
+    qik: Project | None = None
 
 
-def _parse_project_config(contents: bytes) -> BaseProject:
-    """Dynamically generate a Project config class based on installed plugins."""
-    class Space(BaseSpace, frozen=True):
-        venv: str | UVVenv | None = None
-
-    # Must register as part of the global namespace in order for msgspec to
-    # recognize dynamic nested type.
-    globals()['Space'] = Space
-
-    class Project(BaseProject, frozen=True):
-        venvs: dict[str, UVVenv] = {}  # type: ignore
-        caches: dict[str, S3Cache] = {}  # type: ignore
-        spaces: dict[str, Space] = {}  # type: ignore
-
-    return msgspec.toml.decode(contents, type=Project)
+class Pyproject(msgspec.Struct, omit_defaults=True):
+    tool: PyprojectTool | None = None
 
 
 @qik.func.cache
-def _project() -> tuple[BaseProject, pathlib.Path]:
+def _project() -> tuple[Project, pathlib.Path]:
     """Return the project configuration and file."""
     cwd = pathlib.Path.cwd()
     qik_toml: pathlib.Path | None = None
@@ -313,18 +262,32 @@ def _project() -> tuple[BaseProject, pathlib.Path]:
         if (directory / "qik.toml").is_file():
             qik_toml = directory / "qik.toml"
 
-        if (directory / ".git").is_dir():
+        if (
+            has_pyproject := (directory / "pyproject.toml").is_file()
+            or (directory / ".git").is_dir()
+        ):
+            if qik_toml and qik_toml.parent == directory:
+                # qik.toml is at the root. Use qik.toml
+                return msgspec.toml.decode(qik_toml.read_bytes(), type=Project), qik_toml
+            elif has_pyproject:
+                location = directory / "pyproject.toml"
+                pyproject = msgspec.toml.decode(location.read_bytes(), type=Pyproject)
+                if pyproject.tool and pyproject.tool.qik:
+                    return pyproject.tool.qik, location
+                elif qik_toml:  # qik.toml was found but not at root
+                    return msgspec.toml.decode(qik_toml.read_bytes(), type=Project), qik_toml
+
             break
 
-    if qik_toml:
-        contents = qik_toml.read_bytes()
-        _load_plugins(msgspec.toml.decode(contents, type=ProjectPlugins))
-        return _parse_project_config(contents), qik_toml
-    else:
-        raise qik.errors.ConfigNotFound("Could not locate qik.toml configuration file.")
+    raise qik.errors.ConfigNotFound(
+        "Could not locate qik configuration in qik.toml or pyproject.toml."
+    )
 
 
-def project() -> BaseProject:
+@qik.func.cache
+def project() -> Project:
+    """Get project-level configuration."""
+    sys.path.append(str(root()))
     return _project()[0]
 
 
@@ -397,13 +360,13 @@ def command(uri: str) -> Cmd:
 
 
 @qik.func.cache
-def space(name: str = "default") -> BaseSpace:
+def space(name: str = "default") -> Space:
     """Get configuration for a space."""
     proj = project()
     if name != "default" and name not in proj.spaces:
         raise qik.errors.SpaceNotFound(f'Space "{name}" not configured.')
 
-    return proj.spaces.get(name, BaseSpace(venv="default"))
+    return proj.spaces.get(name, Space(venv="default"))
 
 
 @qik.func.cache
