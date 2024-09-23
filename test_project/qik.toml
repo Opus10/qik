@@ -1,4 +1,4 @@
-plugins = [{name = "graph", pyimport = "qik.pygraph"}, "qik.uv", "qik.s3"]
+plugins = ["qik.pygraph", "qik.uv", "qik.s3"]
 deps = ["python_version"]
 vars = ["aws_access_key_id", "aws_secret_access_key", {name = "aws_endpoint_url", required = false}]
 

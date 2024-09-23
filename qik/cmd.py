@@ -34,6 +34,6 @@ def ls() -> Iterator[str]:
     for module in [None, *proj.modules_by_name, *proj.plugins_by_name]:
         conf = qik.conf.get(module)
         for command in conf.commands:
-            cmd_name = f"{module}.{command}" if module else command
+            cmd_name = f"{module}/{command}" if module else command
             if not qik.conf.command(cmd_name).hidden:
                 yield cmd_name

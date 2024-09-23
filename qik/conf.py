@@ -241,7 +241,8 @@ class Project(ModuleOrPlugin, frozen=True):
     @qik.func.cached_property
     def plugins_by_name(self) -> dict[str, PluginLocator]:
         plugin_locators = (
-            PluginLocator(name=p, pyimport=p) if isinstance(p, str) else p for p in self.plugins
+            PluginLocator(name=p.split(".", 1)[-1], pyimport=p) if isinstance(p, str) else p
+            for p in self.plugins
         )
         return {p.name: p for p in plugin_locators}
 
@@ -417,7 +418,12 @@ def get(name: str | None = None) -> ModuleOrPlugin:
 @qik.func.cache
 def uri_parts(uri: str) -> tuple[str | None, str]:
     """Return the module and name of a URI."""
-    return (None, uri) if "." not in uri else tuple(uri.rsplit(".", 1))  # type: ignore
+    if "/" in uri:
+        return tuple(uri.rsplit("/", 1))  # type: ignore
+    elif "." in uri:
+        return tuple(uri.rsplit(".", 1))  # type: ignore
+    else:
+        return (None, uri)
 
 
 @qik.func.cache
