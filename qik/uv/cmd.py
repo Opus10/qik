@@ -31,7 +31,7 @@ def lock_cmd_factory(
     runnable = qik.runnable.Runnable(
         name=f"{cmd_name}?space={space}",
         cmd=cmd_name,
-        val=f"mkdir -p {pathlib.Path(venv.lock[0]).parent} && uv pip compile --universal {' '.join(venv.reqs)} -o {venv.lock}",
+        val=f"mkdir -p {pathlib.Path(venv.lock).parent} && uv pip compile --universal {' '.join(venv.reqs)} -o {venv.lock}",
         deps=[*(qik.dep.Glob(req) for req in venv.reqs), *qik.dep.project_deps()],
         artifacts=[venv.lock],
         cache="repo",

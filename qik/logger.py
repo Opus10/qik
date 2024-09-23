@@ -365,7 +365,7 @@ class Progress(Logger):
         self.live.update(self.generate_table())
         self.live.stop()
 
-        verbosity = qik.ctx.module("qik").verbosity
+        verbosity = qik.ctx.by_namespace("qik").verbosity
         if verbosity:
             cached_runnables = self.stats.cached_runnables
 

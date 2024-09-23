@@ -3,27 +3,21 @@ deps = ["python_version"]
 vars = ["aws_access_key_id", "aws_secret_access_key", {name = "aws_endpoint_url", required = false}]
 
 [spaces.default]
-venv = { type = "uv", reqs = "requirements.in" }
+venv = {type = "uv", reqs = "requirements.in"}
 modules = ["a", {name = "b_module", path = "b"}]
 
 [spaces.other]
-venv = { type = "uv", reqs = "req2.in" }
+venv = {type = "uv", reqs = "req2.in"}
 modules = ["nest/c"]
 fence = ["b", "a", "nest"]
 
 [caches.remote]
 type = "s3"
 bucket = "qik-cache-test"
-aws-access-key-id = "{ctx.project.aws_access_key_id}"
-aws-secret-access-key = "{ctx.project.aws_secret_access_key}"
+aws-access-key-id = "{ctx.aws_access_key_id}"
+aws-secret-access-key = "{ctx.aws_secret_access_key}"
 region-name = "us-west-2"
-endpoint-url = "{ctx.project.aws_endpoint_url}"
-
-[ctx.ci.qik]
-workers = 1
-
-[ctx.default.plugins."qik.uv"]
-hello_world = "worl"
+endpoint-url = "{ctx.aws_endpoint_url}"
 
 [commands.fail]
 exec = 'exit 1'

@@ -8,7 +8,7 @@ import os.path
 import pathlib
 import sys
 from types import UnionType
-from typing import Any, ClassVar, Literal, TypeAlias, TypeVar, Union
+from typing import ClassVar, Literal, TypeAlias, TypeVar, Union
 
 import msgspec.structs
 import msgspec.toml
@@ -124,7 +124,6 @@ class Var(Base, frozen=True):
 
 
 class ModuleOrPlugin(Base, frozen=True):
-    vars: list[str | Var] = []
     commands: dict[str, Cmd] = {}
 
     @qik.func.cached_property
@@ -217,8 +216,8 @@ class Space(Base, frozen=True):
 
 class Project(ModuleOrPlugin, frozen=True):
     plugins: list[str | PluginLocator] = []
+    vars: list[str | Var] = []
     deps: list[str | Dep] = []
-    ctx: dict[str, dict[CtxNamespace, dict[str, Any]]] = {}
     venvs: dict[str, Venv] = {}
     caches: dict[str, Cache] = {}
     spaces: dict[str, Space] = {}

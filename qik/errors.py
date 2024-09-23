@@ -130,5 +130,5 @@ def fmt_msg(exc: Exception, prefix: str = "") -> str:
 def print(exc: Exception, prefix: str = "") -> None:
     msg = fmt_msg(exc, prefix=prefix)
     qik.console.get().print(msg)
-    if not isinstance(exc, Error) or qik_ctx.module("qik").verbosity >= 3:
+    if not isinstance(exc, Error) or qik_ctx.by_namespace("qik").verbosity >= 3:
         qik.console.print_exception()

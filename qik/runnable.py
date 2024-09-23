@@ -243,7 +243,7 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
 
     def get_cache_when(self) -> qik.conf.CacheWhen:
         return (
-            qik.ctx.module("qik").cache_when
+            qik.ctx.by_namespace("qik").cache_when
             if isinstance(self.cache_when, qik.unset.UnsetType)
             else self.cache_when
         )
@@ -261,14 +261,14 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
 
     def get_cache_backend(self) -> qik.cache.Cache:
         backend = (
-            qik.ctx.module("qik").cache
+            qik.ctx.by_namespace("qik").cache
             if isinstance(self.cache, qik.unset.UnsetType)
             else self.cache
         )
         return qik.cache.load(backend)
 
     def get_cache_entry(self, artifacts: bool = True) -> qik.cache.Entry | None:
-        if not qik.ctx.module("qik").force:
+        if not qik.ctx.by_namespace("qik").force:
             entry = self.get_cache_backend().get(self, artifacts=artifacts)
             if entry and self.should_cache(entry.manifest.code):
                 return entry

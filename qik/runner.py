@@ -161,7 +161,7 @@ class Graph:
                 isolated = (
                     dep.isolated
                     if not isinstance(dep.isolated, qik.unset.UnsetType)
-                    else qik.ctx.module("qik").isolated
+                    else qik.ctx.by_namespace("qik").isolated
                 )
                 if not isolated or dep.obj.name in self._nodes:
                     yield (runnable, dep.obj, "up")
@@ -317,9 +317,9 @@ class Runner:
     def __init__(self, graph: Graph) -> None:
         self.graph = graph
         self.pool = concurrent.futures.ThreadPoolExecutor(
-            max_workers=qik.ctx.module("qik").workers
+            max_workers=qik.ctx.by_namespace("qik").workers
         )
-        qik_ctx = qik.ctx.module("qik")
+        qik_ctx = qik.ctx.by_namespace("qik")
         self.logger = (
             qik.logger.Stdout()
             if len(graph) == 1 or qik_ctx.workers == 1
@@ -346,7 +346,7 @@ class Runner:
 
 def _get_graph() -> Graph:
     """Get a filtered graph."""
-    qik_ctx = qik.ctx.module("qik")
+    qik_ctx = qik.ctx.by_namespace("qik")
     cmds = qik_ctx.commands
 
     if not cmds:
@@ -372,7 +372,7 @@ def _get_graph() -> Graph:
 def exec() -> Graph:
     """Run commands based on the current qik context."""
     try:
-        qik_ctx = qik.ctx.module("qik")
+        qik_ctx = qik.ctx.by_namespace("qik")
         graph = _get_graph()
 
         if not qik_ctx.ls and not qik_ctx.fail:
