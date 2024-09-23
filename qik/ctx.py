@@ -130,7 +130,7 @@ def _var_struct(namespace: qik.conf.CtxNamespace | None = None) -> type[msgspec.
         proj = qik.conf.project()
         return msgspec.defstruct(
             "VarStruct",
-            [(v.name, v.py_type, v.default) for v in proj.vars_dict.values()],  # type: ignore
+            [(v.name, v.pytype, v.default) for v in proj.ctx_vars.values()],  # type: ignore
             forbid_unknown_fields=True,
             rename="kebab",
         )

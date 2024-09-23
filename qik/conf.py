@@ -116,7 +116,7 @@ class Var(Base, frozen=True):
             msgspec.structs.force_setattr(self, "default", None)
 
     @property
-    def py_type(self) -> type | UnionType:
+    def pytype(self) -> type | UnionType:
         if self.required:
             return __builtins__[self.type]
         else:
@@ -125,10 +125,6 @@ class Var(Base, frozen=True):
 
 class ModuleOrPlugin(Base, frozen=True):
     commands: dict[str, Cmd] = {}
-
-    @qik.func.cached_property
-    def vars_dict(self) -> dict[str, Var]:
-        return dict((v, Var(v)) if isinstance(v, str) else (v.name, v) for v in self.vars)
 
 
 class BaseLocator(Base, frozen=True):
@@ -216,7 +212,7 @@ class Space(Base, frozen=True):
 
 class Project(ModuleOrPlugin, frozen=True):
     plugins: list[str | PluginLocator] = []
-    vars: list[str | Var] = []
+    ctx: list[str | Var] = []
     deps: list[str | Dep] = []
     venvs: dict[str, Venv] = {}
     caches: dict[str, Cache] = {}
@@ -225,6 +221,10 @@ class Project(ModuleOrPlugin, frozen=True):
     pydist_versions: dict[str, str] = {}
     ignore_missing_pydists: bool = False
     active_venv_lock: str | None = None
+
+    @qik.func.cached_property
+    def ctx_vars(self) -> dict[str, Var]:
+        return dict((v, Var(v)) if isinstance(v, str) else (v.name, v) for v in self.ctx)
 
     @qik.func.cached_property
     def modules_by_name(self) -> dict[str, ModuleLocator]:
