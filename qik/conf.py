@@ -181,6 +181,10 @@ class Venv(BasePluggable, frozen=True, tag_field="type"):
     lock: str | None = None
 
 
+class ActiveVenv(Venv, frozen=True, tag="active"):
+    reqs: str | list[str] = []
+
+
 class Pygraph(Base, frozen=True):
     ignore_type_checking: bool = False
     ignore_pydists: bool = False
@@ -214,20 +218,23 @@ class ConfCommands(Base, frozen=True):
     deps: list[str | Dep] = []
 
 
+class ConfPydist(Base, frozen=True):
+    versions: dict[str, str] = {}
+    ignore_missing: bool = False
+
+
 class Conf(Base, frozen=True):
     commands: ConfCommands = msgspec.field(default_factory=ConfCommands)
+    pydist: ConfPydist = msgspec.field(default_factory=ConfPydist)
 
 
 class Project(ModuleOrPlugin, frozen=True):
     plugins: list[str | PluginLocator] = []
     ctx: list[str | Var] = []
-    venvs: dict[str, Venv] = {}
     caches: dict[str, Cache] = {}
     spaces: dict[str, Space] = {}
     pygraph: Pygraph = msgspec.field(default_factory=Pygraph)
     conf: Conf = msgspec.field(default_factory=Conf)
-    pydist_versions: dict[str, str] = {}
-    ignore_missing_pydists: bool = False
     active_venv_lock: str | None = None
 
     @qik.func.cached_property

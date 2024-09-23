@@ -71,10 +71,10 @@ def _normalize_pydist_name(name: str) -> str:
 @qik.func.cache
 def _pydist_version_overrides() -> dict[str, str]:
     project_conf = qik.conf.project()
-    base = collections.defaultdict(str) if project_conf.ignore_missing_pydists else {}
+    base = collections.defaultdict(str) if project_conf.conf.pydist.ignore_missing else {}
     return base | {
         _normalize_pydist_name(name): version
-        for name, version in project_conf.pydist_versions.items()
+        for name, version in project_conf.conf.pydist.versions.items()
     }
 
 
@@ -197,18 +197,7 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
 
     @property
     def since_deps(self) -> set[str]:
-        if not self.lock:
-            raise qik.errors.LockFileNotFound(f"No lock configured for {self.alias}.")
-
-        return set().union(self.reqs, self.lock)
-
-
-class ActiveConf(qik.conf.Venv, frozen=True):
-    reqs: str | list[str] = []
-
-    @property
-    def lock(self) -> str | None:  # type: ignore
-        return qik.conf.project().active_venv_lock
+        return set().union(self.reqs, [self.lock] if self.lock else [])
 
 
 class Active(Venv, frozen=True, dict=True):
@@ -216,7 +205,7 @@ class Active(Venv, frozen=True, dict=True):
     The active virtual environment.
     """
 
-    conf: ActiveConf
+    conf: qik.conf.ActiveVenv
 
     @property
     def alias(self) -> str:
@@ -235,7 +224,7 @@ class Active(Venv, frozen=True, dict=True):
         return {}
 
 
-_ACTIVE: Active = Active(name=".active", conf=ActiveConf())
+_ACTIVE: Active = Active(name=".active", conf=qik.conf.ActiveVenv())
 
 
 def active() -> Active:
