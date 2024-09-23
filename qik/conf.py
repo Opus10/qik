@@ -210,14 +210,22 @@ class Space(Base, frozen=True):
         return {m.path: m for m in self.modules_by_name.values()}
 
 
+class ConfCommands(Base, frozen=True):
+    deps: list[str | Dep] = []
+
+
+class Conf(Base, frozen=True):
+    commands: ConfCommands = msgspec.field(default_factory=ConfCommands)
+
+
 class Project(ModuleOrPlugin, frozen=True):
     plugins: list[str | PluginLocator] = []
     ctx: list[str | Var] = []
-    deps: list[str | Dep] = []
     venvs: dict[str, Venv] = {}
     caches: dict[str, Cache] = {}
     spaces: dict[str, Space] = {}
     pygraph: Pygraph = msgspec.field(default_factory=Pygraph)
+    conf: Conf = msgspec.field(default_factory=Conf)
     pydist_versions: dict[str, str] = {}
     ignore_missing_pydists: bool = False
     active_venv_lock: str | None = None
@@ -314,21 +322,36 @@ def _parse_project_config(contents: bytes) -> Project:
         "DynamicCmd", [("deps", list[DynamicDeps], [])], bases=(Cmd,), frozen=True
     )
 
+    DynamicConfCommands = msgspec.defstruct(
+        "DynamicConfCommands",
+        [("deps", list[DynamicDeps], [])],
+        bases=(ConfCommands,),
+        frozen=True,
+    )
+    DynamicConf = msgspec.defstruct(
+        "DynamicConf",
+        [("commands", DynamicConfCommands, msgspec.field(default_factory=DynamicConfCommands))],
+        bases=(Conf,),
+        frozen=True,
+    )
+
     # Must register as part of the global namespace in order for msgspec to
     # recognize dynamic nested type.
     globals()["DynamicSpace"] = DynamicSpace
     globals()["DynamicCmd"] = DynamicCmd
     globals()["DynamicCacheTypes"] = DynamicCacheTypes
     globals()["DynamicDeps"] = DynamicDeps
+    globals()["DynamicConfCommands"] = DynamicConfCommands
+    globals()["DynamicConf"] = DynamicConf
 
     DynamicProject = msgspec.defstruct(
         "DynamicProject",
         [
-            ("deps", list[DynamicDeps], []),
             ("venvs", dict[str, DynamicVenvTypes], {}),
             ("caches", dict[str, DynamicCacheTypes], {}),
             ("spaces", dict[str, DynamicSpace], {}),
             ("commands", dict[str, DynamicCmd], {}),
+            ("conf", DynamicConf, msgspec.field(default_factory=DynamicConf)),
         ],
         bases=(Project,),
         frozen=True,

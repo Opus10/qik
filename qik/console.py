@@ -33,7 +33,7 @@ def fmt_msg(msg: str, emoji: Emoji | None = None, color: Color | None = None) ->
 
 
 def print(msg: str, emoji: Emoji | None = None, color: Color | None = None, **kwargs: Any) -> None:
-    get().print(fmt_msg(msg, emoji=emoji, color=color), **kwargs)
+    get().print(fmt_msg(msg, emoji=emoji, color=color), highlight=False, **kwargs)
 
 
 def print_exception() -> None:

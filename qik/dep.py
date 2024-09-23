@@ -226,4 +226,4 @@ class Serialized(msgspec.Struct, frozen=True, omit_defaults=True):
 def project_deps() -> list[Dep]:
     """The base dependencies for the project."""
     proj = qik.conf.project()
-    return [factory(dep) for dep in proj.deps]
+    return [factory(dep) for dep in proj.conf.commands.deps]
