@@ -120,7 +120,7 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
         venv_hash = qik.hash.strs(*sorted(venv_contents))
         with self.__dict__["_packages_distributions_lock"]:
             if self.__dict__["_packages_distributions"][0] != venv_hash:
-                pygraph_conf = qik.conf.project().pygraph
+                pydist_conf = qik.conf.project().conf.pydist
                 cache_path = (
                     qik.conf.priv_work_dir()
                     / "venv"
@@ -129,12 +129,10 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
                 )
                 overrides = (
                     {}
-                    if not pygraph_conf.ignore_missing_module_pydists
+                    if not pydist_conf.ignore_missing_modules
                     else collections.defaultdict(lambda: [""])
                 )
-                overrides |= {
-                    module: [dist] for module, dist in pygraph_conf.module_pydists.items()
-                }
+                overrides |= {module: [dist] for module, dist in pydist_conf.modules.items()}
                 try:
                     cached_val = msgspec.json.decode(
                         cache_path.read_bytes(), type=PackagesDistributions

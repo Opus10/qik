@@ -15,7 +15,7 @@ import qik.conf
 import qik.ctx
 import qik.dep
 import qik.func
-import qik.pygraph.qikplugin
+import qik.pygraph.conf
 import qik.shell
 
 if TYPE_CHECKING:
@@ -108,11 +108,11 @@ def build() -> Graph:
     stdlib_modules = sys.stdlib_module_names | set(sys.builtin_module_names)
 
     # Parse the codebase with grimp
-    proj = qik.conf.project()
+    pygraph_conf = qik.pygraph.conf.get()
     grimp_g = grimp.build_graph(
         *internal_modules,
-        include_external_packages=not proj.pygraph.ignore_pydists,
-        exclude_type_checking_imports=proj.pygraph.ignore_type_checking,
+        include_external_packages=not pygraph_conf.ignore_pydists,
+        exclude_type_checking_imports=pygraph_conf.ignore_type_checking,
         cache_dir=str(qik.conf.priv_work_dir() / ".grimp"),
     )
     graph_modules_imps = [(imp.split(".", 1)[0], imp) for imp in sorted(grimp_g.modules)]

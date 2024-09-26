@@ -8,7 +8,7 @@ import os.path
 import pathlib
 import sys
 from types import UnionType
-from typing import ClassVar, Literal, TypeAlias, TypeVar, Union
+from typing import Any, ClassVar, Literal, TypeAlias, TypeVar, Union
 
 import msgspec.structs
 import msgspec.toml
@@ -25,17 +25,23 @@ CacheWhen: TypeAlias = Literal["success", "failed", "finished"]
 CacheStatus: TypeAlias = Literal["warm", "code"]
 
 
-# Dynamic config classes and objects registered by plugins
+# Dynamic objects registered by plugins
 _PLUGIN_TYPES: dict[str, dict[str, tuple[type[BasePluggable], str]]] = collections.defaultdict(
     dict
 )
+# Dynamic conf classes registered by plugins
+_CONF_TYPES: dict[str, type[msgspec.Struct]] = {}
 
 
-def register_type(cache_type: type[BasePluggable], factory: str) -> None:
-    _PLUGIN_TYPES[cache_type.plugin_type_name][str(cache_type.__struct_config__.tag)] = (
-        cache_type,
+def register_type(plugin_type: type[BasePluggable], factory: str) -> None:
+    _PLUGIN_TYPES[plugin_type.plugin_type_name][str(plugin_type.__struct_config__.tag)] = (
+        plugin_type,
         factory,
     )
+
+
+def register_conf(conf_type: type[msgspec.Struct], plugin_pyimport: str) -> None:
+    _CONF_TYPES[plugin_pyimport] = conf_type
 
 
 def get_type_factory(conf: BasePluggable) -> str:
@@ -185,13 +191,6 @@ class ActiveVenv(Venv, frozen=True, tag="active"):
     reqs: str | list[str] = []
 
 
-class Pygraph(Base, frozen=True):
-    ignore_type_checking: bool = False
-    ignore_pydists: bool = False
-    ignore_missing_module_pydists: bool = False
-    module_pydists: dict[str, str] = {}
-
-
 class Cache(BasePluggable, frozen=True, tag_field="type"):
     plugin_type_name: ClassVar[str] = "cache"
 
@@ -220,20 +219,54 @@ class ConfCommands(Base, frozen=True):
 
 class ConfPydist(Base, frozen=True):
     versions: dict[str, str] = {}
+    modules: dict[str, str] = {}
     ignore_missing: bool = False
+    ignore_missing_modules: bool = False
 
 
 class Conf(Base, frozen=True):
     commands: ConfCommands = msgspec.field(default_factory=ConfCommands)
     pydist: ConfPydist = msgspec.field(default_factory=ConfPydist)
+    plugins: dict[str, Any] = {}
 
 
-class Project(ModuleOrPlugin, frozen=True):
+class PluginsMixin:
+    """Parses the root qik.toml file for plugins.
+
+    Allows us to dynamically determine the structure of the config based on installed
+    plugins.
+    """
+
+    plugins: list[str | PluginLocator] = []
+
+    @qik.func.cached_property
+    def plugins_by_name(self) -> dict[str, PluginLocator]:
+        plugin_locators = (
+            PluginLocator(name=p.split(".", 1)[-1], pyimport=p) if isinstance(p, str) else p
+            for p in self.plugins
+        )
+        return {p.name: p for p in plugin_locators}
+
+    @qik.func.cached_property
+    def plugins_by_pyimport(self) -> dict[str, PluginLocator]:
+        return {p.pyimport: p for p in self.plugins_by_name.values()}
+
+
+class Plugins(msgspec.Struct, PluginsMixin, frozen=True):
+    """Parses the root qik.toml file for plugins.
+
+    Allows us to dynamically determine the structure of the config based on installed
+    plugins.
+    """
+
+    plugins: list[str | PluginLocator] = []
+
+
+class Project(ModuleOrPlugin, PluginsMixin, frozen=True):
     plugins: list[str | PluginLocator] = []
     ctx: list[str | Var] = []
     caches: dict[str, Cache] = {}
     spaces: dict[str, Space] = {}
-    pygraph: Pygraph = msgspec.field(default_factory=Pygraph)
     conf: Conf = msgspec.field(default_factory=Conf)
     active_venv_lock: str | None = None
 
@@ -253,30 +286,8 @@ class Project(ModuleOrPlugin, frozen=True):
     def modules_by_path(self) -> dict[str, ModuleLocator]:
         return {m.path: m for m in self.modules_by_name.values()}
 
-    @qik.func.cached_property
-    def plugins_by_name(self) -> dict[str, PluginLocator]:
-        plugin_locators = (
-            PluginLocator(name=p.split(".", 1)[-1], pyimport=p) if isinstance(p, str) else p
-            for p in self.plugins
-        )
-        return {p.name: p for p in plugin_locators}
 
-    @qik.func.cached_property
-    def plugins_by_pyimport(self) -> dict[str, PluginLocator]:
-        return {p.pyimport: p for p in self.plugins_by_name.values()}
-
-
-class ProjectPlugins(msgspec.Struct, frozen=True):
-    """Parses the root qik.toml file for plugins.
-
-    Allows us to dynamically determine the structure of the config based on installed
-    plugins.
-    """
-
-    plugins: list[str | PluginLocator] = []
-
-
-def _load_plugins(conf: ProjectPlugins) -> None:
+def _load_plugins(conf: Plugins) -> None:
     """Load plugins and return the Project configuration."""
     for plugin in conf.plugins:
         pyimport = plugin if isinstance(plugin, str) else plugin.pyimport
@@ -298,7 +309,7 @@ def _load_plugins(conf: ProjectPlugins) -> None:
                 raise
 
 
-def _parse_project_config(contents: bytes) -> Project:
+def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
     """Dynamically generate a Project config class based on installed plugins."""
 
     dep_plugin_types = _PLUGIN_TYPES["dep"]
@@ -335,9 +346,26 @@ def _parse_project_config(contents: bytes) -> Project:
         bases=(ConfCommands,),
         frozen=True,
     )
+    DynamicConfPlugins = msgspec.defstruct(
+        "DynamicConfPlugins",
+        [
+            (
+                plugins_conf.plugins_by_pyimport[plugin_pyimport].name,
+                plugin_conf,
+                msgspec.field(default_factory=plugin_conf),
+            )
+            for plugin_pyimport, plugin_conf in _CONF_TYPES.items()
+        ],
+        bases=(Base,),
+        frozen=True,
+    )
+
     DynamicConf = msgspec.defstruct(
         "DynamicConf",
-        [("commands", DynamicConfCommands, msgspec.field(default_factory=DynamicConfCommands))],
+        [
+            ("commands", DynamicConfCommands, msgspec.field(default_factory=DynamicConfCommands)),
+            ("plugins", DynamicConfPlugins, msgspec.field(default_factory=DynamicConfPlugins)),
+        ],
         bases=(Conf,),
         frozen=True,
     )
@@ -382,8 +410,9 @@ def _project() -> tuple[Project, pathlib.Path]:
 
     if qik_toml:
         contents = qik_toml.read_bytes()
-        _load_plugins(msgspec.toml.decode(contents, type=ProjectPlugins))
-        return _parse_project_config(contents), qik_toml
+        plugins_conf = msgspec.toml.decode(contents, type=Plugins)
+        _load_plugins(plugins_conf)
+        return _parse_project_config(contents, plugins_conf), qik_toml
     else:
         raise qik.errors.ConfigNotFound("Could not locate qik.toml configuration file.")
 

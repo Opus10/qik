@@ -11,6 +11,7 @@ import qik.errors
 import qik.file
 import qik.func
 import qik.hash
+import qik.pygraph.conf
 import qik.pygraph.core
 import qik.pygraph.utils
 import qik.runnable
@@ -25,7 +26,7 @@ else:
 
 
 class GraphConfDep(qik.dep.Val, frozen=True, dict=True):
-    val: str = "pygraph"
+    val: str = "pygraph"  # The value is dynamic based on plugin name
     file: str = ""  # The file is dynamic based on config location
 
     @qik.func.cached_property
@@ -34,7 +35,8 @@ class GraphConfDep(qik.dep.Val, frozen=True, dict=True):
 
     @qik.func.cached_property
     def vals(self) -> list[str]:  # type: ignore
-        return [str(msgspec.json.encode(qik.conf.project().pygraph))]
+        conf = qik.pygraph.conf.get()
+        return [str(msgspec.json.encode(conf))]
 
 
 @qik.func.cache

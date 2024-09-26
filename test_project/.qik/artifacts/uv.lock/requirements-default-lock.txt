@@ -106,7 +106,7 @@ pyproject-hooks==1.1.0
     #   poetry
 pywin32-ctypes==0.2.3 ; sys_platform == 'win32'
     # via keyring
-rapidfuzz==3.9.7
+rapidfuzz==3.10.0
     # via cleo
 requests==2.32.3
     # via
@@ -127,7 +127,7 @@ tomlkit==0.13.2
     # via poetry
 trove-classifiers==2024.9.12
     # via poetry
-tzdata==2024.1 ; sys_platform == 'win32'
+tzdata==2024.2 ; sys_platform == 'win32'
     # via django
 urllib3==2.2.3
     # via

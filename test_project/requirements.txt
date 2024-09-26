@@ -92,7 +92,7 @@ pyproject-hooks==1.1.0
     #   build
     #   pip-tools
     #   poetry
-rapidfuzz==3.9.7
+rapidfuzz==3.10.0
     # via cleo
 requests==2.32.3
     # via

@@ -30,7 +30,7 @@ soupsieve==2.6
     # via beautifulsoup4
 sqlparse==0.5.1
     # via django
-tzdata==2024.1 ; sys_platform == 'win32'
+tzdata==2024.2 ; sys_platform == 'win32'
     # via django
 urllib3==2.2.3
     # via requests
