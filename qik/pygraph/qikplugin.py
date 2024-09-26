@@ -12,6 +12,8 @@ class PygraphPluginConf(qik.conf.Base, frozen=True):
     ignore_pydists: bool = False
     ignore_missing_module_pydists: bool = False
     module_pydists: dict[str, str] = {}
+    build_cache: str | None = "repo"
+    lock_cache: str | None = "repo"
 
 
 qik.conf.register_type(PygraphDepConf, "qik.pygraph.dep.factory")

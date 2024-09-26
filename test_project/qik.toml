@@ -5,7 +5,8 @@ ctx = ["aws_access_key_id", "aws_secret_access_key", {name = "aws_endpoint_url",
 deps = ["python_version"]
 
 [conf.plugins.pygraph]
-ignore-type-checking = true
+build-cache = "local"
+lock-cache = "local"
 
 [spaces.default]
 venv = {type = "uv", reqs = "requirements.in"}
