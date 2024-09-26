@@ -231,7 +231,7 @@ class Stdout(Logger):
         """Print output from a runnable."""
         if event == "output":
             if msg := msg.strip():
-                qik.console.print(msg, emoji=emoji, color=color, highlight=False, style=None)
+                qik.console.print(msg, emoji=emoji, color=color, style=None)
         elif event == "start" or (event == "finish" and not result):
             qik.console.rule(msg, emoji=emoji, color=color)
         else:
