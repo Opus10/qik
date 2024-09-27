@@ -136,6 +136,13 @@ class Uncached(Cache):
         pass
 
 
+def _install_custom_merge_driver():
+    """Install qik's custom git merge driver."""
+    script_path = pathlib.Path(__file__).parent / "merge.sh"
+    custom_merge_driver_install = f'git config merge.qik.driver "sh {script_path} %O %A %B"'
+    qik.shell.exec(custom_merge_driver_install)
+
+
 @qik.func.cache
 def _add_cache_dir_to_git_attributes():
     """Add .qik to .gitattributes so that it appears differently in diff.
@@ -145,14 +152,16 @@ def _add_cache_dir_to_git_attributes():
     git_root_dir = pathlib.Path(qik.shell.exec("git rev-parse --git-dir").stdout.strip()).parent
     attrs_path = git_root_dir / ".gitattributes"
     ignore_glob = qik.conf.root().relative_to(git_root_dir) / ".qik/**/*"
-    attrs_line = f"{ignore_glob} linguist-generated=true\n"
+    attrs_line = f"{ignore_glob} linguist-generated=true merge=qik\n"
     try:
         gitattributes = attrs_path.read_text()
         if attrs_line not in gitattributes:
             attrs_path.write_text(f"{attrs_line}{gitattributes}")
+            _install_custom_merge_driver()
     except FileNotFoundError:
         attrs_path.write_text(attrs_line)
         qik.shell.exec(f"git add -N {attrs_path}")
+        _install_custom_merge_driver()
 
 
 class Repo(Cache):
