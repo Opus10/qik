@@ -183,7 +183,6 @@ def lock_cmd_factory(
     cmd_name = qik.pygraph.utils.lock_cmd_name()
     pygraph_conf = qik.pygraph.conf.get()
     artifact = str(qik.pygraph.utils.lock_path(pyimport, space))
-    cache = pygraph_conf.cache if pygraph_conf.lock_cache is qik.unset.UNSET else pygraph_conf.lock_cache
     runnable = qik.runnable.Runnable(
         name=name,
         cmd=cmd_name,

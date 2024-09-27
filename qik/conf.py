@@ -264,11 +264,11 @@ class Plugins(msgspec.Struct, PluginsMixin, frozen=True):
 
 class Project(ModuleOrPlugin, PluginsMixin, frozen=True):
     plugins: list[str | PluginLocator] = []
+    plugin_cache: str | qik.unset.UnsetType = qik.unset.UNSET
     ctx: list[str | Var] = []
     caches: dict[str, Cache] = {}
     spaces: dict[str, Space] = {}
     conf: Conf = msgspec.field(default_factory=Conf)
-    active_venv_lock: str | None = None
 
     @qik.func.cached_property
     def ctx_vars(self) -> dict[str, Var]:

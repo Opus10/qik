@@ -4,9 +4,6 @@ ctx = ["aws_access_key_id", "aws_secret_access_key", {name = "aws_endpoint_url",
 [conf.commands]
 deps = ["python_version"]
 
-[conf.plugins.pygraph]
-cache = "repo"
-
 [spaces.default]
 venv = {type = "uv", reqs = "requirements.in"}
 modules = ["a", {name = "b_module", path = "b"}]

@@ -9,23 +9,25 @@ import qik.conf
 import qik.dep
 import qik.errors
 import qik.func
+import qik.uv.conf
+import qik.uv.utils
 import qik.venv
 
 if TYPE_CHECKING:
-    from qik.uv.qikplugin import UVConf
+    from qik.uv.qikplugin import UVVenvConf
 
 
 class UVVenv(qik.venv.Venv, frozen=True, dict=True):
-    conf: UVConf
+    conf: UVVenvConf
 
     @qik.func.cached_property
     def default_lock(self) -> str:
-        import qik.uv.cmd as uv_cmd
-
+        uv_conf = qik.uv.conf.get()
+        root = qik.conf.pub_work_dir() if uv_conf.cache == "repo" else qik.conf.priv_work_dir()
         return str(
-            qik.conf.pub_work_dir()
+            root
             / "artifacts"
-            / uv_cmd.lock_cmd_name()
+            / qik.uv.utils.lock_cmd_name()
             / f"requirements-{self.name}-lock.txt"
         )
 
@@ -55,15 +57,13 @@ class UVVenv(qik.venv.Venv, frozen=True, dict=True):
 
     @qik.func.cached_property
     def runnable_deps(self) -> dict[str, qik.dep.Runnable]:
-        import qik.uv.cmd as uv_cmd
-
         return {
             runnable.name: qik.dep.Runnable(name=runnable.name, obj=runnable, strict=True)
             for runnable in qik.cmd.load(
-                uv_cmd.install_cmd_name(), space=self.name
+                qik.uv.utils.install_cmd_name(), space=self.name
             ).runnables.values()
         }
 
 
-def factory(name: str, conf: UVConf) -> UVVenv:
+def factory(name: str, conf: UVVenvConf) -> UVVenv:
     return UVVenv(name=name, conf=conf)

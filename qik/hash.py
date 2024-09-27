@@ -28,7 +28,7 @@ def globs(*vals: run_deps.Glob | str) -> str:
     if not vals:
         return ""
 
-    globs = set(f"{glob}" for glob in vals)
+    globs = {f"{glob}" for glob in vals}
 
     priv_artifact_patterns = sorted(
         f"'{glob[16:]}'" for glob in globs if glob.startswith("._qik/artifacts/")
@@ -49,7 +49,9 @@ def globs(*vals: run_deps.Glob | str) -> str:
         # Create a pattern string for git ls-files. Ensure there are no duplicates and
         # that we sort globs for a consistent hash
         pattern_str = " ".join(repo_patterns)
-        git_ls_lines = qik.shell.exec(f"git ls-files -cm {fmt} {pattern_str}", check=True, lines=True)
+        git_ls_lines = qik.shell.exec(
+            f"git ls-files -cm {fmt} {pattern_str}", check=True, lines=True
+        )
         git_ls_lines_split = [line.split("\t", 1) for line in git_ls_lines]
         hashes = dict(git_ls_lines_split)
 
