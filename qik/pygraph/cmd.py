@@ -154,7 +154,6 @@ def build_cmd_factory(
 ) -> dict[str, qik.runnable.Runnable]:
     build_graph_cmd_name = qik.pygraph.utils.build_cmd_name()
     pygraph_conf = qik.pygraph.conf.get()
-    cache = pygraph_conf.cache if pygraph_conf.build_cache is qik.unset.UNSET else pygraph_conf.build_cache
     runnable = qik.runnable.Runnable(
         name=build_graph_cmd_name,
         cmd=build_graph_cmd_name,
@@ -162,7 +161,7 @@ def build_cmd_factory(
         shell=False,
         deps=[qik.dep.Glob("**.py"), _graph_conf_dep(), *qik.dep.project_deps()],
         artifacts=[str(qik.pygraph.utils.graph_path())],
-        cache=cache
+        cache=pygraph_conf.resolved_build_cache,
     )
     return {runnable.name: runnable}
 
@@ -197,7 +196,7 @@ def lock_cmd_factory(
             *qik.dep.project_deps(),
         ],
         artifacts=[artifact],
-        cache=cache,
+        cache=pygraph_conf.resolved_lock_cache,
         space=space,
         args={"pyimport": pyimport},
     )
