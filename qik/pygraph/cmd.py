@@ -16,6 +16,7 @@ import qik.pygraph.core
 import qik.pygraph.utils
 import qik.runnable
 import qik.space
+import qik.unset
 
 if TYPE_CHECKING:
     import grimp.exceptions as grimp_exceptions
@@ -153,6 +154,7 @@ def build_cmd_factory(
 ) -> dict[str, qik.runnable.Runnable]:
     build_graph_cmd_name = qik.pygraph.utils.build_cmd_name()
     pygraph_conf = qik.pygraph.conf.get()
+    cache = pygraph_conf.cache if pygraph_conf.build_cache is qik.unset.UNSET else pygraph_conf.build_cache
     runnable = qik.runnable.Runnable(
         name=build_graph_cmd_name,
         cmd=build_graph_cmd_name,
@@ -160,7 +162,7 @@ def build_cmd_factory(
         shell=False,
         deps=[qik.dep.Glob("**.py"), _graph_conf_dep(), *qik.dep.project_deps()],
         artifacts=[str(qik.pygraph.utils.graph_path())],
-        cache=pygraph_conf.build_cache,
+        cache=cache
     )
     return {runnable.name: runnable}
 
@@ -182,6 +184,7 @@ def lock_cmd_factory(
     cmd_name = qik.pygraph.utils.lock_cmd_name()
     pygraph_conf = qik.pygraph.conf.get()
     artifact = str(qik.pygraph.utils.lock_path(pyimport, space))
+    cache = pygraph_conf.cache if pygraph_conf.lock_cache is qik.unset.UNSET else pygraph_conf.lock_cache
     runnable = qik.runnable.Runnable(
         name=name,
         cmd=cmd_name,
@@ -194,7 +197,7 @@ def lock_cmd_factory(
             *qik.dep.project_deps(),
         ],
         artifacts=[artifact],
-        cache=pygraph_conf.lock_cache,
+        cache=cache,
         space=space,
         args={"pyimport": pyimport},
     )
