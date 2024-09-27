@@ -136,6 +136,7 @@ class Uncached(Cache):
         pass
 
 
+@qik.func.cache
 def _install_custom_merge_driver():
     """Install qik's custom git merge driver."""
     script_path = pathlib.Path(__file__).parent / "merge.sh"
@@ -157,11 +158,9 @@ def _add_cache_dir_to_git_attributes():
         gitattributes = attrs_path.read_text()
         if attrs_line not in gitattributes:
             attrs_path.write_text(f"{attrs_line}{gitattributes}")
-            _install_custom_merge_driver()
     except FileNotFoundError:
         attrs_path.write_text(attrs_line)
         qik.shell.exec(f"git add -N {attrs_path}")
-        _install_custom_merge_driver()
 
 
 class Repo(Cache):
@@ -183,6 +182,7 @@ class Repo(Cache):
         with _LOCK:
             qik.shell.exec(f"git add -N {git_add_files}")
             _add_cache_dir_to_git_attributes()
+            _install_custom_merge_driver()
 
 
 class Local(Cache):
