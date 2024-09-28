@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import pathlib
 import sys
 
 import qik.conf
@@ -84,9 +85,14 @@ def main() -> None:
     spaces = args.spaces
 
     # Set the space if in a space root
-    if not spaces and os.getcwd() != qik.conf.root():
-        print('root')
-        ...
+    if not spaces and pathlib.Path.cwd() != qik.conf.root():
+        location = (
+            str(pathlib.Path.cwd().relative_to(qik.conf.root())).replace(os.path.sep, "/") + "/"
+        )
+        for space_name, space_conf in qik.conf.project().spaces.items():
+            if space_conf.root and location.startswith(space_conf.root):
+                spaces = [space_name]
+                break
 
     with qik.ctx.set_vars(
         "qik",

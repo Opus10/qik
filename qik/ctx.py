@@ -154,9 +154,7 @@ def _by_namespace(name: qik.conf.CtxNamespace | None) -> QikCtx | msgspec.Struct
     var_struct = _var_struct(name)
     parsed = msgspec.convert({}, type=var_struct)
 
-    def _get_val(
-        var_name: str, type_val: str | type
-    ) -> qik.conf.VarType | list[str] | qik.unset.UnsetType:
+    def _get_val(var_name: str, type_val: str | type) -> qik.conf.VarType | qik.unset.UnsetType:
         str_type = type_val.__name__ if isinstance(type_val, type) else str(type_val)
         env_key = f"{env_prefix}{var_name}".upper()
         env_setting = os.environ.get(env_key)

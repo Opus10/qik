@@ -19,8 +19,9 @@ import qik.func
 import qik.unset
 
 CtxNamespace: TypeAlias = Literal["qik", "project", "modules", "plugins"]
-VarType: TypeAlias = str | bool | int
-VAR_T = TypeVar("VAR_T", str, bool, int, None)
+SerializableVarType: TypeAlias = str | bool | int
+VarType: TypeAlias = SerializableVarType | list[str]
+VAR_T = TypeVar("VAR_T", str, bool, int, list[str], None)
 CacheWhen: TypeAlias = Literal["success", "failed", "finished"]
 CacheStatus: TypeAlias = Literal["warm", "code"]
 
@@ -114,7 +115,7 @@ class Cmd(Base, frozen=True):
 class Var(Base, frozen=True):
     name: str
     type: Literal["str", "int", "bool"] = "str"
-    default: VarType | qik.unset.UnsetType = qik.unset.UNSET
+    default: SerializableVarType | qik.unset.UnsetType = qik.unset.UNSET
     required: bool = True
 
     def __post_init__(self):

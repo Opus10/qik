@@ -6,6 +6,7 @@ base-deps = ["python_version"]
 python = "3.12"
 
 [spaces.default]
+root = "a/"
 venv = {type = "uv", reqs = "requirements.in"}
 modules = ["a", {name = "b_module", path = "b"}]
 fence = ["other"]
