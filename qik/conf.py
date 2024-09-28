@@ -213,8 +213,10 @@ class Space(Base, frozen=True):
         return {m.path: m for m in self.modules_by_name.values()}
 
 
-class ConfCommands(Base, frozen=True):
+class ConfDefaults(Base, frozen=True):
     deps: list[str | Dep] = []
+    cache: str | qik.unset.UnsetType = qik.unset.UNSET
+    cache_when: CacheWhen | qik.unset.UnsetType = qik.unset.UNSET
 
 
 class ConfPydist(Base, frozen=True):
@@ -225,7 +227,7 @@ class ConfPydist(Base, frozen=True):
 
 
 class Conf(Base, frozen=True):
-    commands: ConfCommands = msgspec.field(default_factory=ConfCommands)
+    defaults: ConfDefaults = msgspec.field(default_factory=ConfDefaults)
     pydist: ConfPydist = msgspec.field(default_factory=ConfPydist)
     plugins: dict[str, Any] = {}
 
@@ -340,10 +342,10 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
         "DynamicCmd", [("deps", list[DynamicDeps], [])], bases=(Cmd,), frozen=True
     )
 
-    DynamicConfCommands = msgspec.defstruct(
-        "DynamicConfCommands",
+    DynamicConfDefaults = msgspec.defstruct(
+        "DynamicConfDefaults",
         [("deps", list[DynamicDeps], [])],
-        bases=(ConfCommands,),
+        bases=(ConfDefaults,),
         frozen=True,
     )
     DynamicConfPlugins = msgspec.defstruct(
@@ -363,7 +365,7 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
     DynamicConf = msgspec.defstruct(
         "DynamicConf",
         [
-            ("commands", DynamicConfCommands, msgspec.field(default_factory=DynamicConfCommands)),
+            ("commands", DynamicConfDefaults, msgspec.field(default_factory=DynamicConfDefaults)),
             ("plugins", DynamicConfPlugins, msgspec.field(default_factory=DynamicConfPlugins)),
         ],
         bases=(Conf,),
@@ -376,7 +378,7 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
     globals()["DynamicCmd"] = DynamicCmd
     globals()["DynamicCacheTypes"] = DynamicCacheTypes
     globals()["DynamicDeps"] = DynamicDeps
-    globals()["DynamicConfCommands"] = DynamicConfCommands
+    globals()["DynamicConfDefaults"] = DynamicConfDefaults
     globals()["DynamicConf"] = DynamicConf
 
     DynamicProject = msgspec.defstruct(
@@ -528,3 +530,9 @@ def pub_work_dir(abs: bool = False) -> pathlib.Path:
 def location() -> pathlib.Path:
     """Get the root configuration file."""
     return _project()[1]
+
+
+@qik.func.cache
+def defaults() -> ConfDefaults:
+    """Get the default configuration values."""
+    return project().conf.defaults

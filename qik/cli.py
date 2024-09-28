@@ -37,13 +37,6 @@ def main() -> None:
         help="Don't read cache.",
         default=qik.unset.UNSET,
     )
-    parser.add_argument("--cache", help="Set default cache.", default=qik.unset.UNSET)
-    parser.add_argument(
-        "--cache-when",
-        help="Cache results by event type.",
-        default=qik.unset.UNSET,
-        choices=["success", "failed", "finished"],
-    )
     parser.add_argument(
         "-n", "--workers", help="Number of workers.", type=int, default=qik.unset.UNSET
     )
@@ -90,14 +83,12 @@ def main() -> None:
         "qik",
         watch=args.watch,
         force=args.force,
-        cache=args.cache,
         isolated=args.isolated,
         ls=args.ls,
         workers=args.workers,
         since=args.since,
         fail=args.fail,
         cache_status=args.cache_status,
-        cache_when=args.cache_when,
         verbosity=args.verbosity,
         commands=args.commands or qik.unset.UNSET,
         modules=args.modules or qik.unset.UNSET,

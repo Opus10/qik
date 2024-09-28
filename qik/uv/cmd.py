@@ -29,9 +29,10 @@ def lock_cmd_factory(
         name=f"{cmd_name}?space={space}",
         cmd=cmd_name,
         val=f"mkdir -p {pathlib.Path(venv.lock).parent} && uv pip compile --universal {' '.join(venv.reqs)} -o {venv.lock}",
-        deps=[*(qik.dep.Glob(req) for req in venv.reqs), *qik.dep.project_deps()],
+        deps=[*(qik.dep.Glob(req) for req in venv.reqs), *qik.dep.defaults()],
         artifacts=[venv.lock],
-        cache=uv_conf.cache,
+        cache=uv_conf.resolved_cache,
+        cache_when="success",
         args={"space": space},
         space=None,
     )
@@ -55,10 +56,11 @@ def install_cmd_factory(
         deps=[
             qik.dep.Cmd(qik.uv.utils.lock_cmd_name(), args={"space": space}, strict=True),
             qik.dep.Glob(venv.lock),
-            *qik.dep.project_deps(),
+            *qik.dep.defaults(),
         ],
         artifacts=[],
         cache="local",
+        cache_when="success",
         args={"space": space},
         space=None,
     )

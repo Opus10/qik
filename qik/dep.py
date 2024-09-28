@@ -223,7 +223,6 @@ class Serialized(msgspec.Struct, frozen=True, omit_defaults=True):
 
 
 @qik.func.cache
-def project_deps() -> list[Dep]:
+def defaults() -> list[Dep]:
     """The base dependencies for the project."""
-    proj = qik.conf.project()
-    return [factory(dep) for dep in proj.conf.commands.deps]
+    return [factory(dep) for dep in qik.conf.defaults().deps]

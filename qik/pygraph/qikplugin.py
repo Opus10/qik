@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import cast
-
 import qik.conf
 import qik.func
 import qik.unset
@@ -19,23 +17,24 @@ class PygraphPluginConf(qik.conf.Base, frozen=True, dict=True):
     cache: str | qik.unset.UnsetType = qik.unset.UNSET
     build_cache: str | qik.unset.UnsetType = qik.unset.UNSET
     lock_cache: str | qik.unset.UnsetType = qik.unset.UNSET
+    check_cache: str | qik.unset.UnsetType = qik.unset.UNSET
 
     @qik.func.cached_property
     def resolved_build_cache(self) -> str:
-        return cast(
-            str,
-            qik.unset.coalesce(
-                self.build_cache, self.cache, qik.conf.project().plugin_cache, default="repo"
-            ),
+        return qik.unset.coalesce(
+            self.build_cache, self.cache, qik.conf.defaults().cache, default="local", type=str
         )
 
     @qik.func.cached_property
     def resolved_lock_cache(self) -> str:
-        return cast(
-            str,
-            qik.unset.coalesce(
-                self.lock_cache, self.cache, qik.conf.project().plugin_cache, default="repo"
-            ),
+        return qik.unset.coalesce(
+            self.lock_cache, self.cache, qik.conf.defaults().cache, default="local", type=str
+        )
+
+    @qik.func.cached_property
+    def resolved_check_cache(self) -> str:
+        return qik.unset.coalesce(
+            self.check_cache, self.cache, qik.conf.defaults().cache, default="local", type=str
         )
 
 

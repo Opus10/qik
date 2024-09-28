@@ -159,9 +159,10 @@ def build_cmd_factory(
         cmd=build_graph_cmd_name,
         val="qik.pygraph.cmd.build_cmd",
         shell=False,
-        deps=[qik.dep.Glob("**.py"), _graph_conf_dep(), *qik.dep.project_deps()],
+        deps=[qik.dep.Glob("**.py"), _graph_conf_dep(), *qik.dep.defaults()],
         artifacts=[str(qik.pygraph.utils.graph_path())],
         cache=pygraph_conf.resolved_build_cache,
+        cache_when="success",
     )
     return {runnable.name: runnable}
 
@@ -192,10 +193,11 @@ def lock_cmd_factory(
             qik.dep.Cmd(qik.pygraph.utils.build_cmd_name()),
             qik.dep.Load(artifact, default=["**.py"]),
             _graph_conf_dep(),
-            *qik.dep.project_deps(),
+            *qik.dep.defaults(),
         ],
         artifacts=[artifact],
         cache=pygraph_conf.resolved_lock_cache,
+        cache_when="success",
         space=space,
         args={"pyimport": pyimport},
     )
@@ -206,6 +208,7 @@ def check_cmd_factory(
     cmd: str, conf: qik.conf.Cmd, **args: str
 ) -> dict[str, qik.runnable.Runnable]:
     cmd_name = qik.pygraph.utils.check_cmd_name()
+    pygraph_conf = qik.pygraph.conf.get()
     return {
         f"{cmd_name}#{space}": qik.runnable.Runnable(
             name=f"{cmd_name}#{space}",
@@ -216,7 +219,8 @@ def check_cmd_factory(
                 qik.dep.Cmd(qik.pygraph.utils.build_cmd_name()),
                 *(qik.dep.Glob(fence_val) for fence_val in conf.fence),
             ],
-            cache=None,
+            cache=pygraph_conf.resolved_check_cache,
+            cache_when="success",
             space=space,
         )
         for space, conf in qik.conf.project().spaces.items()

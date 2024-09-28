@@ -100,12 +100,10 @@ class QikCtx(msgspec.Struct, forbid_unknown_fields=True, rename="kebab", dict=Tr
     # Runtime behavior
     isolated: bool = False
     watch: bool = False
-    cache: str | None = None
     force: bool = False
     ls: bool = False
     workers: int = msgspec.field(default_factory=lambda: os.cpu_count() or 1)
     fail: bool = False
-    cache_when: qik.conf.CacheWhen = "success"
     verbosity: int = 1
 
     # Selectors

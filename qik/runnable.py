@@ -138,12 +138,18 @@ def _make_runnable(
         val=qik.ctx.format(conf.exec, module=module),
         deps=[
             *(qik.dep.factory(dep, module=module, space=space) for dep in conf.deps),
-            *qik.dep.project_deps(),
+            *qik.dep.defaults(),
         ],
         module=module.name if module else None,
         artifacts=[qik.ctx.format(artifact) for artifact in conf.artifacts],
-        cache=qik.ctx.format(conf.cache),
-        cache_when=qik.ctx.format(conf.cache_when),
+        cache=qik.ctx.format(
+            qik.unset.coalesce(conf.cache, qik.conf.defaults().cache, default="local", type=str)
+        ),
+        cache_when=qik.ctx.format(
+            qik.unset.coalesce(
+                conf.cache_when, qik.conf.defaults().cache_when, default="success", type=str
+            )
+        ),  # type: ignore
         space=space,
     )
 
@@ -193,12 +199,12 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
     name: str
     cmd: str
     val: str
+    cache: str | None
+    cache_when: qik.conf.CacheWhen
     shell: bool = True
     deps: list[qik.dep.Dep] = []
     artifacts: list[str] = []
     module: str | None = None
-    cache: str | None | qik.unset.UnsetType = qik.unset.UNSET
-    cache_when: qik.conf.CacheWhen | qik.unset.UnsetType = qik.unset.UNSET
     args: dict[str, str] = {}
     space: str | None = None
 
@@ -241,15 +247,8 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
         """Compute the hash, including the command definitions and deps."""
         return qik.hash.strs(self.spec_hash, self.deps_collection.hash())
 
-    def get_cache_when(self) -> qik.conf.CacheWhen:
-        return (
-            qik.ctx.by_namespace("qik").cache_when
-            if isinstance(self.cache_when, qik.unset.UnsetType)
-            else self.cache_when
-        )
-
     def should_cache(self, code: int) -> bool:
-        match self.get_cache_when():
+        match self.cache_when:
             case "success":
                 return code == 0
             case "failed":
@@ -260,12 +259,7 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
                 raise AssertionError(f'Unexpected cache_when "{other}".')
 
     def get_cache_backend(self) -> qik.cache.Cache:
-        backend = (
-            qik.ctx.by_namespace("qik").cache
-            if isinstance(self.cache, qik.unset.UnsetType)
-            else self.cache
-        )
-        return qik.cache.load(backend)
+        return qik.cache.load(self.cache)
 
     def get_cache_entry(self, artifacts: bool = True) -> qik.cache.Entry | None:
         if not qik.ctx.by_namespace("qik").force:

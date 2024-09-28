@@ -1,4 +1,3 @@
-from typing import cast
 
 import qik.conf
 import qik.func
@@ -14,9 +13,7 @@ class UVPluginConf(qik.conf.Base, frozen=True, dict=True):
 
     @qik.func.cached_property
     def resolved_cache(self) -> str:
-        return cast(
-            str, qik.unset.coalesce(self.cache, qik.conf.project().plugin_cache, default="repo")
-        )
+        return qik.unset.coalesce(self.cache, qik.conf.defaults().cache, default="repo", type=str)
 
 
 qik.conf.register_type(UVVenvConf, "qik.uv.venv.factory")
