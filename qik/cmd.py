@@ -32,7 +32,7 @@ def ls() -> Iterator[str]:
     """List all non-hidden command names."""
     proj = qik.conf.project()
     for module in [None, *proj.modules_by_name, *proj.plugins_by_name]:
-        conf = qik.conf.get(module)
+        conf = qik.conf.search(module)
         for command in conf.commands:
             cmd_name = f"{module}/{command}" if module else command
             if not qik.conf.command(cmd_name).hidden:

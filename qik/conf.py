@@ -467,8 +467,8 @@ def plugin(uri: str, by_pyimport: bool = False) -> ModuleOrPlugin:
 
 
 @qik.func.cache
-def get(name: str | None = None) -> ModuleOrPlugin:
-    """Get configuration for a given module, plugin, or project."""
+def search(name: str | None = None) -> ModuleOrPlugin:
+    """Search configuration for a given module, plugin, or project."""
     if not name:
         return project()
     else:
@@ -498,7 +498,7 @@ def uri_parts(uri: str) -> tuple[str | None, str]:
 def command(uri: str) -> Cmd:
     """Get configuration for a command."""
     module, name = uri_parts(uri)
-    conf = get(module)
+    conf = search(module)
     if name not in conf.commands:
         raise qik.errors.CommandNotFound(f'Command "{uri}" not configured.')
 
