@@ -22,19 +22,19 @@ class PygraphPluginConf(qik.conf.Base, frozen=True, dict=True):
     @qik.func.cached_property
     def resolved_build_cache(self) -> str:
         return qik.unset.coalesce(
-            self.build_cache, self.cache, qik.conf.defaults().cache, default="local", type=str
+            self.build_cache, self.cache, qik.conf.project().default_cache, default="local", type=str
         )
 
     @qik.func.cached_property
     def resolved_lock_cache(self) -> str:
         return qik.unset.coalesce(
-            self.lock_cache, self.cache, qik.conf.defaults().cache, default="local", type=str
+            self.lock_cache, self.cache, qik.conf.project().default_cache, default="local", type=str
         )
 
     @qik.func.cached_property
     def resolved_check_cache(self) -> str:
         return qik.unset.coalesce(
-            self.check_cache, self.cache, qik.conf.defaults().cache, default="local", type=str
+            self.check_cache, self.cache, qik.conf.project().default_cache, default="local", type=str
         )
 
 

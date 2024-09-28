@@ -140,17 +140,17 @@ def _make_runnable(
         cmd=cmd,
         val=qik.ctx.format(conf.exec, module=module),
         deps=[
+            *qik.dep.base(),
             *(qik.dep.factory(dep, module=module, space=space) for dep in conf.deps),
-            *qik.dep.defaults(),
         ],
         module=module.name if module else None,
         artifacts=[qik.ctx.format(artifact) for artifact in conf.artifacts],
         cache=qik.ctx.format(
-            qik.unset.coalesce(initial_cache, qik.conf.defaults().cache, default="local", type=str)
+            qik.unset.coalesce(initial_cache, qik.conf.project().default_cache, default="local", type=str)
         ),
         cache_when=qik.ctx.format(
             qik.unset.coalesce(
-                conf.cache_when, qik.conf.defaults().cache_when, default="success", type=str
+                conf.cache_when, qik.conf.project().default_cache_when, default="success", type=str
             )
         ),  # type: ignore
         space=space,

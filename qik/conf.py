@@ -222,12 +222,6 @@ class Space(Base, frozen=True):
         return {m.path: m for m in self.modules_by_name.values()}
 
 
-class ConfDefaults(Base, frozen=True):
-    deps: list[str | Dep] = []
-    cache: str | qik.unset.UnsetType = qik.unset.UNSET
-    cache_when: CacheWhen | qik.unset.UnsetType = qik.unset.UNSET
-
-
 class ConfPydist(Base, frozen=True):
     versions: dict[str, str] = {}
     modules: dict[str, str] = {}
@@ -236,7 +230,6 @@ class ConfPydist(Base, frozen=True):
 
 
 class Conf(Base, frozen=True):
-    defaults: ConfDefaults = msgspec.field(default_factory=ConfDefaults)
     pydist: ConfPydist = msgspec.field(default_factory=ConfPydist)
     plugins: dict[str, Any] = {}
 
@@ -275,12 +268,14 @@ class Plugins(msgspec.Struct, PluginsMixin, frozen=True):
 
 class Project(ModuleOrPlugin, PluginsMixin, frozen=True):
     plugins: list[str | PluginLocator] = []
-    plugin_cache: str | qik.unset.UnsetType = qik.unset.UNSET
     ctx: list[str | Var] = []
     caches: dict[str, Cache] = {}
     spaces: dict[str, Space] = {}
     conf: Conf = msgspec.field(default_factory=Conf)
     python_path: str = "."
+    base_deps: list[str | Dep] = []
+    default_cache: str | qik.unset.UnsetType = qik.unset.UNSET
+    default_cache_when: CacheWhen | qik.unset.UnsetType = qik.unset.UNSET
 
     @qik.func.cached_property
     def ctx_vars(self) -> dict[str, Var]:
@@ -354,12 +349,6 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
         "DynamicCmd", [("deps", list[DynamicDeps], [])], bases=(Cmd,), frozen=True
     )
 
-    DynamicConfDefaults = msgspec.defstruct(
-        "DynamicConfDefaults",
-        [("deps", list[DynamicDeps], [])],
-        bases=(ConfDefaults,),
-        frozen=True,
-    )
     DynamicConfPlugins = msgspec.defstruct(
         "DynamicConfPlugins",
         [
@@ -377,7 +366,6 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
     DynamicConf = msgspec.defstruct(
         "DynamicConf",
         [
-            ("commands", DynamicConfDefaults, msgspec.field(default_factory=DynamicConfDefaults)),
             ("plugins", DynamicConfPlugins, msgspec.field(default_factory=DynamicConfPlugins)),
         ],
         bases=(Conf,),
@@ -390,7 +378,6 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
     globals()["DynamicCmd"] = DynamicCmd
     globals()["DynamicCacheTypes"] = DynamicCacheTypes
     globals()["DynamicDeps"] = DynamicDeps
-    globals()["DynamicConfDefaults"] = DynamicConfDefaults
     globals()["DynamicConf"] = DynamicConf
 
     DynamicProject = msgspec.defstruct(
@@ -400,6 +387,7 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
             ("caches", dict[str, DynamicCacheTypes], {}),
             ("spaces", dict[str, DynamicSpace], {}),
             ("commands", dict[str, DynamicCmd], {}),
+            ("base_deps", list[DynamicDeps], []),
             ("conf", DynamicConf, msgspec.field(default_factory=DynamicConf)),
         ],
         bases=(Project,),
