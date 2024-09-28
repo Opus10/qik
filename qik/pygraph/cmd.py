@@ -217,14 +217,14 @@ def check_cmd_factory(
             shell=False,
             deps=[
                 qik.dep.Cmd(qik.pygraph.utils.build_cmd_name()),
-                *(qik.dep.Glob(fence_val) for fence_val in conf.fence),
+                *(qik.dep.Glob(fence_path) for fence_path in qik.space.load(space).fence_paths),
             ],
             cache=pygraph_conf.resolved_check_cache,
             cache_when="success",
             space=space,
         )
-        for space, conf in qik.conf.project().spaces.items()
-        if conf.fence
+        for space, space_conf in qik.conf.project().spaces.items()
+        if space_conf.fence
     }
 
 

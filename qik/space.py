@@ -13,21 +13,41 @@ class Space(msgspec.Struct, frozen=True, dict=True):
     name: str
     conf: qik.conf.Space
 
-    def _pyimports_iter(self) -> Iterator[str]:
+    def _fence_pyimports_iter(self) -> Iterator[str]:
         for locator in self.conf.modules_by_path.values():
             yield locator.pyimport
 
-        for value in self.conf.fence:
-            if isinstance(value, str):
-                yield qik.conf.pyimport(value)
-            else:
-                space = load(value.name)
-                yield from space._pyimports_iter()
+        if isinstance(self.conf.fence, list):
+            for value in self.conf.fence:
+                if isinstance(value, str):
+                    yield qik.conf.pyimport(value)
+                else:
+                    space = load(value.name)
+                    yield from space._fence_pyimports_iter()
+
+    def _fence_paths_iter(self) -> Iterator[str]:
+        for locator in self.conf.modules_by_path.values():
+            yield locator.path
+
+        if isinstance(self.conf.fence, list):
+            for value in self.conf.fence:
+                if isinstance(value, str):
+                    yield value
+                else:
+                    space = load(value.name)
+                    yield from space._fence_paths_iter()
 
     @qik.func.cached_property
     def fence_pyimports(self) -> list[str]:
         try:
-            return sorted(set(self._pyimports_iter()))
+            return sorted(set(self._fence_pyimports_iter()))
+        except RecursionError as e:
+            raise qik.errors.CircularFence("Circular fence detected.") from e
+
+    @qik.func.cached_property
+    def fence_paths(self) -> list[str]:
+        try:
+            return sorted(set(self._fence_paths_iter()))
         except RecursionError as e:
             raise qik.errors.CircularFence("Circular fence detected.") from e
 

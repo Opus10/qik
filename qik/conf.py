@@ -207,7 +207,7 @@ class SpaceFence(Base, tag_field="type", frozen=True, tag="space"):
 class Space(Base, frozen=True):
     root: str | None = None
     modules: list[str | ModuleLocator] = []
-    fence: list[str | SpaceFence] = []
+    fence: list[str | SpaceFence] | bool = []
     venv: Venv | None = None
 
     @qik.func.cached_property
