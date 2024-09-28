@@ -400,7 +400,7 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
 @qik.func.cache
 def load() -> tuple[Project, pathlib.Path]:
     """Load the project configuration and file.
-    
+
     This serves as an entry point for all of qik, so we set the python path
     here too.
     """
@@ -533,12 +533,6 @@ def pub_work_dir(abs: bool = False) -> pathlib.Path:
 def location() -> pathlib.Path:
     """Get the root configuration file."""
     return load()[1]
-
-
-@qik.func.cache
-def defaults() -> ConfDefaults:
-    """Get the default configuration values."""
-    return project().conf.defaults
 
 
 @qik.func.cache

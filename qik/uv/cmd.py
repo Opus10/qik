@@ -29,7 +29,7 @@ def lock_cmd_factory(
         name=f"{cmd_name}?space={space}",
         cmd=cmd_name,
         val=f"mkdir -p {pathlib.Path(venv.lock).parent} && uv pip compile --universal {' '.join(venv.reqs)} -o {venv.lock}",
-        deps=[*qik.dep.base(),*(qik.dep.Glob(req) for req in venv.reqs)],
+        deps=[*qik.dep.base(), *(qik.dep.Glob(req) for req in venv.reqs)],
         artifacts=[venv.lock],
         cache=uv_conf.resolved_cache,
         cache_when="success",

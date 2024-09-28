@@ -146,7 +146,9 @@ def _make_runnable(
         module=module.name if module else None,
         artifacts=[qik.ctx.format(artifact) for artifact in conf.artifacts],
         cache=qik.ctx.format(
-            qik.unset.coalesce(initial_cache, qik.conf.project().default_cache, default="local", type=str)
+            qik.unset.coalesce(
+                initial_cache, qik.conf.project().default_cache, default="local", type=str
+            )
         ),
         cache_when=qik.ctx.format(
             qik.unset.coalesce(

@@ -11,12 +11,12 @@ Qik can be used in a number of ways to dramatically increase CI/CD performance. 
 When using the `repo` cache, we can quickly verify that all commands are successful with:
 
 ```bash
-qik --cache-type repo --cache-status cold --fail --ls
+qik --cache repo --cache-status cold --fail --ls
 ```
 
 Above, we're doing the following:
 
-- Filtering commands by `--cache-type` of `repo`
+- Filtering commands by `--cache` of `repo`
 - Filtering for any `cold` commands
 - Failing if any exist
 - Printing the commands that aren't cached
@@ -24,7 +24,7 @@ Above, we're doing the following:
 If all commands are cached, we can run them all with:
 
 ```bash
-qik --cache-type repo
+qik --cache repo
 ```
 
 The second step ensures that any cached failures are caught. By default, only successful runs are cached, but this may have been overridden with `--cache-when`.
@@ -95,6 +95,6 @@ There are several tools at your disposal to optimize your CI/CD experience. By l
 - Store artifacts of cached runs in the artifact store of your CI/CD provider.
 - Dynamically generate CI/CD config by listing commands based on their cache type.
 
-We recommend running `qik --cache-type repo --watch` locally to always keep the repo cache up to date.
+We recommend running `qik --cache repo --watch` locally to always keep the repo cache up to date.
 
 Qik is still in beta. Open a [discussion](https://github.com/Opus10/qik/discussions) if you have other ideas or suggestions on how to improve the local development and CI/CD experience.

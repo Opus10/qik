@@ -12,7 +12,7 @@ Qik CLI examples, common command definitions, and useful snippets.
 #### Watch Repo-Cached Commands
 
 ```bash
-qik --cache-type repo --watch
+qik --cache repo --watch
 ```
 
 #### Run All Commands Serially

@@ -192,7 +192,7 @@ Use `-f` to break configured caches. Use `--cache` to set a default cache for co
 
 ### Selecting Based on Cache Type or Status
 
-Use `--cache-type` to select commands based on the type of cache, such as `local`, `repo`, or a [custom remote cache you've defined](caching.md#s3).
+Use `--cache` to select commands based on the cache, such as `local`, `repo`, or a [custom remote cache you've defined](caching.md#s3).
 
 Select commands that have a warm or cold cache with `--cache-status warm` or `--cache-status cold`.
 

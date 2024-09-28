@@ -112,12 +112,12 @@ def test_ls():
 def test_selectors():
     """Test various cache / git selectors."""
     # Ensure repo cache is warm
-    assert shell("qik --cache-status cold --cache-type repo --ls --fail").returncode == 0
+    assert shell("qik --cache-status cold --cache repo --ls --fail").returncode == 0
 
     # Editing a project file should result in --since returning results
     with _edit_hello_py():
         assert len(shell("qik --since HEAD").stdout.split("\n")) > 5
-        assert shell("qik --cache-status cold --cache-type repo --ls --fail").returncode == 1
+        assert shell("qik --cache-status cold --cache repo --ls --fail").returncode == 1
 
     # Return the cache back to normal
     assert shell("qik").returncode == 1
@@ -128,7 +128,7 @@ def test_env_ctx():
     env = os.environ | {
         "QIK__LS": "True",
         "QIK__CACHE_STATUS": "cold",
-        "QIK__CACHE_TYPES": "repo",
+        "QIK__CACHES": "repo",
         "QIK__FAIL": "True",
     }
     assert shell("qik", env=env).returncode == 0

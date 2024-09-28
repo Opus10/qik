@@ -1,8 +1,6 @@
 plugins = ["qik.pygraph", "qik.uv", "qik.s3"]
 ctx = ["aws_access_key_id", "aws_secret_access_key", {name = "aws_endpoint_url", required = false}]
-
-[conf.defaults]
-deps = ["python_version"]
+base-deps = ["python_version"]
 
 [spaces.default]
 venv = {type = "uv", reqs = "requirements.in"}
