@@ -11,7 +11,7 @@ modules = ["a", {name = "b_module", path = "b"}]
 fence = ["other"]
 
 [spaces.other]
-venv = {type = "uv", reqs = "req2.in"}
+venv = {type = "uv", reqs = "req2.in", constraint = "constraint.in"}
 modules = ["nest/c"]
 fence = ["b", "a", "nest", {type = "space", name = "default"}]
 

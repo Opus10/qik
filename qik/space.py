@@ -33,7 +33,7 @@ class Space(msgspec.Struct, frozen=True, dict=True):
             for value in self.conf.fence:
                 if isinstance(value, str):
                     yield value
-                else:
+                elif value.name != self.name:
                     space = load(value.name)
                     yield from space._fence_paths_iter()
 
@@ -57,7 +57,10 @@ class Space(msgspec.Struct, frozen=True, dict=True):
             if self.conf.venv is None or isinstance(self.conf.venv, qik.conf.ActiveVenv):
                 return qik.venv.active()
             elif isinstance(self.conf.venv, qik.conf.SpaceVenv):
-                return load(self.conf.venv.name).venv
+                if self.conf.venv.name == self.name:
+                    return qik.venv.active()
+                else:
+                    return load(self.conf.venv.name).venv
             else:
                 factory = qik.conf.get_type_factory(self.conf.venv)
                 return pkgutil.resolve_name(factory)(self.name, self.conf.venv)

@@ -25,11 +25,18 @@ def lock_cmd_factory(
     venv = cast(qik.uv.venv.UVVenv, qik.space.load(space).venv)
     cmd_name = qik.uv.utils.lock_cmd_name()
     uv_conf = qik.uv.conf.get()
+
+    pip_compile = f"uv pip compile --universal {' '.join(venv.reqs)} -o {venv.lock}"
+    constraint_deps = []
+    if venv.constraint:
+        pip_compile = f"{pip_compile} --constraint {venv.constraint}"
+        constraint_deps = [qik.dep.Glob(venv.constraint)]
+
     runnable = qik.runnable.Runnable(
         name=f"{cmd_name}?space={space}",
         cmd=cmd_name,
-        val=f"mkdir -p {pathlib.Path(venv.lock).parent} && uv pip compile --universal {' '.join(venv.reqs)} -o {venv.lock}",
-        deps=[*qik.dep.base(), *(qik.dep.Glob(req) for req in venv.reqs)],
+        val=f"mkdir -p {pathlib.Path(venv.lock).parent} && {pip_compile}",
+        deps=[*qik.dep.base(), *(qik.dep.Glob(req) for req in venv.reqs), *constraint_deps],
         artifacts=[venv.lock],
         cache=uv_conf.resolved_cache,
         cache_when="success",

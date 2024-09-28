@@ -9,6 +9,8 @@ import qik.conf
 import qik.dep
 import qik.errors
 import qik.func
+import qik.space
+import qik.unset
 import qik.uv.conf
 import qik.uv.utils
 import qik.venv
@@ -17,12 +19,42 @@ if TYPE_CHECKING:
     from qik.uv.qikplugin import UVVenvConf
 
 
+def _resolve_constraint(
+    constraint: str | qik.conf.SpaceLocator | qik.unset.UnsetType | None,
+) -> str | qik.unset.UnsetType | None:
+    if isinstance(constraint, str):
+        return constraint
+    elif isinstance(constraint, qik.conf.SpaceLocator):
+        venv = qik.space.load(constraint.name).venv
+        return (
+            _resolve_constraint(venv.conf.constraint)
+            if isinstance(venv, UVVenv)
+            else qik.unset.UNSET
+        )
+    else:
+        return constraint
+
+
 class UVVenv(qik.venv.Venv, frozen=True, dict=True):
     conf: UVVenvConf
 
     @qik.func.cached_property
     def python(self) -> str | None:
-        return self.conf.python or qik.uv.conf.get().python
+        return qik.unset.coalesce(
+            self.conf.python, qik.uv.conf.get().python, default=None, type=str | None
+        )
+
+    @qik.func.cached_property
+    def constraint(self) -> str | None:
+        try:
+            return qik.unset.coalesce(
+                _resolve_constraint(self.conf.constraint),
+                _resolve_constraint(qik.uv.conf.get().constraint),
+                default=None,
+                type=str | None,
+            )
+        except RecursionError as e:
+            raise qik.errors.CircularConstraint("Circular constraint detected.") from e
 
     @qik.func.cached_property
     def default_lock(self) -> str:

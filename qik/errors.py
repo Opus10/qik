@@ -72,6 +72,10 @@ class CircularVenv(RunnerError):
     code = "conf13"
 
 
+class CircularConstraint(RunnerError):
+    code = "conf14"
+
+
 class CircularFence(RunnerError):
     code = "conf14"
 

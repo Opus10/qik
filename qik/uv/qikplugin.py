@@ -4,12 +4,14 @@ import qik.unset
 
 
 class UVVenvConf(qik.conf.Venv, frozen=True, tag="uv"):
-    python: str | None = None
+    python: str | qik.unset.UnsetType = qik.unset.UNSET
+    constraint: str | qik.conf.SpaceLocator | qik.unset.UnsetType = qik.unset.UNSET
 
 
 class UVPluginConf(qik.conf.Base, frozen=True, dict=True):
     cache: str | qik.unset.UnsetType = qik.unset.UNSET
     python: str | None = None
+    constraint: str | qik.conf.SpaceLocator | None = None
 
     @qik.func.cached_property
     def resolved_cache(self) -> str:

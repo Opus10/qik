@@ -200,14 +200,14 @@ class Cache(BasePluggable, frozen=True, tag_field="type"):
     plugin_type_name: ClassVar[str] = "cache"
 
 
-class SpaceFence(Base, tag_field="type", frozen=True, tag="space"):
+class SpaceLocator(Base, tag_field="type", frozen=True, tag="space"):
     name: str
 
 
 class Space(Base, frozen=True):
     root: str | None = None
     modules: list[str | ModuleLocator] = []
-    fence: list[str | SpaceFence] | bool = []
+    fence: list[str | SpaceLocator] | bool = []
     venv: Venv | None = None
 
     @qik.func.cached_property
