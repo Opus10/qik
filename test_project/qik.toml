@@ -1,9 +1,55 @@
-plugins = ["qik.pygraph", "qik.uv", "qik.s3"]
-ctx = ["aws_access_key_id", "aws_secret_access_key", {name = "aws_endpoint_url", required = false}]
 base-deps = ["python_version"]
+conf.uv.python = "3.12"
+ctx = ["aws_access_key_id", "aws_secret_access_key", {name = "aws_endpoint_url", required = false}]
+plugins = ["qik.pygraph", "qik.uv", "qik.s3"]
 
-[plugin-conf.uv]
-python = "3.12"
+[caches.remote]
+type = "s3"
+bucket = "qik-cache-test"
+aws-access-key-id = "{ctx.aws_access_key_id}"
+aws-secret-access-key = "{ctx.aws_secret_access_key}"
+region-name = "us-west-2"
+endpoint-url = "{ctx.aws_endpoint_url}"
+
+[commands]
+fail = "exit 1"
+
+[commands.dep_fail]
+exec = 'echo "hi"; exit 1'
+deps = [{type = "command", name = "fail"}, {type = "const", val = "hi"}]
+
+[commands.ind_lint]
+exec = "ruff check b"
+deps = [{type = "command", name = "modular_lint"}, {type = "pygraph", pyimport = "b"}, {type = "pygraph", pyimport = "nest.c"}]
+cache = "repo"
+space = "other"
+
+[commands.lint]
+exec = "ruff check --fix && ruff format"
+deps = ["**.py"]
+cache = "remote"
+
+[commands.lock]
+exec = "pip-compile > requirements.txt"
+deps = ["requirements.in", {type = "pydist", name = "pip-tools"}]
+artifacts = ["requirements.txt"]
+cache = "remote"
+cache-when = "finished"
+
+[commands.modular_format]
+exec = "ruff format {module.dir}"
+deps = ["{module.dir}/**.py", {type = "command", name = "modular_lint"}]
+cache = "repo"
+
+[commands.modular_lint]
+exec = "ruff check {module.dir}"
+deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]
+cache = "repo"
+
+[commands.pghistory_version]
+exec = "pip freeze | grep django-pgtrigger && python --version"
+cache = "local"
+space = "other"
 
 [spaces.default]
 root = "a/"
@@ -15,51 +61,3 @@ fence = ["other"]
 venv = {type = "uv", reqs = "req2.in", constraint = "constraint.in"}
 modules = ["nest/c"]
 fence = ["b", "a", "nest", {type = "space", name = "default"}]
-
-[caches.remote]
-type = "s3"
-bucket = "qik-cache-test"
-aws-access-key-id = "{ctx.aws_access_key_id}"
-aws-secret-access-key = "{ctx.aws_secret_access_key}"
-region-name = "us-west-2"
-endpoint-url = "{ctx.aws_endpoint_url}"
-
-[commands.fail]
-exec = 'exit 1'
-
-[commands.pghistory_version]
-exec = "pip freeze | grep django-pgtrigger && python --version"
-cache = "local"
-space = "other"
-
-[commands.dep_fail]
-exec = 'echo "hi"; exit 1'
-deps = [{type = "command", name = "fail"}, {type = "const", val = "hi"}]
-
-[commands.lock]
-exec = "pip-compile > requirements.txt"
-deps = ["requirements.in", {type = "pydist", name = "pip-tools"}]
-artifacts = ["requirements.txt"]
-cache = "remote"
-cache-when = "finished"
-
-[commands.modular_lint]
-exec = "ruff check {module.dir}"
-deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]
-cache = "repo"
-
-[commands.ind_lint]
-exec = "ruff check b"
-deps = [{type = "command", name = "modular_lint"}, {type = "pygraph", pyimport = "b"}, {type = "pygraph", pyimport = "nest.c"}]
-cache = "repo"
-space = "other"
-
-[commands.modular_format]
-exec = "ruff format {module.dir}"
-deps = ["{module.dir}/**.py", {type = "command", name = "modular_lint"}]
-cache = "repo"
-
-[commands.lint]
-exec = "ruff check --fix && ruff format"
-deps = ["**.py"]
-cache = "remote"

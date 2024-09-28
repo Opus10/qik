@@ -131,7 +131,7 @@ class Var(Base, frozen=True):
 
 
 class ModuleOrPlugin(Base, frozen=True):
-    commands: dict[str, Cmd] = {}
+    commands: dict[str, Cmd | str] = {}
 
 
 class BaseLocator(Base, frozen=True):
@@ -267,7 +267,7 @@ class Project(ModuleOrPlugin, PluginsMixin, frozen=True):
     ctx: list[str | Var] = []
     caches: dict[str, Cache] = {}
     spaces: dict[str, Space] = {}
-    plugin_conf: dict[str, Any] = {}
+    conf: dict[str, Any] = {}
     python_path: str = "."
     base_deps: list[str | Dep] = []
     default_cache: str | qik.unset.UnsetType = qik.unset.UNSET
@@ -346,8 +346,8 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
         "DynamicCmd", [("deps", list[DynamicDeps], [])], bases=(Cmd,), frozen=True
     )
 
-    DynamicPluginConf = msgspec.defstruct(
-        "DynamicPluginConf",
+    DynamicConf = msgspec.defstruct(
+        "DynamicConf",
         [
             (
                 plugins_conf.plugins_by_pyimport[plugin_pyimport].name,
@@ -366,7 +366,7 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
     globals()["DynamicCmd"] = DynamicCmd
     globals()["DynamicCacheTypes"] = DynamicCacheTypes
     globals()["DynamicDeps"] = DynamicDeps
-    globals()["DynamicPluginConf"] = DynamicPluginConf
+    globals()["DynamicConf"] = DynamicConf
 
     DynamicProject = msgspec.defstruct(
         "DynamicProject",
@@ -374,9 +374,9 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
             ("venvs", dict[str, DynamicVenvTypes], {}),
             ("caches", dict[str, DynamicCacheTypes], {}),
             ("spaces", dict[str, DynamicSpace], {}),
-            ("commands", dict[str, DynamicCmd], {}),
+            ("commands", dict[str, DynamicCmd | str], {}),
             ("base_deps", list[DynamicDeps], []),
-            ("plugin_conf", DynamicPluginConf, msgspec.field(default_factory=DynamicPluginConf)),
+            ("conf", DynamicConf, msgspec.field(default_factory=DynamicConf)),
         ],
         bases=(Project,),
         frozen=True,
@@ -490,7 +490,8 @@ def command(uri: str) -> Cmd:
     if name not in conf.commands:
         raise qik.errors.CommandNotFound(f'Command "{uri}" not configured.')
 
-    return conf.commands[name]
+    cmd_conf = conf.commands[name]
+    return Cmd(exec=cmd_conf) if isinstance(cmd_conf, str) else cmd_conf
 
 
 @qik.func.cache
