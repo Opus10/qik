@@ -105,15 +105,15 @@ def _generate_fence_regex(imps: Iterable[str]) -> re.Pattern:
 def check_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
     graph = load_graph()
     # TODO: Handle custom PYTHONPATH env var
-    fence_imps = [f.replace("/", ".") for f in runnable.space_obj.conf.fence]
+    fence_pyimports = runnable.space_obj.fence_pyimports
     imps: set[tuple[qik.pygraph.core.Module, qik.pygraph.core.Module]] = set().union(
-        *(graph.upstream_imports(imp) for imp in fence_imps)
+        *(graph.upstream_imports(imp) for imp in fence_pyimports)
     )
 
     internal_imps = "\n".join(
         f"{dest.imp} imported from {src.imp}" for src, dest in imps if dest.is_internal
     )
-    internal_fence_re = _generate_fence_regex(fence_imps)
+    internal_fence_re = _generate_fence_regex(fence_pyimports)
     internal_violations = [
         violation.group() for violation in re.finditer(internal_fence_re, internal_imps)
     ]

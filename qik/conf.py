@@ -187,6 +187,11 @@ class Venv(BasePluggable, frozen=True, tag_field="type"):
     lock: str | None = None
 
 
+class SpaceVenv(Venv, frozen=True, tag="space", kw_only=True):
+    name: str
+    reqs: str | list[str] = []
+
+
 class ActiveVenv(Venv, frozen=True, tag="active"):
     reqs: str | list[str] = []
 
@@ -195,11 +200,15 @@ class Cache(BasePluggable, frozen=True, tag_field="type"):
     plugin_type_name: ClassVar[str] = "cache"
 
 
+class SpaceFence(Base, tag_field="type", frozen=True, tag="space"):
+    name: str
+
+
 class Space(Base, frozen=True):
     root: str | None = None
     modules: list[str | ModuleLocator] = []
-    fence: list[str] = []
-    venv: str | Venv | None = None
+    fence: list[str | SpaceFence] = []
+    venv: Venv | None = None
 
     @qik.func.cached_property
     def modules_by_name(self) -> dict[str, ModuleLocator]:
@@ -319,7 +328,9 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
     venv_plugin_types = _PLUGIN_TYPES["venv"]
 
     DynamicCacheTypes = Union[(Cache, *(cls for cls, _ in cache_plugin_types.values()))]
-    DynamicVenvTypes = Union[(Venv, *(cls for cls, _ in venv_plugin_types.values()))]
+    DynamicVenvTypes = Union[
+        (ActiveVenv, SpaceVenv, *(cls for cls, _ in venv_plugin_types.values()))
+    ]
     DynamicDeps = Union[
         (
             str,

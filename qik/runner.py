@@ -204,11 +204,7 @@ class Graph:
         """Filter the graph by the cache."""
         caches_set = frozenset(c.lower() for c in caches)
         return self.filter(
-            (
-                runnable
-                for runnable in self
-                if runnable.cache.lower() in caches_set
-            ),
+            (runnable for runnable in self if runnable.cache.lower() in caches_set),
             neighbors=False,
         )
 

@@ -7,11 +7,12 @@ deps = ["python_version"]
 [spaces.default]
 venv = {type = "uv", reqs = "requirements.in"}
 modules = ["a", {name = "b_module", path = "b"}]
+fence = ["other"]
 
 [spaces.other]
 venv = {type = "uv", reqs = "req2.in"}
 modules = ["nest/c"]
-fence = ["b", "a", "nest"]
+fence = ["b", "a", "nest", {type = "space", name = "default"}]
 
 [caches.remote]
 type = "s3"

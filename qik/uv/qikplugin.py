@@ -1,4 +1,3 @@
-
 import qik.conf
 import qik.func
 import qik.unset
