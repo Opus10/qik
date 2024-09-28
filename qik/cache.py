@@ -208,7 +208,7 @@ class Local(Cache):
 
 
 @qik.func.cache
-def load(name: str | None) -> Cache:
+def load(name: str) -> Cache:
     proj = qik.conf.project()
 
     match name:
@@ -216,7 +216,7 @@ def load(name: str | None) -> Cache:
             return Repo()
         case "local":
             return Local()
-        case "none" | None:
+        case "none":
             return Uncached()
         case custom:
             if conf := proj.caches.get(custom):

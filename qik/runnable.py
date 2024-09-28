@@ -132,6 +132,9 @@ def _make_runnable(
     space: str | None,
     module: qik.conf.ModuleLocator | None = None,
 ) -> Runnable:
+    # If the command has no deps, use "none" as the cache unless explicitly set
+    initial_cache = "none" if not conf.deps else conf.cache
+
     return Runnable(
         name=f"{cmd}#{module.name}" if module else cmd,
         cmd=cmd,
@@ -143,7 +146,7 @@ def _make_runnable(
         module=module.name if module else None,
         artifacts=[qik.ctx.format(artifact) for artifact in conf.artifacts],
         cache=qik.ctx.format(
-            qik.unset.coalesce(conf.cache, qik.conf.defaults().cache, default="local", type=str)
+            qik.unset.coalesce(initial_cache, qik.conf.defaults().cache, default="local", type=str)
         ),
         cache_when=qik.ctx.format(
             qik.unset.coalesce(
@@ -199,7 +202,7 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
     name: str
     cmd: str
     val: str
-    cache: str | None
+    cache: str
     cache_when: qik.conf.CacheWhen
     shell: bool = True
     deps: list[qik.dep.Dep] = []

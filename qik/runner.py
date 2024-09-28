@@ -200,14 +200,14 @@ class Graph:
     # Filtering methods and filtered properties
     ###
 
-    def filter_cache_types(self, cache_types: list[str]) -> Self:
-        """Filter the graph by the type of cache."""
-        cache_types_set = frozenset(c_type.lower() for c_type in cache_types)
+    def filter_caches(self, caches: list[str]) -> Self:
+        """Filter the graph by the cache."""
+        caches_set = frozenset(c.lower() for c in caches)
         return self.filter(
             (
                 runnable
                 for runnable in self
-                if runnable.get_cache_backend().type in cache_types_set
+                if runnable.cache.lower() in caches_set
             ),
             neighbors=False,
         )
@@ -357,8 +357,8 @@ def _get_graph() -> Graph:
     except RecursionError as exc:
         raise qik.errors.GraphCycle("Cycle detected in DAG.") from exc
 
-    if qik_ctx.cache_types:
-        graph = graph.filter_cache_types(qik_ctx.cache_types)
+    if qik_ctx.caches:
+        graph = graph.filter_caches(qik_ctx.caches)
 
     if qik_ctx.cache_status:
         graph = graph.filter_cache_status(qik_ctx.cache_status)

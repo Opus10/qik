@@ -16,14 +16,14 @@ def main() -> None:
     parser.add_argument(
         "-m",
         "--module",
-        help="Set module name(s).",
+        help="Select commands by module(s).",
         action="append",
         dest="modules",
     )
     parser.add_argument(
         "-s",
         "--space",
-        help="Set space name(s).",
+        help="Select commands by space(s).",
         action="append",
         dest="spaces",
     )
@@ -34,7 +34,7 @@ def main() -> None:
         "-f",
         "--force",
         action="store_true",
-        help="Don't read cache.",
+        help="Don't read caches.",
         default=qik.unset.UNSET,
     )
     parser.add_argument(
@@ -55,16 +55,16 @@ def main() -> None:
         help="Fail if any commands are selected.",
         default=qik.unset.UNSET,
     )
-    parser.add_argument("--since", help="Filter since git SHA.", default=qik.unset.UNSET)
+    parser.add_argument("--since", help="Select since git SHA.", default=qik.unset.UNSET)
     parser.add_argument(
-        "--cache-type",
-        help="Filter by cache type.",
+        "--cache",
+        help="Select by cache(s).",
         action="append",
-        dest="cache_types",
+        dest="caches",
     )
     parser.add_argument(
         "--cache-status",
-        help="Filter by cache status.",
+        help="Select by cache status.",
         default=qik.unset.UNSET,
         choices=["warm", "cold"],
     )
@@ -93,7 +93,7 @@ def main() -> None:
         commands=args.commands or qik.unset.UNSET,
         modules=args.modules or qik.unset.UNSET,
         spaces=args.spaces or qik.unset.UNSET,
-        cache_types=args.cache_types or qik.unset.UNSET,
+        caches=args.caches or qik.unset.UNSET,
     ):
         res = qik.runner.exec()
         qik_ctx = qik.ctx.by_namespace("qik")

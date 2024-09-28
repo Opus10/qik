@@ -140,12 +140,11 @@ Here's a list of all qik context variables:
 | ls | `False` | List commands (`--ls`) |
 | workers | *thread count* | Set the number of workers (`-n`) |
 | fail | `False` | Fail if no commands are selected (`--fail`) |
-| cache_when | `success` | Set when to cache (`--cache-when`) |
 | since | `None` | Select commands since git reference (`--since`) |
 | commands | `None` | The default commands to run when none are provided to `qik` |
 | modules | `None` | The default modules (`-m`) |
 | cache_status | `None` | Select commands by cache status (`--cache-status`) |
-| cache_types | `None` | Select commands by cache type (`--cache-type`) |
+| caches | `None` | Select commands by cache (`--cache`) |
 | arch | *machine arch* | Set the default architecture |
 
 ## Using Context in Dependencies

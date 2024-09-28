@@ -112,7 +112,7 @@ class QikCtx(msgspec.Struct, forbid_unknown_fields=True, rename="kebab", dict=Tr
     modules: list[str] = []
     spaces: list[str] = []
     cache_status: qik.conf.CacheStatus | None = None
-    cache_types: list[str] = []
+    caches: list[str] = []
 
     @qik_func.cached_property
     def arch(self) -> qik.arch.ArchType:
