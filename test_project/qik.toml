@@ -7,7 +7,7 @@ deps = ["python_version"]
 [spaces.default]
 venv = {type = "uv", reqs = "requirements.in"}
 modules = ["a", {name = "b_module", path = "b"}]
-fence = ["other"]
+fence = ["other", {type = "space", name = "other"}]
 
 [spaces.other]
 venv = {type = "uv", reqs = "req2.in"}

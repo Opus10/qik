@@ -26,17 +26,23 @@ class Space(msgspec.Struct, frozen=True, dict=True):
 
     @qik.func.cached_property
     def fence_pyimports(self) -> list[str]:
-        return sorted(set(self._pyimports_iter()))
+        try:
+            return sorted(set(self._pyimports_iter()))
+        except RecursionError as e:
+            raise qik.errors.CircularFence("Circular fence detected.") from e
 
     @qik.func.cached_property
     def venv(self) -> qik.venv.Venv:
-        if self.conf.venv is None or isinstance(self.conf.venv, qik.conf.ActiveVenv):
-            return qik.venv.active()
-        elif isinstance(self.conf.venv, qik.conf.SpaceVenv):
-            return load(self.conf.venv.name).venv
-        else:
-            factory = qik.conf.get_type_factory(self.conf.venv)
-            return pkgutil.resolve_name(factory)(self.name, self.conf.venv)
+        try:
+            if self.conf.venv is None or isinstance(self.conf.venv, qik.conf.ActiveVenv):
+                return qik.venv.active()
+            elif isinstance(self.conf.venv, qik.conf.SpaceVenv):
+                return load(self.conf.venv.name).venv
+            else:
+                factory = qik.conf.get_type_factory(self.conf.venv)
+                return pkgutil.resolve_name(factory)(self.name, self.conf.venv)
+        except RecursionError as e:
+            raise qik.errors.CircularVenv("Circular venv detected.") from e
 
 
 @qik.func.cache

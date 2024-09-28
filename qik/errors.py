@@ -68,6 +68,14 @@ class InvalidVenvType(RunnerError):
     code = "conf12"
 
 
+class CircularVenv(RunnerError):
+    code = "conf13"
+
+
+class CircularFence(RunnerError):
+    code = "conf14"
+
+
 class CtxProfileNotFound(RunnerError):
     code = "ctx0"
 

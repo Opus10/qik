@@ -114,6 +114,40 @@ venv = {type = "invalid", name = "name"}
 ...
 ```
 
+<a id="conf13"></a>
+
+#### Circlar Venv
+
+The configuration has a circular venv definition, for example:
+
+```toml
+[spaces.default]
+venv = {type = "space", name = "other"}
+...
+
+[spaces.other]
+venv = {type = "space", name = "default"}
+...
+```
+
+<a id="conf14"></a>
+
+#### Circlar Fence
+
+The configuration has a circular fence definition, for example:
+
+```toml
+[spaces.default]
+fence = ["some/module", {type = "space", name = "default"}]
+...
+
+[spaces.other]
+fence = ["path/to/module", {type = "space", name = "other"}]
+...
+```
+
+
+
 ## Context
 
 <a id="ctx0"></a>
