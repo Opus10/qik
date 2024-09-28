@@ -71,10 +71,10 @@ def _normalize_pydist_name(name: str) -> str:
 @qik.func.cache
 def _pydist_version_overrides() -> dict[str, str]:
     project_conf = qik.conf.project()
-    base = collections.defaultdict(str) if project_conf.conf.pydist.ignore_missing else {}
+    base = collections.defaultdict(str) if project_conf.pydist.ignore_missing else {}
     return base | {
         _normalize_pydist_name(name): version
-        for name, version in project_conf.conf.pydist.versions.items()
+        for name, version in project_conf.pydist.versions.items()
     }
 
 
@@ -120,7 +120,7 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
         venv_hash = qik.hash.strs(*sorted(venv_contents))
         with self.__dict__["_packages_distributions_lock"]:
             if self.__dict__["_packages_distributions"][0] != venv_hash:
-                pydist_conf = qik.conf.project().conf.pydist
+                pydist_conf = qik.conf.project().pydist
                 cache_path = (
                     qik.conf.priv_work_dir()
                     / "venv"

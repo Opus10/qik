@@ -13,4 +13,4 @@ if TYPE_CHECKING:
 def get() -> PygraphPluginConf:
     """Get the pygraph config."""
     proj = qik.conf.project()
-    return getattr(proj.conf.plugins, proj.plugins_by_pyimport["qik.pygraph"].name)  # type: ignore
+    return getattr(proj.plugin_conf, proj.plugins_by_pyimport["qik.pygraph"].name)  # type: ignore

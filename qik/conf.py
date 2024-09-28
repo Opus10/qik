@@ -222,16 +222,11 @@ class Space(Base, frozen=True):
         return {m.path: m for m in self.modules_by_name.values()}
 
 
-class ConfPydist(Base, frozen=True):
+class Pydist(Base, frozen=True):
     versions: dict[str, str] = {}
     modules: dict[str, str] = {}
     ignore_missing: bool = False
     ignore_missing_modules: bool = False
-
-
-class Conf(Base, frozen=True):
-    pydist: ConfPydist = msgspec.field(default_factory=ConfPydist)
-    plugins: dict[str, Any] = {}
 
 
 class PluginsMixin:
@@ -271,11 +266,12 @@ class Project(ModuleOrPlugin, PluginsMixin, frozen=True):
     ctx: list[str | Var] = []
     caches: dict[str, Cache] = {}
     spaces: dict[str, Space] = {}
-    conf: Conf = msgspec.field(default_factory=Conf)
+    plugin_conf: dict[str, Any] = {}
     python_path: str = "."
     base_deps: list[str | Dep] = []
     default_cache: str | qik.unset.UnsetType = qik.unset.UNSET
     default_cache_when: CacheWhen | qik.unset.UnsetType = qik.unset.UNSET
+    pydist: Pydist = msgspec.field(default_factory=Pydist)
 
     @qik.func.cached_property
     def ctx_vars(self) -> dict[str, Var]:
@@ -349,8 +345,8 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
         "DynamicCmd", [("deps", list[DynamicDeps], [])], bases=(Cmd,), frozen=True
     )
 
-    DynamicConfPlugins = msgspec.defstruct(
-        "DynamicConfPlugins",
+    DynamicPluginConf = msgspec.defstruct(
+        "DynamicPluginConf",
         [
             (
                 plugins_conf.plugins_by_pyimport[plugin_pyimport].name,
@@ -363,22 +359,13 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
         frozen=True,
     )
 
-    DynamicConf = msgspec.defstruct(
-        "DynamicConf",
-        [
-            ("plugins", DynamicConfPlugins, msgspec.field(default_factory=DynamicConfPlugins)),
-        ],
-        bases=(Conf,),
-        frozen=True,
-    )
-
     # Must register as part of the global namespace in order for msgspec to
     # recognize dynamic nested type.
     globals()["DynamicSpace"] = DynamicSpace
     globals()["DynamicCmd"] = DynamicCmd
     globals()["DynamicCacheTypes"] = DynamicCacheTypes
     globals()["DynamicDeps"] = DynamicDeps
-    globals()["DynamicConf"] = DynamicConf
+    globals()["DynamicPluginConf"] = DynamicPluginConf
 
     DynamicProject = msgspec.defstruct(
         "DynamicProject",
@@ -388,7 +375,7 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
             ("spaces", dict[str, DynamicSpace], {}),
             ("commands", dict[str, DynamicCmd], {}),
             ("base_deps", list[DynamicDeps], []),
-            ("conf", DynamicConf, msgspec.field(default_factory=DynamicConf)),
+            ("plugin_conf", DynamicPluginConf, msgspec.field(default_factory=DynamicPluginConf)),
         ],
         bases=(Project,),
         frozen=True,

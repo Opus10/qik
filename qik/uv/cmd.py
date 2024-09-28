@@ -47,7 +47,7 @@ def install_cmd_factory(
         raise qik.errors.ArgNotSupplied('"space" arg is required for qik.uv.install command.')
 
     venv = cast(qik.uv.venv.UVVenv, qik.space.load(space).venv)
-    venv_python = f"--python '{venv.conf.python}'" if venv.conf.python else ""
+    venv_python = f"--python '{venv.python}'" if venv.python else ""
     cmd_name = qik.uv.utils.install_cmd_name()
     runnable = qik.runnable.Runnable(
         name=f"{cmd_name}?space={space}",

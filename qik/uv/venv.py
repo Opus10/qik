@@ -21,6 +21,10 @@ class UVVenv(qik.venv.Venv, frozen=True, dict=True):
     conf: UVVenvConf
 
     @qik.func.cached_property
+    def python(self) -> str | None:
+        return self.conf.python or qik.uv.conf.get().python
+
+    @qik.func.cached_property
     def default_lock(self) -> str:
         uv_conf = qik.uv.conf.get()
         root = qik.conf.pub_work_dir() if uv_conf.cache == "repo" else qik.conf.priv_work_dir()

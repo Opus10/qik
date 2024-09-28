@@ -9,6 +9,7 @@ class UVVenvConf(qik.conf.Venv, frozen=True, tag="uv"):
 
 class UVPluginConf(qik.conf.Base, frozen=True, dict=True):
     cache: str | qik.unset.UnsetType = qik.unset.UNSET
+    python: str | None = None
 
     @qik.func.cached_property
     def resolved_cache(self) -> str:
