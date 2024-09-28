@@ -142,9 +142,9 @@ class Graph:
 
         # Construct the graph
         self._nodes: dict[str, Runnable] = {
-            name: runnable
+            runnable.name: runnable
             for cmd in cmds
-            for name, runnable in qik.cmd.load(cmd).runnables.items()
+            for runnable in qik.cmd.runnables(cmd)
             if (
                 (not modules or runnable.module in modules)
                 and (not spaces or runnable.space in spaces)

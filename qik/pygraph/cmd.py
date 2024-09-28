@@ -69,7 +69,7 @@ def lock_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
     # TODO: Better error if the module doesn't exist
     upstream = graph.upstream_modules(pyimport, idx=False)
     root = graph.modules[graph.modules_idx[pyimport]]
-    distributions = runnable.venv.packages_distributions()
+    distributions = runnable.resolved_venv.packages_distributions()
 
     def _gen_upstream_globs() -> Iterator[str]:
         for module in [root, *upstream]:
@@ -105,7 +105,7 @@ def _generate_fence_regex(imps: Iterable[str]) -> re.Pattern:
 def check_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
     graph = load_graph()
     # TODO: Handle custom PYTHONPATH env var
-    fence_pyimports = runnable.space_obj.fence_pyimports
+    fence_pyimports = runnable.resolved_space.fence_pyimports
     imps: set[tuple[qik.pygraph.core.Module, qik.pygraph.core.Module]] = set().union(
         *(graph.upstream_imports(imp) for imp in fence_pyimports)
     )
@@ -122,7 +122,10 @@ def check_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
         f"{dest.imp} imported from {src.imp}" for src, dest in imps if not dest.is_internal
     )
     external_fence_re = _generate_fence_regex(
-        (external_imp for external_imp, _ in runnable.venv.packages_distributions().items())
+        (
+            external_imp
+            for external_imp, _ in runnable.resolved_venv.packages_distributions().items()
+        )
     )
     external_violations = [
         violation.group() for violation in re.finditer(external_fence_re, external_imps)

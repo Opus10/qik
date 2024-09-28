@@ -43,7 +43,7 @@ class DepsCollection:
         ]
         self.runnable = runnable
         self.module = runnable.module
-        self.venv = runnable.venv
+        self.venv = runnable.resolved_venv
 
     @property
     def globs(self) -> set[str]:
@@ -200,6 +200,7 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
     module: str | None = None
     args: dict[str, str] = {}
     space: str | None = None
+    venv: qik.unset.UnsetType | None = qik.unset.UNSET
     environ: dict[str, str] = {}
 
     @qik.func.per_run_cached_property
@@ -216,17 +217,20 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
         return DepsCollection(*self.deps, runnable=self)
 
     @qik.func.cached_property
-    def space_obj(self) -> qik.space.Space:
+    def resolved_space(self) -> qik.space.Space:
         return qik.space.load(self.space)
 
     @qik.func.cached_property
-    def venv(self) -> qik.venv.Venv:
-        return self.space_obj.venv if self.space else qik.venv.active()
+    def resolved_venv(self) -> qik.venv.Venv:
+        if not self.space or self.venv is None:
+            return qik.venv.active()
+        else:
+            return self.resolved_space.venv
 
     @property
     def _exec_env(self) -> dict[str, str]:
         """Get the environment for runnables."""
-        environ = self.venv.environ if self.venv else os.environ
+        environ = self.resolved_venv.environ if self.resolved_venv else os.environ
         return {
             **environ,
             **self.environ,

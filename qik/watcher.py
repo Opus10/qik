@@ -74,8 +74,8 @@ def _make_watchdog_handler(*, runner: Runner) -> QikEventHandlerProtocol:  # pra
         def active_venv(self) -> qik.venv.Active | None:
             # Find if an active venv is being used by the runner. IF so, we'll watch it.
             for runnable in self.runner.graph:
-                if isinstance(runnable.venv, qik.venv.Active):
-                    return runnable.venv
+                if isinstance(runnable.resolved_venv, qik.venv.Active):
+                    return runnable.resolved_venv
 
         def restart_timer(self, interval: float = 0.1):
             if self.timer is not None:

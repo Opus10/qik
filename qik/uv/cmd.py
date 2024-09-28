@@ -48,7 +48,8 @@ def lock_cmd_factory(
         cache=uv_conf.resolved_cache,
         cache_when="success",
         args={"space": space},
-        space=None,
+        space=space,
+        venv=None,
         environ=environ,
     )
     return {runnable.name: runnable}
@@ -77,6 +78,7 @@ def install_cmd_factory(
         cache="local",
         cache_when="success",
         args={"space": space},
-        space=None,
+        space=space,
+        venv=None,
     )
     return {runnable.name: runnable}
