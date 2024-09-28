@@ -97,14 +97,15 @@ class Graph(msgspec.Struct, frozen=True, dict=True):
 
 def build() -> Graph:
     """Build the import graph from the current codebase."""
-    internal_path = str(qik.conf.root())
+    python_path = str(qik.conf.abs_python_path())
     internal_modules = {
         module.name
         for module in pkgutil.iter_modules()
         if module.ispkg
         and isinstance(module.module_finder, importlib.machinery.FileFinder)
-        and module.module_finder.path == internal_path
+        and module.module_finder.path == python_path
     }
+    # TODO: Raise a runtime error if no internalmodules were found. Suggest to configure the python path.
     stdlib_modules = sys.stdlib_module_names | set(sys.builtin_module_names)
 
     # Parse the codebase with grimp

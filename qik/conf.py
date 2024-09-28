@@ -160,7 +160,7 @@ class ModuleLocator(BaseLocator, frozen=True):
 
     @qik.func.cached_property
     def pyimport(self) -> str:
-        return self.path.replace("/", ".")
+        return pyimport(self.path)
 
     @qik.func.cached_property
     def dir(self) -> pathlib.Path:
@@ -280,6 +280,7 @@ class Project(ModuleOrPlugin, PluginsMixin, frozen=True):
     caches: dict[str, Cache] = {}
     spaces: dict[str, Space] = {}
     conf: Conf = msgspec.field(default_factory=Conf)
+    python_path: str = "."
 
     @qik.func.cached_property
     def ctx_vars(self) -> dict[str, Var]:
@@ -409,8 +410,12 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
 
 
 @qik.func.cache
-def _project() -> tuple[Project, pathlib.Path]:
-    """Return the project configuration and file."""
+def load() -> tuple[Project, pathlib.Path]:
+    """Load the project configuration and file.
+    
+    This serves as an entry point for all of qik, so we set the python path
+    here too.
+    """
     cwd = pathlib.Path.cwd()
     qik_toml: pathlib.Path | None = None
 
@@ -425,15 +430,18 @@ def _project() -> tuple[Project, pathlib.Path]:
         contents = qik_toml.read_bytes()
         plugins_conf = msgspec.toml.decode(contents, type=Plugins)
         _load_plugins(plugins_conf)
-        return _parse_project_config(contents, plugins_conf), qik_toml
+        conf = _parse_project_config(contents, plugins_conf)
+
+        python_path = qik_toml.parent / conf.python_path
+        sys.path.insert(0, str(python_path))
+        return conf, qik_toml
     else:
         raise qik.errors.ConfigNotFound("Could not locate qik.toml configuration file.")
 
 
 @qik.func.cache
 def project() -> Project:
-    sys.path.append(str(root()))
-    return _project()[0]
+    return load()[0]
 
 
 @qik.func.cache
@@ -510,19 +518,15 @@ def command(uri: str) -> Cmd:
 
 
 @qik.func.cache
-def space(name: str = "default") -> Space:
-    """Get configuration for a space."""
-    proj = project()
-    if name != "default" and name not in proj.spaces:
-        raise qik.errors.SpaceNotFound(f'Space "{name}" not configured.')
-
-    return proj.spaces.get(name, Space(venv="default"))
+def root() -> pathlib.Path:
+    """Get the absolute root project directory."""
+    return load()[1].parent
 
 
 @qik.func.cache
-def root() -> pathlib.Path:
-    """Get the absolute root project directory."""
-    return _project()[1].parent
+def abs_python_path() -> pathlib.Path:
+    """Get the absolute python path."""
+    return load()[1].parent / project().python_path
 
 
 @qik.func.cache
@@ -540,10 +544,20 @@ def pub_work_dir(abs: bool = False) -> pathlib.Path:
 @qik.func.cache
 def location() -> pathlib.Path:
     """Get the root configuration file."""
-    return _project()[1]
+    return load()[1]
 
 
 @qik.func.cache
 def defaults() -> ConfDefaults:
     """Get the default configuration values."""
     return project().conf.defaults
+
+
+@qik.func.cache
+def pyimport(path: str) -> str:
+    """Return the python import for a path."""
+    python_path = project().python_path
+    if python_path == ".":
+        return path.replace("/", ".")
+    else:
+        return str(pathlib.Path(path).relative_to(python_path)).replace("/", ".")

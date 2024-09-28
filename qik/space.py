@@ -14,12 +14,12 @@ class Space(msgspec.Struct, frozen=True, dict=True):
     conf: qik.conf.Space
 
     def _pyimports_iter(self) -> Iterator[str]:
-        for path in self.conf.modules_by_path:
-            yield path.replace("/", ".")
+        for locator in self.conf.modules_by_path.values():
+            yield locator.pyimport
 
         for value in self.conf.fence:
             if isinstance(value, str):
-                yield value.replace("/", ".")
+                yield qik.conf.pyimport(value)
             else:
                 space = load(value.name)
                 yield from space._pyimports_iter()
