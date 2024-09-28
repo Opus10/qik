@@ -113,18 +113,6 @@ class DepsCollection:
         )
 
 
-def _get_exec_env() -> dict[str, str]:
-    """Get the environment for runnables."""
-    runnable = qik.ctx.runnable()
-    environ = runnable.venv.environ if runnable.venv else os.environ
-    return {
-        **environ,
-        "QIK__CMD": runnable.cmd,
-        "QIK__RUNNABLE": runnable.name,
-        "QIK__WORKER": str(qik.ctx.worker_id()),
-    }
-
-
 def _make_runnable(
     *,
     cmd: str,
@@ -212,6 +200,7 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
     module: str | None = None
     args: dict[str, str] = {}
     space: str | None = None
+    environ: dict[str, str] = {}
 
     @qik.func.per_run_cached_property
     def description(self) -> str:
@@ -233,6 +222,18 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
     @qik.func.cached_property
     def venv(self) -> qik.venv.Venv:
         return self.space_obj.venv if self.space else qik.venv.active()
+
+    @property
+    def _exec_env(self) -> dict[str, str]:
+        """Get the environment for runnables."""
+        environ = self.venv.environ if self.venv else os.environ
+        return {
+            **environ,
+            **self.environ,
+            "QIK__CMD": self.cmd,
+            "QIK__RUNNABLE": self.name,
+            "QIK__WORKER": str(qik.ctx.worker_id()),
+        }
 
     def filter_regex(self, strategy: FilterStrategy) -> re.Pattern | None:
         """Generate the regex used for file-based filtering.
@@ -304,7 +305,7 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
         """Run a command without wrapped caching."""
         try:
             if self.shell:
-                process = qik.shell.popen(self.val, env=_get_exec_env())
+                process = qik.shell.popen(self.val, env=self._exec_env)
                 output = []
                 for line in process.stdout if process.stdout is not None else []:
                     logger.print(line, runnable=self, event="output")

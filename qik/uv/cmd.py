@@ -32,6 +32,13 @@ def lock_cmd_factory(
         pip_compile = f"{pip_compile} --constraint {venv.constraint}"
         constraint_deps = [qik.dep.Glob(venv.constraint)]
 
+    environ = {}
+    if uv_conf.resolved_index_url:
+        environ["UV_INDEX_URL"] = uv_conf.resolved_index_url
+
+    if uv_conf.resolved_extra_index_url:
+        environ["UV_EXTRA_INDEX_URL"] = uv_conf.resolved_extra_index_url
+
     runnable = qik.runnable.Runnable(
         name=f"{cmd_name}?space={space}",
         cmd=cmd_name,
@@ -42,6 +49,7 @@ def lock_cmd_factory(
         cache_when="success",
         args={"space": space},
         space=None,
+        environ=environ,
     )
     return {runnable.name: runnable}
 
