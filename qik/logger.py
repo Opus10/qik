@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import collections
 import contextlib
+import os
+import pathlib
 from typing import IO, TYPE_CHECKING, Iterator, Literal, TypeAlias
 
 import msgspec
@@ -13,8 +15,6 @@ import qik.file
 import qik.func
 
 if TYPE_CHECKING:
-    import pathlib
-
     import rich.live as rich_live
     import rich.progress as rich_progress
     import rich.table as rich_table
@@ -41,7 +41,8 @@ RunStatus: TypeAlias = Literal["success", "failed", "skipped", "pending"]
 
 @qik.func.cache
 def out_dir() -> pathlib.Path:
-    return qik.conf.priv_work_dir() / "out"
+    # Note, relative_to(walk_up=True) is supported in python 3.12.
+    return pathlib.Path(os.path.relpath(qik.conf.priv_work_dir() / "out", os.getcwd()))
 
 
 class Manifest(msgspec.Struct):

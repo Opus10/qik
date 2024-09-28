@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 
+import qik.conf
 import qik.ctx
 import qik.runner
 import qik.unset
@@ -79,6 +81,13 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+    spaces = args.spaces
+
+    # Set the space if in a space root
+    if not spaces and os.getcwd() != qik.conf.root():
+        print('root')
+        ...
+
     with qik.ctx.set_vars(
         "qik",
         watch=args.watch,
@@ -92,7 +101,7 @@ def main() -> None:
         verbosity=args.verbosity,
         commands=args.commands or qik.unset.UNSET,
         modules=args.modules or qik.unset.UNSET,
-        spaces=args.spaces or qik.unset.UNSET,
+        spaces=spaces or qik.unset.UNSET,
         caches=args.caches or qik.unset.UNSET,
     ):
         res = qik.runner.exec()

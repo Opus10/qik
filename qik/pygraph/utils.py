@@ -29,23 +29,23 @@ def check_cmd_name() -> str:
 
 
 @qik.func.cache
-def graph_path() -> pathlib.Path:
+def graph_path(rel: bool = True) -> pathlib.Path:
     pygraph_conf = qik.pygraph.conf.get()
     root = (
-        qik.conf.pub_work_dir()
+        qik.conf.pub_work_dir(rel=rel)
         if pygraph_conf.resolved_build_cache == "repo"
-        else qik.conf.priv_work_dir()
+        else qik.conf.priv_work_dir(rel=rel)
     )
     return root / "artifacts" / build_cmd_name() / "graph.json"
 
 
 @qik.func.cache
-def lock_path(pyimport: str, space: str | None = None) -> pathlib.Path:
+def lock_path(pyimport: str, space: str | None = None, rel: bool = True) -> pathlib.Path:
     pygraph_conf = qik.pygraph.conf.get()
     root = (
-        qik.conf.pub_work_dir()
+        qik.conf.pub_work_dir(rel=rel)
         if pygraph_conf.resolved_lock_cache == "repo"
-        else qik.conf.priv_work_dir()
+        else qik.conf.priv_work_dir(rel=rel)
     )
     file_name = f"lock.{pyimport}.{space}.json" if space else f"lock.{pyimport}.json"
     return root / "artifacts" / lock_cmd_name() / file_name

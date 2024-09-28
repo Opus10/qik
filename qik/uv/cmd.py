@@ -59,7 +59,7 @@ def install_cmd_factory(
     runnable = qik.runnable.Runnable(
         name=f"{cmd_name}?space={space}",
         cmd=cmd_name,
-        val=f"uv venv {venv.dir} {venv_python} && uv pip sync {venv.lock} --python {venv.dir}/bin/python",
+        val=f"uv venv {venv.dir.relative_to(qik.conf.root())} {venv_python} && uv pip sync {venv.lock} --python {venv.dir}/bin/python",
         deps=[
             *qik.dep.base(),
             qik.dep.Cmd(qik.uv.utils.lock_cmd_name(), args={"space": space}, strict=True),

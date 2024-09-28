@@ -53,7 +53,7 @@ def build_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
     except grimp_exceptions.SourceSyntaxError as exc:
         return 1, f"Cannot build import graph - {exc}"
 
-    path = qik.pygraph.utils.graph_path()
+    path = qik.pygraph.utils.graph_path(rel=False)
 
     serialized = msgspec.json.encode(graph)
     qik.file.write(path, serialized)
@@ -89,7 +89,7 @@ def lock_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
                     ) from exc
 
     runnable.store_deps(
-        qik.pygraph.utils.lock_path(pyimport, runnable.space),
+        qik.pygraph.utils.lock_path(pyimport, runnable.space, rel=False),
         globs=sorted(_gen_upstream_globs()),
         pydists=sorted(_gen_upstream_pydists()),
     )
@@ -232,5 +232,5 @@ def check_cmd_factory(
 def load_graph() -> qik.pygraph.core.Graph:
     """Load the graph."""
     return msgspec.json.decode(
-        qik.pygraph.utils.graph_path().read_bytes(), type=qik.pygraph.core.Graph
+        qik.pygraph.utils.graph_path(rel=False).read_bytes(), type=qik.pygraph.core.Graph
     )

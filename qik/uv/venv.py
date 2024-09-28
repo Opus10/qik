@@ -59,7 +59,7 @@ class UVVenv(qik.venv.Venv, frozen=True, dict=True):
     @qik.func.cached_property
     def default_lock(self) -> str:
         uv_conf = qik.uv.conf.get()
-        root = qik.conf.pub_work_dir() if uv_conf.cache == "repo" else qik.conf.priv_work_dir()
+        root = qik.conf.pub_work_dir(rel=True) if uv_conf.cache == "repo" else qik.conf.priv_work_dir(rel=True)
         return str(
             root
             / "artifacts"
@@ -89,7 +89,7 @@ class UVVenv(qik.venv.Venv, frozen=True, dict=True):
             return path
 
         # TODO: Turn this into a qik runtime error
-        raise AssertionError(f'Could not find site packages dir of venv "{self.name}"')
+        raise AssertionError(f'Could not find site packages dir of venv "{self.name}" at "{self.dir}"')
 
     @qik.func.cached_property
     def runnable_deps(self) -> dict[str, qik.dep.Runnable]:

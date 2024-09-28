@@ -505,15 +505,15 @@ def abs_python_path() -> pathlib.Path:
 
 
 @qik.func.cache
-def priv_work_dir(abs: bool = False) -> pathlib.Path:
+def priv_work_dir(rel: bool = False) -> pathlib.Path:
     """Get the private work directory."""
-    return root() / "._qik" if abs else pathlib.Path("._qik")
+    return root() / "._qik" if not rel else pathlib.Path("._qik")
 
 
 @qik.func.cache
-def pub_work_dir(abs: bool = False) -> pathlib.Path:
+def pub_work_dir(rel: bool = False) -> pathlib.Path:
     """Get the public work directory."""
-    return root() / ".qik" if abs else pathlib.Path(".qik")
+    return root() / ".qik" if not rel else pathlib.Path(".qik")
 
 
 @qik.func.cache
