@@ -72,6 +72,10 @@ class Space(msgspec.Struct, frozen=True, dict=True):
         except RecursionError as e:
             raise qik.errors.CircularVenv("Circular venv detected.") from e
 
+    @property
+    def environ(self) -> dict[str, str]:
+        return self.venv.environ
+
 
 @qik.func.cache
 def load(name: str = "default") -> Space:

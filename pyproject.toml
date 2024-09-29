@@ -46,7 +46,8 @@ repository = "https://github.com/Opus10/qik"
 documentation = "https://qik.readthedocs.io"
 
 [tool.poetry.scripts]
-qik = "qik.cli:main"
+qik = "qik.cli:qik_entry"
+qikx = "qik.cli:qikx_entry"
 
 [tool.poetry.dependencies]
 python = ">=3.10.0,<4"

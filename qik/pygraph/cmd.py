@@ -158,7 +158,7 @@ def build_cmd_factory(
     build_graph_cmd_name = qik.pygraph.utils.build_cmd_name()
     pygraph_conf = qik.pygraph.conf.get()
     runnable = qik.runnable.Runnable(
-        name=build_graph_cmd_name,
+        name=qik.runnable.fmt_name(build_graph_cmd_name),
         cmd=build_graph_cmd_name,
         val="qik.pygraph.cmd.build_cmd",
         shell=False,
@@ -180,11 +180,8 @@ def lock_cmd_factory(
 
     pyimport = args["pyimport"]
     space = args["space"]
-    name = f"{qik.pygraph.utils.lock_cmd_name()}?pyimport={pyimport}"
-    if space:
-        name += f"&space={space}"
-
     cmd_name = qik.pygraph.utils.lock_cmd_name()
+    name = qik.runnable.fmt_name(cmd_name, space=space, pyimport=pyimport)
     pygraph_conf = qik.pygraph.conf.get()
     artifact = str(qik.pygraph.utils.lock_path(pyimport, space))
     runnable = qik.runnable.Runnable(
@@ -212,9 +209,10 @@ def check_cmd_factory(
 ) -> dict[str, qik.runnable.Runnable]:
     cmd_name = qik.pygraph.utils.check_cmd_name()
     pygraph_conf = qik.pygraph.conf.get()
-    return {
-        f"{cmd_name}#{space}": qik.runnable.Runnable(
-            name=f"{cmd_name}#{space}",
+
+    runnables = (
+        qik.runnable.Runnable(
+            name=qik.runnable.fmt_name(cmd_name, space=space),
             cmd=cmd_name,
             val="qik.pygraph.cmd.check_cmd",
             shell=False,
@@ -228,7 +226,8 @@ def check_cmd_factory(
         )
         for space, space_conf in qik.conf.project().resolved_spaces.items()
         if space_conf.fence
-    }
+    )
+    return {runnable.name: runnable for runnable in runnables}
 
 
 @qik.func.per_run_cache

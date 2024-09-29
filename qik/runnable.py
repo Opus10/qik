@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import fnmatch
-import os
 import pkgutil
 import re
 from typing import TYPE_CHECKING, Literal, TypeAlias
@@ -113,6 +112,24 @@ class DepsCollection:
         )
 
 
+@qik.func.cache
+def _num_spaces() -> int:
+    return len((set(qik.conf.project().resolved_spaces) | {"default"}))
+
+
+def fmt_name(
+    cmd: str,
+    *,
+    module: qik.conf.ModuleLocator | None = None,
+    space: str = "default",
+    **args: str,
+) -> str:
+    module_str = f"#{module.name}" if module else ""
+    space_str = f"@{space}" if space and _num_spaces() > 1 else ""
+    args_str = "?" + "&".join(f"{k}={v}" for k, v in args.items()) if args else ""
+    return f"{cmd}{space_str}{module_str}{args_str}"
+
+
 def _make_runnable(
     *,
     cmd: str,
@@ -124,7 +141,7 @@ def _make_runnable(
     initial_cache = "none" if not conf.deps else conf.cache
 
     return Runnable(
-        name=f"{cmd}#{module.name}" if module else cmd,
+        name=fmt_name(cmd, module=module, space=space),
         cmd=cmd,
         val=qik.ctx.format(conf.exec, module=module),
         deps=[
@@ -233,9 +250,8 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
     @property
     def _exec_env(self) -> dict[str, str]:
         """Get the environment for runnables."""
-        environ = self.resolved_venv.environ if self.resolved_venv else os.environ
         return {
-            **environ,
+            **self.resolved_venv.environ,
             **self.environ,
             "QIK__CMD": self.cmd,
             "QIK__RUNNABLE": self.name,

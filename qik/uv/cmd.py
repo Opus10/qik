@@ -41,14 +41,13 @@ def lock_cmd_factory(
         environ["UV_EXTRA_INDEX_URL"] = uv_conf.resolved_extra_index_url
 
     runnable = qik.runnable.Runnable(
-        name=f"{cmd_name}?space={space}",
+        name=qik.runnable.fmt_name(cmd_name, space=space),
         cmd=cmd_name,
         val=f"mkdir -p {pathlib.Path(venv.lock).parent} && {pip_compile}",
         deps=[*qik.dep.base(), *(qik.dep.Glob(req) for req in venv.reqs), *constraint_deps],
         artifacts=[venv.lock],
         cache=uv_conf.resolved_cache,
         cache_when="success",
-        args={"space": space},
         space=space,
         venv=None,
         environ=environ,
@@ -67,7 +66,7 @@ def install_cmd_factory(
     venv_python = f"--python '{venv.python}'" if venv.python else ""
     cmd_name = qik.uv.utils.install_cmd_name()
     runnable = qik.runnable.Runnable(
-        name=f"{cmd_name}?space={space}",
+        name=qik.runnable.fmt_name(cmd_name, space=space),
         cmd=cmd_name,
         val=f"uv venv {venv.dir.relative_to(qik.conf.root())} {venv_python} && uv pip sync {venv.lock} --python {venv.dir}/bin/python",
         deps=[
@@ -78,7 +77,6 @@ def install_cmd_factory(
         artifacts=[],
         cache="local",
         cache_when="success",
-        args={"space": space},
         space=space,
         venv=None,
     )

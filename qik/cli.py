@@ -8,11 +8,22 @@ import sys
 import qik.conf
 import qik.ctx
 import qik.runner
+import qik.space
 import qik.unset
 
 
-def main() -> None:
-    """The main entrypoint into the CLI."""
+def _get_working_space() -> str | None:
+    if pathlib.Path.cwd() != qik.conf.root():
+        location = (
+            str(pathlib.Path.cwd().relative_to(qik.conf.root())).replace(os.path.sep, "/") + "/"
+        )
+        for space_name, space_conf in qik.conf.project().resolved_spaces.items():
+            if space_conf.root and location.startswith(space_conf.root):
+                return space_name
+
+
+def qik_entry() -> None:
+    """The entrypoint into the qik CLI."""
     parser = argparse.ArgumentParser()
 
     parser.add_argument("commands", help="Command name(s)", nargs="*")
@@ -85,14 +96,9 @@ def main() -> None:
     spaces = args.spaces
 
     # Set the space if in a space root
-    if not spaces and pathlib.Path.cwd() != qik.conf.root():
-        location = (
-            str(pathlib.Path.cwd().relative_to(qik.conf.root())).replace(os.path.sep, "/") + "/"
-        )
-        for space_name, space_conf in qik.conf.project().resolved_spaces.items():
-            if space_conf.root and location.startswith(space_conf.root):
-                spaces = [space_name]
-                break
+    if not spaces:
+        if working_space := _get_working_space():
+            spaces = [working_space]
 
     with qik.ctx.set_vars(
         "qik",
@@ -119,3 +125,24 @@ def main() -> None:
 
         if res and qik_ctx.fail:
             sys.exit(1)
+
+
+def qikx_entry() -> None:
+    """The entrypoint into the qikx CLI."""
+    if len(sys.argv) < 2:
+        print("Usage: qikx <command_string>")
+        sys.exit(1)
+
+    space = "default"
+    command = sys.argv[1]
+    args = sys.argv[2:]
+    if "@" in command:
+        command, space = command.split("@", 1)
+
+    # Set the space if in a space root
+    if not space:
+        space = _get_working_space()
+
+    resolved_space = qik.space.load(space)
+    os.environ |= resolved_space.environ
+    os.execvp(command, [command, *args])

@@ -341,7 +341,7 @@ def _load_plugins(conf: Plugins) -> None:
                 raise
 
 
-class BaseDict(Base, frozen=True):
+class BaseDynamicPlugins(Base, frozen=True):
     def items(self) -> Generator[tuple[str, Any]]:  # type: ignore
         for key in self.__struct_fields__:
             yield (key, getattr(self, key))
@@ -398,7 +398,7 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
             )
             for plugin_pyimport, plugin_conf in (existing_plugin_confs | _CONF_TYPES).items()
         ],
-        bases=(BaseDict,),
+        bases=(BaseDynamicPlugins,),
         frozen=True,
     )
 
