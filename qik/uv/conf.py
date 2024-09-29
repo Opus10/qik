@@ -13,4 +13,4 @@ if TYPE_CHECKING:
 def get() -> UVPluginConf:
     """Get the uv config."""
     proj = qik.conf.project()
-    return getattr(proj.conf, proj.plugins_by_pyimport["qik.uv"].name)  # type: ignore
+    return getattr(proj.conf, proj.plugins_by_pyimport["qik.uv"][0])  # type: ignore

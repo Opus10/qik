@@ -135,8 +135,6 @@ class ModuleOrPlugin(Base, frozen=True):
 
 
 class BaseLocator(Base, frozen=True):
-    name: str
-
     @qik.func.cached_property
     def dir(self) -> pathlib.Path:
         raise NotImplementedError
@@ -157,6 +155,7 @@ class BaseLocator(Base, frozen=True):
 
 
 class ModuleLocator(BaseLocator, frozen=True):
+    name: str
     path: str
 
     @qik.func.cached_property
@@ -177,7 +176,7 @@ class PluginLocator(BaseLocator, frozen=True):
     def dir(self) -> pathlib.Path:
         spec = importlib.util.find_spec(self.pyimport)
         if not spec or not spec.origin:
-            raise qik.errors.PluginImport(f'Could not import plugin "{self.name}"')
+            raise qik.errors.PluginImport(f'Could not import plugin "{self.pyimport}"')
 
         return pathlib.Path(spec.origin).parent
 
@@ -237,19 +236,18 @@ class PluginsMixin:
     plugins.
     """
 
-    plugins: list[str | PluginLocator] = []
+    plugins: dict[str, str | PluginLocator] = {}
 
     @qik.func.cached_property
     def plugins_by_name(self) -> dict[str, PluginLocator]:
-        plugin_locators = (
-            PluginLocator(name=p.split(".", 1)[-1], pyimport=p) if isinstance(p, str) else p
-            for p in self.plugins
-        )
-        return {p.name: p for p in plugin_locators}
+        return {
+            name: PluginLocator(pyimport=p) if isinstance(p, str) else p
+            for name, p in self.plugins.items()
+        }
 
     @qik.func.cached_property
-    def plugins_by_pyimport(self) -> dict[str, PluginLocator]:
-        return {p.pyimport: p for p in self.plugins_by_name.values()}
+    def plugins_by_pyimport(self) -> dict[str, tuple[str, PluginLocator]]:
+        return {p.pyimport: (name, p) for name, p in self.plugins_by_name.items()}
 
 
 class Plugins(msgspec.Struct, PluginsMixin, frozen=True):
@@ -259,11 +257,11 @@ class Plugins(msgspec.Struct, PluginsMixin, frozen=True):
     plugins.
     """
 
-    plugins: list[str | PluginLocator] = []
+    plugins: dict[str, str | PluginLocator] = {}
 
 
 class Project(ModuleOrPlugin, PluginsMixin, frozen=True):
-    plugins: list[str | PluginLocator] = []
+    plugins: dict[str, str | PluginLocator] = {}
     ctx: list[str | Var] = []
     caches: dict[str, Cache] = {}
     spaces: dict[str, Space] = {}
@@ -293,7 +291,7 @@ class Project(ModuleOrPlugin, PluginsMixin, frozen=True):
 
 def _load_plugins(conf: Plugins) -> None:
     """Load plugins and return the Project configuration."""
-    for plugin in conf.plugins:
+    for plugin in conf.plugins.values():
         pyimport = plugin if isinstance(plugin, str) else plugin.pyimport
 
         try:
@@ -350,7 +348,7 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
         "DynamicConf",
         [
             (
-                plugins_conf.plugins_by_pyimport[plugin_pyimport].name,
+                plugins_conf.plugins_by_pyimport[plugin_pyimport][0],
                 plugin_conf,
                 msgspec.field(default_factory=plugin_conf),
             )
@@ -438,20 +436,23 @@ def module(uri: str, *, by_path: bool = False) -> ModuleOrPlugin:
 
 
 @qik.func.cache
-def plugin_locator(uri: str, *, by_pyimport: bool = False) -> PluginLocator:
+def plugin_locator(uri: str, *, by_pyimport: bool = False) -> tuple[str, PluginLocator]:
     """Get plugin locator."""
     proj = project()
     lookup = proj.plugins_by_pyimport if by_pyimport else proj.plugins_by_name
     if uri not in lookup:
         raise qik.errors.PluginNotFound(f'Plugin "{uri}" not configured in {location().name}.')
 
-    return lookup[uri]
+    if by_pyimport:
+        return proj.plugins_by_pyimport[uri]
+    else:
+        return uri, proj.plugins_by_name[uri]
 
 
 @qik.func.cache
 def plugin(uri: str, by_pyimport: bool = False) -> ModuleOrPlugin:
     """Get plugin configuration."""
-    return plugin_locator(uri, by_pyimport=by_pyimport).conf
+    return plugin_locator(uri, by_pyimport=by_pyimport)[1].conf
 
 
 @qik.func.cache

@@ -12,19 +12,19 @@ if TYPE_CHECKING:
 
 @qik.func.cache
 def build_cmd_name() -> str:
-    graph_plugin_name = qik.conf.plugin_locator("qik.pygraph", by_pyimport=True).name
+    graph_plugin_name = qik.conf.plugin_locator("qik.pygraph", by_pyimport=True)[0]
     return f"{graph_plugin_name}.build"
 
 
 @qik.func.cache
 def lock_cmd_name() -> str:
-    graph_plugin_name = qik.conf.plugin_locator("qik.pygraph", by_pyimport=True).name
+    graph_plugin_name = qik.conf.plugin_locator("qik.pygraph", by_pyimport=True)[0]
     return f"{graph_plugin_name}.lock"
 
 
 @qik.func.cache
 def check_cmd_name() -> str:
-    graph_plugin_name = qik.conf.plugin_locator("qik.pygraph", by_pyimport=True).name
+    graph_plugin_name = qik.conf.plugin_locator("qik.pygraph", by_pyimport=True)[0]
     return f"{graph_plugin_name}.check"
 
 
