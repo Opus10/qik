@@ -60,13 +60,20 @@ exec = "pip freeze | grep django-pgtrigger && python --version"
 cache = "local"
 space = "other"
 
+[commands.ruff-version]
+exec = "ruff --version"
+space = "ruff"
+
+[spaces]
+ruff = "ruff.in"
+
 [spaces.default]
 root = "a/"
-venv = {type = "uv", reqs = "requirements.in"}
+venv = "requirements.in"
 modules = ["a", {name = "b_module", path = "b"}]
 fence = ["other"]
 
 [spaces.other]
-venv = {type = "uv", reqs = "req2.in", constraint = "constraint.in"}
+venv = "req2.in"
 modules = ["nest/c"]
 fence = ["b", "a", "nest", {type = "space", name = "default"}]

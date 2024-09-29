@@ -89,7 +89,7 @@ def main() -> None:
         location = (
             str(pathlib.Path.cwd().relative_to(qik.conf.root())).replace(os.path.sep, "/") + "/"
         )
-        for space_name, space_conf in qik.conf.project().spaces.items():
+        for space_name, space_conf in qik.conf.project().resolved_spaces.items():
             if space_conf.root and location.startswith(space_conf.root):
                 spaces = [space_name]
                 break

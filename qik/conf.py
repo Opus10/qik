@@ -32,9 +32,15 @@ _PLUGIN_TYPES: dict[str, dict[str, tuple[type[BasePluggable], str]]] = collectio
 )
 # Dynamic conf classes registered by plugins
 _CONF_TYPES: dict[str, type[msgspec.Struct]] = {}
+# Default venv type
+_VENV_TYPE: type[Venv] | None = None
 
 
 def register_type(plugin_type: type[BasePluggable], factory: str) -> None:
+    if plugin_type.plugin_type_name == "venv":
+        global _VENV_TYPE
+        _VENV_TYPE = plugin_type  # type: ignore
+
     _PLUGIN_TYPES[plugin_type.plugin_type_name][str(plugin_type.__struct_config__.tag)] = (
         plugin_type,
         factory,
@@ -218,7 +224,7 @@ class Space(Base, frozen=True):
     root: str | None = None
     modules: list[str | ModuleLocator] = []
     fence: list[str | SpaceLocator] | bool = []
-    venv: Venv | None = None
+    venv: Venv | str | None = None
 
     @qik.func.cached_property
     def modules_by_name(self) -> dict[str, ModuleLocator]:
@@ -283,11 +289,18 @@ class Project(ModuleOrPlugin, PluginsMixin, frozen=True):
     plugins: dict[str, str | PluginLocator] = {}
     ctx: list[str | Var] = []
     caches: dict[str, Cache] = {}
-    spaces: dict[str, Space] = {}
+    spaces: dict[str, Space | str] = {}
     python_path: str = "."
     base: BaseConf = msgspec.field(default_factory=BaseConf)
     defaults: Defaults = msgspec.field(default_factory=Defaults)
     pydist: Pydist = msgspec.field(default_factory=Pydist)
+
+    @qik.func.cached_property
+    def resolved_spaces(self) -> dict[str, Space]:
+        return {
+            name: Space(venv=space) if isinstance(space, str) else space
+            for name, space in self.spaces.items()
+        }
 
     @qik.func.cached_property
     def ctx_vars(self) -> dict[str, Var]:
@@ -297,7 +310,7 @@ class Project(ModuleOrPlugin, PluginsMixin, frozen=True):
     def modules_by_name(self) -> dict[str, ModuleLocator]:
         return {
             name: locator
-            for space in self.spaces.values()
+            for space in self.resolved_spaces.values()
             for name, locator in space.modules_by_name.items()
         }
 
@@ -403,7 +416,7 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
         [
             ("venvs", dict[str, DynamicVenvTypes], {}),
             ("caches", dict[str, DynamicCacheTypes], {}),
-            ("spaces", dict[str, DynamicSpace], {}),
+            ("spaces", dict[str, DynamicSpace | str], {}),
             ("commands", dict[str, DynamicCmd | str], {}),
             ("base", DynamicBaseConf, msgspec.field(default_factory=DynamicBaseConf)),
             ("plugins", DynamicPlugins, msgspec.field(default_factory=DynamicPlugins)),
@@ -564,3 +577,8 @@ def pyimport(path: str) -> str:
         return path.replace("/", ".")
     else:
         return str(pathlib.Path(path).relative_to(python_path)).replace("/", ".")
+
+
+def default_venv_type() -> type[Venv]:
+    """Get the default venv type."""
+    return _VENV_TYPE or ActiveVenv

@@ -158,7 +158,7 @@ def factory(cmd: str, conf: qik.conf.Cmd, **args: str) -> dict[str, Runnable]:
         if not isinstance(conf.space, qik.unset.UnsetType):
             spaces = {conf.space: qik.space.load(conf.space).conf}
         else:
-            spaces = proj.spaces
+            spaces = proj.resolved_spaces
 
         runnables = (
             _make_runnable(cmd=cmd, conf=conf, module=module, space=space)

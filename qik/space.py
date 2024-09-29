@@ -53,17 +53,22 @@ class Space(msgspec.Struct, frozen=True, dict=True):
 
     @qik.func.cached_property
     def venv(self) -> qik.venv.Venv:
+        if isinstance(self.conf.venv, str):
+            conf = qik.conf.default_venv_type()(reqs=self.conf.venv)
+        else:
+            conf = self.conf.venv
+
         try:
-            if self.conf.venv is None or isinstance(self.conf.venv, qik.conf.ActiveVenv):
+            if conf is None or isinstance(conf, qik.conf.ActiveVenv):
                 return qik.venv.active()
-            elif isinstance(self.conf.venv, qik.conf.SpaceVenv):
-                if self.conf.venv.name == self.name:
+            elif isinstance(conf, qik.conf.SpaceVenv):
+                if conf.name == self.name:
                     return qik.venv.active()
                 else:
-                    return load(self.conf.venv.name).venv
+                    return load(conf.name).venv
             else:
-                factory = qik.conf.get_type_factory(self.conf.venv)
-                return pkgutil.resolve_name(factory)(self.name, self.conf.venv)
+                factory = qik.conf.get_type_factory(conf)
+                return pkgutil.resolve_name(factory)(self.name, conf)
         except RecursionError as e:
             raise qik.errors.CircularVenv("Circular venv detected.") from e
 
@@ -72,7 +77,7 @@ class Space(msgspec.Struct, frozen=True, dict=True):
 def load(name: str = "default") -> Space:
     """Get configuration for a space."""
     proj = qik.conf.project()
-    if name != "default" and name not in proj.spaces:
+    if name != "default" and name not in proj.resolved_spaces:
         raise qik.errors.SpaceNotFound(f'Space "{name}" not configured.')
 
-    return Space(name=name, conf=proj.spaces.get(name, qik.conf.Space()))
+    return Space(name=name, conf=proj.resolved_spaces.get(name, qik.conf.Space()))

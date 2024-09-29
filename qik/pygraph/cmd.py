@@ -226,7 +226,7 @@ def check_cmd_factory(
             cache_when="success",
             space=space,
         )
-        for space, space_conf in qik.conf.project().spaces.items()
+        for space, space_conf in qik.conf.project().resolved_spaces.items()
         if space_conf.fence
     }
 
