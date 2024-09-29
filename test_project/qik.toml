@@ -1,6 +1,7 @@
-base-deps = ["python_version"]
-conf.uv.python = "3.12"
 ctx = ["aws_access_key_id", "aws_secret_access_key", {name = "aws_endpoint_url", required = false}]
+
+[base]
+deps = ["python_version"]
 
 [plugins]
 pygraph = "qik.pygraph"
@@ -8,6 +9,8 @@ s3 = "qik.s3"
 
 [plugins.uv]
 pyimport = "qik.uv"
+python = "3.12"
+constraint = "constraint.in"
 
 [caches.remote]
 type = "s3"

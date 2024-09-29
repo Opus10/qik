@@ -9,7 +9,7 @@ class UVVenvConf(qik.conf.Venv, frozen=True, tag="uv"):
     constraint: str | qik.conf.SpaceLocator | qik.unset.UnsetType = qik.unset.UNSET
 
 
-class UVPluginConf(qik.conf.Base, frozen=True, dict=True):
+class UVPluginConf(qik.conf.PluginConf, frozen=True, dict=True, tag="qik.uv"):
     cache: str | qik.unset.UnsetType = qik.unset.UNSET
     python: str | None = None
     index_url: str | None = None
@@ -34,4 +34,4 @@ class UVPluginConf(qik.conf.Base, frozen=True, dict=True):
 
 
 qik.conf.register_type(UVVenvConf, "qik.uv.venv.factory")
-qik.conf.register_conf(UVPluginConf, "qik.uv")
+qik.conf.register_conf(UVPluginConf)

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import qik.conf
 import qik.func
+import qik.uv.qikplugin
 
 if TYPE_CHECKING:
     from qik.uv.qikplugin import UVPluginConf
@@ -12,5 +13,4 @@ if TYPE_CHECKING:
 @qik.func.cache
 def get() -> UVPluginConf:
     """Get the uv config."""
-    proj = qik.conf.project()
-    return getattr(proj.conf, proj.plugins_by_pyimport["qik.uv"][0])  # type: ignore
+    return qik.conf.plugin("qik.uv")  # type: ignore

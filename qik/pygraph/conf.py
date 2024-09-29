@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import qik.conf
 import qik.func
+import qik.pygraph.qikplugin
 
 if TYPE_CHECKING:
     from qik.pygraph.qikplugin import PygraphPluginConf
@@ -12,5 +13,4 @@ if TYPE_CHECKING:
 @qik.func.cache
 def get() -> PygraphPluginConf:
     """Get the pygraph config."""
-    proj = qik.conf.project()
-    return getattr(proj.conf, proj.plugins_by_pyimport["qik.pygraph"][0])  # type: ignore
+    return qik.conf.plugin("qik.pygraph")  # type: ignore

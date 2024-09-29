@@ -8,7 +8,7 @@ import os.path
 import pathlib
 import sys
 from types import UnionType
-from typing import Any, ClassVar, Literal, TypeAlias, TypeVar, Union
+from typing import Any, ClassVar, Generator, Literal, TypeAlias, TypeVar, Union
 
 import msgspec.structs
 import msgspec.toml
@@ -41,8 +41,8 @@ def register_type(plugin_type: type[BasePluggable], factory: str) -> None:
     )
 
 
-def register_conf(conf_type: type[msgspec.Struct], plugin_pyimport: str) -> None:
-    _CONF_TYPES[plugin_pyimport] = conf_type
+def register_conf(conf_type: type[qik.conf.PluginConf]) -> None:
+    _CONF_TYPES[str(conf_type.__struct_config__.tag)] = conf_type
 
 
 def get_type_factory(conf: BasePluggable) -> str:
@@ -169,9 +169,7 @@ class ModuleLocator(BaseLocator, frozen=True):
         return pathlib.Path(self.path.replace("/", os.path.sep))
 
 
-class PluginLocator(BaseLocator, frozen=True):
-    pyimport: str  # type: ignore
-
+class BasePluginLocator(BaseLocator, frozen=True):
     @qik.func.cached_property
     def dir(self) -> pathlib.Path:
         spec = importlib.util.find_spec(self.pyimport)
@@ -179,6 +177,18 @@ class PluginLocator(BaseLocator, frozen=True):
             raise qik.errors.PluginImport(f'Could not import plugin "{self.pyimport}"')
 
         return pathlib.Path(spec.origin).parent
+
+
+# Note - we use forbid_unknown_fields=False because this is used in our first pass
+# to load just the plugins from the conf file.
+class PluginLocator(BasePluginLocator, frozen=True, forbid_unknown_fields=False):
+    pyimport: str  # type: ignore
+
+
+class PluginConf(BasePluginLocator, frozen=True, tag_field="pyimport"):
+    @property
+    def pyimport(self) -> str:  # type: ignore
+        return str(self.__struct_config__.tag)
 
 
 class Venv(BasePluggable, frozen=True, tag_field="type"):
@@ -250,7 +260,7 @@ class PluginsMixin:
         return {p.pyimport: (name, p) for name, p in self.plugins_by_name.items()}
 
 
-class Plugins(msgspec.Struct, PluginsMixin, frozen=True):
+class Plugins(msgspec.Struct, PluginsMixin, frozen=True, forbid_unknown_fields=False):
     """Parses the root qik.toml file for plugins.
 
     Allows us to dynamically determine the structure of the config based on installed
@@ -260,14 +270,17 @@ class Plugins(msgspec.Struct, PluginsMixin, frozen=True):
     plugins: dict[str, str | PluginLocator] = {}
 
 
+class BaseConf(Base, frozen=True):
+    deps: list[str | Dep] = []
+
+
 class Project(ModuleOrPlugin, PluginsMixin, frozen=True):
     plugins: dict[str, str | PluginLocator] = {}
     ctx: list[str | Var] = []
     caches: dict[str, Cache] = {}
     spaces: dict[str, Space] = {}
-    conf: dict[str, Any] = {}
     python_path: str = "."
-    base_deps: list[str | Dep] = []
+    base: BaseConf = msgspec.field(default_factory=BaseConf)
     default_cache: str | qik.unset.UnsetType = qik.unset.UNSET
     default_cache_when: CacheWhen | qik.unset.UnsetType = qik.unset.UNSET
     pydist: Pydist = msgspec.field(default_factory=Pydist)
@@ -311,6 +324,12 @@ def _load_plugins(conf: Plugins) -> None:
                 raise
 
 
+class BaseDict(Base, frozen=True):
+    def items(self) -> Generator[tuple[str, Any]]:  # type: ignore
+        for key in self.__struct_fields__:
+            yield (key, getattr(self, key))
+
+
 def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
     """Dynamically generate a Project config class based on installed plugins."""
 
@@ -333,6 +352,12 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
             *(cls for cls, _ in dep_plugin_types.values()),
         )
     ]
+    DynamicBaseConf = msgspec.defstruct(
+        "DynamicBaseConf",
+        [("deps", list[DynamicDeps], [])],  # type: ignore
+        bases=(BaseConf,),
+        frozen=True,
+    )
 
     DynamicSpace = msgspec.defstruct(
         "DynamicSpace",
@@ -344,17 +369,19 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
         "DynamicCmd", [("deps", list[DynamicDeps], [])], bases=(Cmd,), frozen=True
     )
 
-    DynamicConf = msgspec.defstruct(
-        "DynamicConf",
+    existing_plugin_confs = {
+        pyimport: PluginLocator for pyimport in plugins_conf.plugins_by_pyimport
+    }
+    DynamicPlugins = msgspec.defstruct(
+        "DynamicPlugins",
         [
             (
                 plugins_conf.plugins_by_pyimport[plugin_pyimport][0],
-                plugin_conf,
-                msgspec.field(default_factory=plugin_conf),
+                plugin_conf | str,  # type: ignore
             )
-            for plugin_pyimport, plugin_conf in _CONF_TYPES.items()
+            for plugin_pyimport, plugin_conf in (existing_plugin_confs | _CONF_TYPES).items()
         ],
-        bases=(Base,),
+        bases=(BaseDict,),
         frozen=True,
     )
 
@@ -364,7 +391,8 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
     globals()["DynamicCmd"] = DynamicCmd
     globals()["DynamicCacheTypes"] = DynamicCacheTypes
     globals()["DynamicDeps"] = DynamicDeps
-    globals()["DynamicConf"] = DynamicConf
+    globals()["DynamicBaseConf"] = DynamicBaseConf
+    globals()["DynamicPlugins"] = DynamicPlugins
 
     DynamicProject = msgspec.defstruct(
         "DynamicProject",
@@ -373,8 +401,8 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
             ("caches", dict[str, DynamicCacheTypes], {}),
             ("spaces", dict[str, DynamicSpace], {}),
             ("commands", dict[str, DynamicCmd | str], {}),
-            ("base_deps", list[DynamicDeps], []),
-            ("conf", DynamicConf, msgspec.field(default_factory=DynamicConf)),
+            ("base", DynamicBaseConf, msgspec.field(default_factory=DynamicBaseConf)),
+            ("plugins", DynamicPlugins, msgspec.field(default_factory=DynamicPlugins)),
         ],
         bases=(Project,),
         frozen=True,
@@ -430,12 +458,6 @@ def module_locator(uri: str, *, by_path: bool = False) -> ModuleLocator:
 
 
 @qik.func.cache
-def module(uri: str, *, by_path: bool = False) -> ModuleOrPlugin:
-    """Get module configuration."""
-    return module_locator(uri, by_path=by_path).conf
-
-
-@qik.func.cache
 def plugin_locator(uri: str, *, by_pyimport: bool = False) -> tuple[str, PluginLocator]:
     """Get plugin locator."""
     proj = project()
@@ -450,9 +472,14 @@ def plugin_locator(uri: str, *, by_pyimport: bool = False) -> tuple[str, PluginL
 
 
 @qik.func.cache
-def plugin(uri: str, by_pyimport: bool = False) -> ModuleOrPlugin:
-    """Get plugin configuration."""
-    return plugin_locator(uri, by_pyimport=by_pyimport)[1].conf
+def plugin(pyimport: str) -> PluginConf:
+    """Get dynamic plugin configuration."""
+    proj = project()
+    conf = getattr(proj.plugins, proj.plugins_by_pyimport[pyimport][0])
+    if isinstance(conf, str):
+        return _CONF_TYPES[pyimport]()  # type: ignore
+    else:
+        return conf  # type: ignore
 
 
 @qik.func.cache
@@ -462,10 +489,10 @@ def search(name: str | None = None) -> ModuleOrPlugin:
         return project()
     else:
         try:
-            return module(name)
+            return module_locator(name).conf
         except qik.errors.ModuleNotFound:
             try:
-                return plugin(name)
+                return plugin_locator(name)[1].conf
             except qik.errors.PluginNotFound:
                 raise qik.errors.ModuleOrPluginNotFound(
                     f'Module or plugin "{name}" not configured in {location().name}.'

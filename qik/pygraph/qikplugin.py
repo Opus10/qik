@@ -9,7 +9,7 @@ class PygraphDepConf(qik.conf.Dep, tag="pygraph", frozen=True):
     pyimport: str
 
 
-class PygraphPluginConf(qik.conf.Base, frozen=True, dict=True):
+class PygraphPluginConf(qik.conf.PluginConf, frozen=True, dict=True, tag="qik.pygraph"):
     ignore_type_checking: bool = False
     ignore_pydists: bool = False
     ignore_missing_module_pydists: bool = False
@@ -51,4 +51,4 @@ class PygraphPluginConf(qik.conf.Base, frozen=True, dict=True):
 
 
 qik.conf.register_type(PygraphDepConf, "qik.pygraph.dep.factory")
-qik.conf.register_conf(PygraphPluginConf, "qik.pygraph")
+qik.conf.register_conf(PygraphPluginConf)
