@@ -32,7 +32,7 @@ def lock_cmd_factory(
         pip_compile = f"{pip_compile} --constraint {venv.constraint}"
         constraint_deps = [qik.dep.Glob(venv.constraint)]
 
-    environ = {"UV_CACHE_DIR": str(qik.conf.priv_work_dir() / ".uv")}
+    environ = {"UV_CACHE_DIR": str(qik.conf.priv_work_dir(rel=True) / ".uv")}
 
     if uv_conf.resolved_index_url:
         environ["UV_INDEX_URL"] = uv_conf.resolved_index_url

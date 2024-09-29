@@ -3,9 +3,6 @@ ctx = ["aws_access_key_id", "aws_secret_access_key", {name = "aws_endpoint_url",
 [base]
 deps = ["python_version"]
 
-[defaults]
-cache = "repo"
-
 [plugins]
 pygraph = "qik.pygraph"
 s3 = "qik.s3"

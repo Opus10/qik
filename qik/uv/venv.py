@@ -61,7 +61,7 @@ class UVVenv(qik.venv.Venv, frozen=True, dict=True):
         uv_conf = qik.uv.conf.get()
         root = (
             qik.conf.pub_work_dir(rel=True)
-            if uv_conf.cache == "repo"
+            if uv_conf.resolved_cache == "repo"
             else qik.conf.priv_work_dir(rel=True)
         )
         return str(
