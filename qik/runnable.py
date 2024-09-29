@@ -123,7 +123,7 @@ def fmt_name(
     cmd: str,
     *,
     module: qik.conf.ModuleLocator | None = None,
-    space: str = "default",
+    space: str | None = "default",
     **args: str,
 ) -> str:
     module_str = f"#{module.name}" if module else ""

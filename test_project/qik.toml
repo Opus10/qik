@@ -44,7 +44,6 @@ deps = ["requirements.in", {type = "pydist", name = "pip-tools"}]
 artifacts = ["requirements.txt"]
 cache = "remote"
 cache-when = "finished"
-hi = false
 
 [commands.modular_format]
 exec = "ruff format {module.dir}"

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import qik.conf
+import qik.ctx
 import qik.func
 import qik.unset
 
@@ -21,32 +22,38 @@ class PygraphPluginConf(qik.conf.PluginConf, frozen=True, dict=True, tag="qik.py
 
     @qik.func.cached_property
     def resolved_build_cache(self) -> str:
-        return qik.unset.coalesce(
-            self.build_cache,
-            self.cache,
-            qik.conf.project().defaults.cache,
-            default="local",
-            type=str,
+        return qik.ctx.format(
+            qik.unset.coalesce(
+                self.build_cache,
+                self.cache,
+                qik.conf.project().defaults.cache,
+                default="local",
+                type=str,
+            )
         )
 
     @qik.func.cached_property
     def resolved_lock_cache(self) -> str:
-        return qik.unset.coalesce(
-            self.lock_cache,
-            self.cache,
-            qik.conf.project().defaults.cache,
-            default="local",
-            type=str,
+        return qik.ctx.format(
+            qik.unset.coalesce(
+                self.lock_cache,
+                self.cache,
+                qik.conf.project().defaults.cache,
+                default="local",
+                type=str,
+            )
         )
 
     @qik.func.cached_property
     def resolved_check_cache(self) -> str:
-        return qik.unset.coalesce(
-            self.check_cache,
-            self.cache,
-            qik.conf.project().defaults.cache,
-            default="local",
-            type=str,
+        return qik.ctx.format(
+            qik.unset.coalesce(
+                self.check_cache,
+                self.cache,
+                qik.conf.project().defaults.cache,
+                default="local",
+                type=str,
+            )
         )
 
 
