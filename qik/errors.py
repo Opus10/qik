@@ -26,6 +26,10 @@ class ConfigNotFound(RunnerError):
     code = "conf0"
 
 
+class ConfigParse(RunnerError):
+    code = "conf1"
+
+
 class ModuleNotFound(RunnerError):
     code = "conf2"
 
@@ -102,14 +106,6 @@ class InvalidCtxNamespace(RunnerError):
     code = "ctx4"
 
 
-class LockFileNotFound(RunnerError):
-    code = "venv0"
-
-
-class VenvNotFound(RunnerError):
-    code = "venv1"
-
-
 class ArgNotSupplied(RunnerError):
     code = "args0"
 
@@ -120,12 +116,20 @@ class RunnableError(Error):
     code = "runnable"
 
 
-class ModuleDistributionNotFound(RunnableError):
-    code = "graph0"
+class LockFileNotFound(RunnableError):
+    code = "space0"
+
+
+class VenvNotFound(RunnableError):
+    code = "space1"
+
+
+class DotEnvNotFound(RunnableError):
+    code = "space2"
 
 
 class DistributionNotFound(RunnableError):
-    code = "dep0"
+    code = "pydist0"
 
 
 def fmt_msg(exc: Exception, prefix: str = "") -> str:

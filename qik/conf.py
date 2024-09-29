@@ -226,6 +226,7 @@ class Space(Base, frozen=True):
     modules: list[str | ModuleLocator] = []
     fence: list[str | SpaceLocator] | bool = []
     venv: Venv | str | list[str] | None = None
+    dotenv: str | list[str] = []
 
     @qik.func.cached_property
     def modules_by_name(self) -> dict[str, ModuleLocator]:
@@ -447,10 +448,13 @@ def load() -> tuple[Project, pathlib.Path]:
             break
 
     if qik_toml:
-        contents = qik_toml.read_bytes()
-        plugins_conf = msgspec.toml.decode(contents, type=Plugins)
-        _load_plugins(plugins_conf)
-        conf = _parse_project_config(contents, plugins_conf)
+        try:
+            contents = qik_toml.read_bytes()
+            plugins_conf = msgspec.toml.decode(contents, type=Plugins)
+            _load_plugins(plugins_conf)
+            conf = _parse_project_config(contents, plugins_conf)
+        except msgspec.ValidationError as e:
+            raise qik.errors.ConfigParse(f"Error parsing qik.toml: {e}") from e
 
         python_path = qik_toml.parent / conf.defaults.python_path
         sys.path.insert(0, str(python_path))

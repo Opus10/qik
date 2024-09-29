@@ -42,6 +42,7 @@ class DepsCollection:
         ]
         self.runnable = runnable
         self.module = runnable.module
+        self.space_globs = runnable.resolved_space.glob_deps if runnable.resolved_space else set()
         self.venv = runnable.resolved_venv
 
     @property
@@ -54,6 +55,7 @@ class DepsCollection:
                 for artifact in runnable.obj.artifacts
             }
             | self.venv.glob_deps
+            | self.space_globs
         )
 
     @qik.func.cached_property
@@ -237,22 +239,28 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
         return DepsCollection(*self.deps, runnable=self)
 
     @qik.func.cached_property
-    def resolved_space(self) -> qik.space.Space:
-        return qik.space.load(self.space)
+    def resolved_space(self) -> qik.space.Space | None:
+        return qik.space.load(self.space) if self.space else None
 
     @qik.func.cached_property
     def resolved_venv(self) -> qik.venv.Venv:
-        if not self.space or self.venv is None:
+        if not self.resolved_space or self.venv is None:
             return qik.venv.active()
         else:
             return self.resolved_space.venv
+
+    @qik.func.cached_property
+    def resolved_environ(self) -> dict[str, str]:
+        base_environ = (
+            self.resolved_venv.environ if not self.resolved_space else self.resolved_space.environ
+        )
+        return {**base_environ, **self.environ}
 
     @property
     def _exec_env(self) -> dict[str, str]:
         """Get the environment for runnables."""
         return {
-            **self.resolved_venv.environ,
-            **self.environ,
+            **self.resolved_environ,
             "QIK__CMD": self.cmd,
             "QIK__RUNNABLE": self.name,
             "QIK__WORKER": str(qik.ctx.worker_id()),

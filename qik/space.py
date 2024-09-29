@@ -1,5 +1,5 @@
 import pkgutil
-from typing import Iterator
+from typing import Generator, Iterator
 
 import msgspec
 
@@ -7,6 +7,22 @@ import qik.conf
 import qik.errors
 import qik.func
 import qik.venv
+
+
+@qik.func.per_run_cache
+def _read_dotenv(path: str) -> dict[str, str]:
+    def _iter_dotenv_lines() -> Generator[tuple[str, str], None, None]:
+        with open(path, "r") as file:
+            for line in file:
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    key, value = line.split("=", 1)
+                    yield key, value
+
+    try:
+        return dict(_iter_dotenv_lines())
+    except FileNotFoundError as e:
+        raise qik.errors.DotEnvNotFound(f'Dotenv file "{path}" not found.') from e
 
 
 class Space(msgspec.Struct, frozen=True, dict=True):
@@ -73,8 +89,20 @@ class Space(msgspec.Struct, frozen=True, dict=True):
             raise qik.errors.CircularVenv("Circular venv detected.") from e
 
     @property
+    def dotenvs(self) -> list[str]:
+        return [self.conf.dotenv] if isinstance(self.conf.dotenv, str) else self.conf.dotenv
+
+    @qik.func.cached_property
     def environ(self) -> dict[str, str]:
-        return self.venv.environ
+        env = self.venv.environ
+        for dotenv in self.dotenvs:
+            env.update(_read_dotenv(dotenv))
+
+        return env
+
+    @qik.func.cached_property
+    def glob_deps(self) -> set[str]:
+        return set(self.dotenvs)
 
 
 @qik.func.cache

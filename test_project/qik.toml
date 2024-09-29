@@ -44,6 +44,7 @@ deps = ["requirements.in", {type = "pydist", name = "pip-tools"}]
 artifacts = ["requirements.txt"]
 cache = "remote"
 cache-when = "finished"
+hi = false
 
 [commands.modular_format]
 exec = "ruff format {module.dir}"
@@ -58,6 +59,10 @@ cache = "repo"
 [commands.pghistory_version]
 exec = "pip freeze | grep django-pgtrigger && python --version"
 cache = "local"
+space = "other"
+
+[commands.print-dotenv]
+exec = "echo $HELLO $HI"
 space = "other"
 
 [commands.ruff-version]
@@ -77,3 +82,4 @@ root = "a/"
 venv = "req2.in"
 modules = ["nest/c"]
 fence = ["b", "a", "nest", {type = "space", name = "default"}]
+dotenv = ["other.env", "override.env"]
