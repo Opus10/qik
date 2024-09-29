@@ -7,6 +7,7 @@ import sys
 
 import qik.conf
 import qik.ctx
+import qik.errors
 import qik.runner
 import qik.space
 import qik.unset
@@ -22,6 +23,7 @@ def _get_working_space() -> str | None:
                 return space_name
 
 
+@qik.errors.catch_and_exit()
 def qik_entry() -> None:
     """The entrypoint into the qik CLI."""
     parser = argparse.ArgumentParser()
@@ -127,10 +129,11 @@ def qik_entry() -> None:
             sys.exit(1)
 
 
+@qik.errors.catch_and_exit()
 def qikx_entry() -> None:
     """The entrypoint into the qikx CLI."""
     if len(sys.argv) < 2 or sys.argv[1] == "--help":
-        print("Usage: qikx <command_string>")
+        print("Usage: qikx <command@space command_args>")
         sys.exit(1)
 
     space = None

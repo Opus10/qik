@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING
+import contextlib
+import sys
+from typing import TYPE_CHECKING, Iterator
 
 import qik.console
 
@@ -144,3 +146,12 @@ def print(exc: Exception, prefix: str = "") -> None:
     qik.console.get().print(msg)
     if not isinstance(exc, Error) or qik_ctx.by_namespace("qik").verbosity >= 3:
         qik.console.print_exception()
+
+
+@contextlib.contextmanager
+def catch_and_exit() -> Iterator[None]:
+    try:
+        yield
+    except Error as e:
+        print(e)
+        sys.exit(1)
