@@ -1,11 +1,11 @@
 
 # Qik
 
-Qik (*quick*) is a command runner that understands the import graph. Like [make](https://www.gnu.org/software/make/), but with hash-based caching and advanced dependencies such as globs, imports, external packages, and more.
+Qik (*quick*) is an extensible command runner for monorepos. Like [make](https://www.gnu.org/software/make/), but with hash-based caching, advanced dependencies like globs and module imports, and execution in managed virtual environments.
 
-Qik's command caching ensures you never do redundant work. Parametrize commands across modules, watch and re-run them reactively, or filter commands since a git hash. Qik can dramatically improve CI and development time.
+Qik's command caching and module parametrization can dramatically improve local development and CI/CD time. Qik's plugin ecosystem offers remote S3 command caching, Python import graph linting, and much more.
 
-Although qik has special functionality with Python projects, any git-based repo can use qik as a command runner.
+Although qik is currently tailored towards Python repos, any project can use it.
 
 ## Installation
 
@@ -19,13 +19,72 @@ For local development, we recommend installing most optional dependencies with:
 pip install "qik[dev]"
 ```
 
-Qik is compatible with Python 3.10 - 3.12, Linux, OSX, and WSL. It requires [git](https://git-scm.com).
+Qik is compatible with Python 3.10 - 3.12, Linux, OSX, and WSL. It requires [git](https://git-scm.com) for command caching.
 
 ## Quick Start
 
-### File and Glob Dependencies
+### Commands
 
-Here we use the `pip-compile` executable from [pip-tools](https://github.com/jazzband/pip-tools) to lock PyPI distributions. Create `qik.toml` with the following:
+Configure commands in `qik.toml`:
+
+```toml
+[commands]
+format = "ruff format ."
+lint = "ruff check . --fix"
+type-check = "pyright"
+```
+
+Run `qik` to execute every command across available cores. `qik <cmd> ...` runs specific commands.
+
+Specify `deps` to cache commands. Here we use `pip-compile` from [pip-tools](https://github.com/jazzband/pip-tools) to lock requirements:
+
+```toml
+[commands.lock]
+exec = "pip-compile > requirements.txt"
+deps = ["requirements.in"]
+```
+
+The requirements file from `qik lock` is cached locally until `requirements.in` changes.
+
+Along with globs, commands can depend on constants, other commands, Python distributions, and more.
+
+Here we update our previous command to depend on the `pip-tools` distribution, breaking the cache when the version changes:
+
+```toml
+[commands.lock]
+exec = "pip-compile > requirements.txt"
+deps = [
+    "requirements.in",
+    {type = "pydist", name = "pip-tools"}
+]
+```
+
+Here we use command dependencies to ensure our linter runs after formatting:
+
+```toml
+[commands.format]
+exec = "ruff format ."
+deps = ["**.py"]
+
+[commands.lint]
+exec = "ruff check . --fix"
+deps = ["**.py", {type = "command", name = "format"}]
+```
+
+The `qik.pygraph` plugin provides the `pygraph` dependency. Here we run [pyright](https://github.com/microsoft/pyright) over the `hello.world` module whenever its code or imported code changes:
+
+```toml
+[plugins]
+pygraph = "qik.pygraph"
+
+[commands.check-types]
+exec = "pyright hello/world"
+deps = [{type = "pygraph", pyimport = "hello.world"}]
+```
+
+### Caches
+
+Cache results directly in your project with the `repo` cache:
 
 ```toml
 [commands.lock]
@@ -34,100 +93,137 @@ deps = ["requirements.in"]
 cache = "repo"
 ```
 
-Running `qik lock` executes `pip-compile > requirements.txt`. Results are cached in your repo until `requirements.in` changes.
-
-### Distribution Dependencies
-
-Change `deps` to re-run this command if we upgrade `pip-tools`:
+Us the `qik.s3` plugin to create a shared remote cache using [AWS S3](https://aws.amazon.com/s3/):
 
 ```toml
-deps = ["requirements.in", {type = "pydist", name = "pip-tools"}]
-```
+[plugins]
+s3 = "qik.s3"
 
-Installing a different version of `pip-tools` will break the command cache.
+[caches.remote]
+type = "s3"
+bucket = "qik-cache"
 
-#### Modular Commands
-
-Parametrize commands over modules, for example, running the [ruff](https://docs.astral.sh/ruff/) code formatter:
-
-```toml
-modules = ["a_module", "b_module", "c_module"]
-
-[commands.format]
-exec = "ruff format {module.dir}"
-deps = ["{module.dir}/**.py"]
-cache = "repo"
-```
-
-Running `qik format` will parametrize `ruff format` in parallel over all available threads and configured modules. Use `-n` to adjust the number of threads and `-m` to supply modules:
-
-```bash
-qik format -n 2 -m b_module -m c_module
-```
-
-### Import Graph Dependencies
-
-Some commands, such as [pyright](https://github.com/microsoft/pyright) type checking, should re-run whenever module files, imported code, or third-party dependencies change. Here we cache this command based on `my.module` files or dependencies:
-
-```toml
-plugins = ["qik.pygraph"]
-
-[commands.check-types]
-exec = "pyright my/module"
-deps = [{type = "pygraph", pyimport = "my.module"}]
-cache = "repo"
-```
-
-Parametrize this command over multiple modules:
-
-```toml
-modules = ["a_module", "b_module", "c_module"]
-plugins = ["qik.pygraph"]
-
-[commands.check-types]
-exec = "pyright {module.dir}"
-deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]
-cache = "repo"
-```
-
-We use the `qik.pygraph` plugin, which provides commands that lock the Python import graph.
-
-### Command Dependencies
-
-Command dependencies help order execution. For example, change `deps` of `command.check-types` to run type checking only after code has been successfully formatted:
-
-```toml
-deps = [
-    {type = "pygraph", pyimport = "{module.pyimport}"},
-    {type = "command", name = "format"}
-]
-```
-
-### Caching
-
-We've shown examples of the `repo` cache, which stores metadata of the most recent runs in the repo. Qik also offers local and remote caches. To use a remote cache, define command `artifacts`. For example, the `lock` command generates a `requirements.txt` file:
-
-```toml
 [commands.lock]
 exec = "pip-compile > requirements.txt"
 deps = ["requirements.in"]
 artifacts = ["requirements.txt"]
-cache = "s3"
+cache = "remote"
 ```
 
-Above we're using the [AWS S3](https://aws.amazon.com/pm/serv-s3/) cache. See [this section](caching.md) for a deep dive on how caching works, along with how to configure remote caching.
+We specify `artifacts` here to ensure `requirements.txt` is cached and restored.
+
+### Spaces
+
+Qik *spaces* define isolated environments and metadata for commands.
+
+Here we create a space for our linting command. The `qik.uv` plugin uses [uv](https://github.com/astral-sh/uv) to build virtualenvs:
+
+```toml
+[plugins]
+uv = "qik.uv"
+
+[spaces]
+ruff = "ruff-requirements.txt"
+
+[commands.format]
+exec = "ruff format ."
+deps = ["**.py"]
+space = "ruff"
+
+[commands.lint]
+exec = "ruff check . --fix"
+deps = ["**.py", {type = "command", name = "format"}]
+space = "ruff"
+```
+
+Running `qik` will lock and install the virtualenv for the `ruff` space and execute commands inside it. Changes to `ruff-requirements.txt` will break the cache of downstream commands.
+
+Along with managing virtual environments, spaces can:
+
+- Declare a `dotenv` file to automatically set environment variables.
+- Declare a `root`. Running `qik` under this folder only selects commands in the space.
+
+Here's a more complete example:
+
+```toml
+[spaces.my-app]
+root = "app"
+dotenv = "app.env"
+venv = "requirements.txt"
+```
+
+### Modules
+
+Spaces can define *modules* for command parametrization. Here we parametrize `pyright` over six modules across two spaces:
+
+```toml
+[spaces.first]
+modules = ["a", "b", "c"]
+venv = "requirements-first.txt"
+
+[spaces.second]
+modules = ["d", "e", "f"]
+venv = "requirements-second.txt"
+
+[commands.check-types]
+exec = "pyright {module.dir}"
+deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]
+```
+
+Using `{module...}` in a command definition will automatically parametrize it over ever module in every space.
+
+Use `qik check-types -s first` to specify spaces or `qik check-types -m b -m c` to specific modules.
+
+### Fences
+
+Plugins like `qik.pygraph` can leverage the `fence` of a space to perform import linting and other useful tasks:
+
+```toml
+[plugins]
+pygraph = "qik.pygraph"
+
+[spaces.first]
+modules = ["a", "b", "c"]
+fence = true
+```
+
+Running `qik pygraph.check` will ensure these modules only import each other. Add additional internal imports or a virtual environment to extend the fence:
+
+```toml
+[plugins]
+pygraph = "qik.pygraph"
+
+[spaces.first]
+modules = ["a", "b", "c"]
+fence = ["other/module"]
+venv = "requirements.txt"
+```
+
+Include another space in the fence:
+
+```toml
+[spaces.first]
+modules = ["a", "b", "c"]
+
+[spaces.second]
+modules = ["d", "e", "f"]
+fence = [{type = "space", name = "first"}]
+```
+
+Running `qik pygraph.check -s second` will ensure the `second` space can import both it's modules and the `first` space's modules.
 
 ### Command Line Interface
 
 The core CLI functionality is as follows:
 
 - `qik` to run all commands.
-- `qik <cmd_name> <cmd_name>` to run specific commands.
+- `qik <cmd_name> <cmd_name>` to select commands by name.
+- `-m` to select by module.
+- `-s` to select by space.
 - `--watch` to reactively run selected commands.
 - `--since` to select commands based on changes since a git reference.
 - `-f` to run without the cache.
-- `-m` to run against specific modules.
-- `-n` to set the number of threads.
+- `-n` to set the number of workers.
 - `--ls` to list commands instead of running them.
 
 See [the command runner section](commands.md#runner) for other advanced options, such as selecting commands based on cache status and setting the default [context profile](context.md).
