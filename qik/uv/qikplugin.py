@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 import qik.conf
 import qik.ctx
 import qik.func
@@ -7,6 +9,7 @@ import qik.unset
 class UVVenvConf(qik.conf.Venv, frozen=True, tag="uv"):
     python: str | qik.unset.UnsetType = qik.unset.UNSET
     constraint: str | qik.conf.SpaceLocator | qik.unset.UnsetType = qik.unset.UNSET
+    install_cmd: ClassVar[str] = "uv.install"
 
 
 class UVPluginConf(qik.conf.PluginConf, frozen=True, dict=True, tag="qik.uv"):

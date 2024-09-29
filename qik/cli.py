@@ -129,20 +129,27 @@ def qik_entry() -> None:
 
 def qikx_entry() -> None:
     """The entrypoint into the qikx CLI."""
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 2 or sys.argv[1] == "--help":
         print("Usage: qikx <command_string>")
         sys.exit(1)
 
-    space = "default"
+    space = None
     command = sys.argv[1]
-    args = sys.argv[2:]
-    if "@" in command:
-        command, space = command.split("@", 1)
+    if command in ("--install", "-i"):
+        venv_type = qik.conf.default_venv_type()
+        install_cmd = venv_type.install_cmd
+        if install_cmd:
+            os.execvp("qik", ["qik", install_cmd])
+    else:
+        args = sys.argv[2:]
 
-    # Set the space if in a space root
-    if not space:
-        space = _get_working_space()
+        if "@" in command:
+            command, space = command.split("@", 1)
 
-    resolved_space = qik.space.load(space)
-    os.environ |= resolved_space.environ
-    os.execvp(command, [command, *args])
+        # Set the space if in a space root
+        if not space:
+            space = _get_working_space() or "default"
+
+        resolved_space = qik.space.load(space)
+        os.environ |= resolved_space.environ
+        os.execvp(command, [command, *args])

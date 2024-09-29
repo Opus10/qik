@@ -197,8 +197,9 @@ class PluginConf(BasePluginLocator, frozen=True, tag_field="pyimport"):
         return str(self.__struct_config__.tag)
 
 
-class Venv(BasePluggable, frozen=True, tag_field="type"):
+class Venv(BasePluggable, frozen=True, tag_field="type", kw_only=True):
     plugin_type_name: ClassVar[str] = "venv"
+    install_cmd: ClassVar[str | None] = None
     reqs: str | list[str]
     lock: str | None = None
 
@@ -581,4 +582,5 @@ def pyimport(path: str) -> str:
 
 def default_venv_type() -> type[Venv]:
     """Get the default venv type."""
+    load()
     return _VENV_TYPE or ActiveVenv

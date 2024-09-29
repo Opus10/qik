@@ -68,12 +68,12 @@ space = "ruff"
 ruff = "ruff.in"
 
 [spaces.default]
-root = "a/"
 venv = "requirements.in"
 modules = ["a", {name = "b_module", path = "b"}]
 fence = ["other"]
 
 [spaces.other]
+root = "a/"
 venv = "req2.in"
 modules = ["nest/c"]
 fence = ["b", "a", "nest", {type = "space", name = "default"}]
