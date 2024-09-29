@@ -283,6 +283,7 @@ class BaseConf(Base, frozen=True):
 class Defaults(Base, frozen=True):
     cache: str | qik.unset.UnsetType = qik.unset.UNSET
     cache_when: CacheWhen | qik.unset.UnsetType = qik.unset.UNSET
+    python_path: str = "."
 
 
 class Project(ModuleOrPlugin, PluginsMixin, frozen=True):
@@ -290,7 +291,6 @@ class Project(ModuleOrPlugin, PluginsMixin, frozen=True):
     ctx: list[str | Var] = []
     caches: dict[str, Cache] = {}
     spaces: dict[str, Space | str] = {}
-    python_path: str = "."
     base: BaseConf = msgspec.field(default_factory=BaseConf)
     defaults: Defaults = msgspec.field(default_factory=Defaults)
     pydist: Pydist = msgspec.field(default_factory=Pydist)
@@ -451,7 +451,7 @@ def load() -> tuple[Project, pathlib.Path]:
         _load_plugins(plugins_conf)
         conf = _parse_project_config(contents, plugins_conf)
 
-        python_path = qik_toml.parent / conf.python_path
+        python_path = qik_toml.parent / conf.defaults.python_path
         sys.path.insert(0, str(python_path))
         return conf, qik_toml
     else:
@@ -548,7 +548,7 @@ def root() -> pathlib.Path:
 @qik.func.cache
 def abs_python_path() -> pathlib.Path:
     """Get the absolute python path."""
-    return load()[1].parent / project().python_path
+    return load()[1].parent / project().defaults.python_path
 
 
 @qik.func.cache
@@ -572,7 +572,7 @@ def location() -> pathlib.Path:
 @qik.func.cache
 def pyimport(path: str) -> str:
     """Return the python import for a path."""
-    python_path = project().python_path
+    python_path = project().defaults.python_path
     if python_path == ".":
         return path.replace("/", ".")
     else:

@@ -140,7 +140,10 @@ def _make_runnable(
         ),
         cache_when=qik.ctx.format(
             qik.unset.coalesce(
-                conf.cache_when, qik.conf.project().defaults.cache_when, default="success", type=str
+                conf.cache_when,
+                qik.conf.project().defaults.cache_when,
+                default="success",
+                type=str,
             )
         ),  # type: ignore
         space=space,
