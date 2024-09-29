@@ -270,7 +270,9 @@ class Runnable(msgspec.Struct, frozen=True, dict=True):
     @qik.func.cached_property
     def spec_hash(self) -> str:
         """Hash the runnable spec."""
-        return qik.hash.val(msgspec.json.encode(self))
+        # Note - we don't include caching arguments in the definition hash since they don't materially
+        # affect the outcome.
+        return qik.hash.val(msgspec.json.encode(msgspec.structs.replace(self, cache="", cache_when="")))
 
     def hash(self) -> str:
         """Compute the hash, including the command definitions and deps."""
