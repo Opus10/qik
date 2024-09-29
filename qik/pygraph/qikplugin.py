@@ -24,7 +24,7 @@ class PygraphPluginConf(qik.conf.PluginConf, frozen=True, dict=True, tag="qik.py
         return qik.unset.coalesce(
             self.build_cache,
             self.cache,
-            qik.conf.project().default_cache,
+            qik.conf.project().defaults.cache,
             default="local",
             type=str,
         )
@@ -34,7 +34,7 @@ class PygraphPluginConf(qik.conf.PluginConf, frozen=True, dict=True, tag="qik.py
         return qik.unset.coalesce(
             self.lock_cache,
             self.cache,
-            qik.conf.project().default_cache,
+            qik.conf.project().defaults.cache,
             default="local",
             type=str,
         )
@@ -44,7 +44,7 @@ class PygraphPluginConf(qik.conf.PluginConf, frozen=True, dict=True, tag="qik.py
         return qik.unset.coalesce(
             self.check_cache,
             self.cache,
-            qik.conf.project().default_cache,
+            qik.conf.project().defaults.cache,
             default="local",
             type=str,
         )

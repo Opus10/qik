@@ -274,6 +274,11 @@ class BaseConf(Base, frozen=True):
     deps: list[str | Dep] = []
 
 
+class Defaults(Base, frozen=True):
+    cache: str | qik.unset.UnsetType = qik.unset.UNSET
+    cache_when: CacheWhen | qik.unset.UnsetType = qik.unset.UNSET
+
+
 class Project(ModuleOrPlugin, PluginsMixin, frozen=True):
     plugins: dict[str, str | PluginLocator] = {}
     ctx: list[str | Var] = []
@@ -281,8 +286,7 @@ class Project(ModuleOrPlugin, PluginsMixin, frozen=True):
     spaces: dict[str, Space] = {}
     python_path: str = "."
     base: BaseConf = msgspec.field(default_factory=BaseConf)
-    default_cache: str | qik.unset.UnsetType = qik.unset.UNSET
-    default_cache_when: CacheWhen | qik.unset.UnsetType = qik.unset.UNSET
+    defaults: Defaults = msgspec.field(default_factory=Defaults)
     pydist: Pydist = msgspec.field(default_factory=Pydist)
 
     @qik.func.cached_property

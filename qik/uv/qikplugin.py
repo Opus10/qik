@@ -29,7 +29,7 @@ class UVPluginConf(qik.conf.PluginConf, frozen=True, dict=True, tag="qik.uv"):
     @qik.func.cached_property
     def resolved_cache(self) -> str:
         return qik.unset.coalesce(
-            self.cache, qik.conf.project().default_cache, default="repo", type=str
+            self.cache, qik.conf.project().defaults.cache, default="repo", type=str
         )
 
 

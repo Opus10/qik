@@ -135,12 +135,12 @@ def _make_runnable(
         artifacts=[qik.ctx.format(artifact) for artifact in conf.artifacts],
         cache=qik.ctx.format(
             qik.unset.coalesce(
-                initial_cache, qik.conf.project().default_cache, default="local", type=str
+                initial_cache, qik.conf.project().defaults.cache, default="local", type=str
             )
         ),
         cache_when=qik.ctx.format(
             qik.unset.coalesce(
-                conf.cache_when, qik.conf.project().default_cache_when, default="success", type=str
+                conf.cache_when, qik.conf.project().defaults.cache_when, default="success", type=str
             )
         ),  # type: ignore
         space=space,
