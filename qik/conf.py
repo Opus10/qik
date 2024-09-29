@@ -225,7 +225,7 @@ class Space(Base, frozen=True):
     root: str | None = None
     modules: list[str | ModuleLocator] = []
     fence: list[str | SpaceLocator] | bool = []
-    venv: Venv | str | None = None
+    venv: Venv | str | list[str] | None = None
 
     @qik.func.cached_property
     def modules_by_name(self) -> dict[str, ModuleLocator]:
@@ -291,7 +291,7 @@ class Project(ModuleOrPlugin, PluginsMixin, frozen=True):
     plugins: dict[str, str | PluginLocator] = {}
     ctx: list[str | Var] = []
     caches: dict[str, Cache] = {}
-    spaces: dict[str, Space | str] = {}
+    spaces: dict[str, Space | str | list[str]] = {}
     base: BaseConf = msgspec.field(default_factory=BaseConf)
     defaults: Defaults = msgspec.field(default_factory=Defaults)
     pydist: Pydist = msgspec.field(default_factory=Pydist)
@@ -299,7 +299,7 @@ class Project(ModuleOrPlugin, PluginsMixin, frozen=True):
     @qik.func.cached_property
     def resolved_spaces(self) -> dict[str, Space]:
         return {
-            name: Space(venv=space) if isinstance(space, str) else space
+            name: Space(venv=space) if isinstance(space, str | list) else space
             for name, space in self.spaces.items()
         }
 
@@ -379,7 +379,7 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
 
     DynamicSpace = msgspec.defstruct(
         "DynamicSpace",
-        [("venv", DynamicVenvTypes | str | None, None)],  # type: ignore
+        [("venv", DynamicVenvTypes | str | list[str] | None, None)],  # type: ignore
         bases=(Space,),
         frozen=True,
     )
@@ -417,7 +417,7 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
         [
             ("venvs", dict[str, DynamicVenvTypes], {}),
             ("caches", dict[str, DynamicCacheTypes], {}),
-            ("spaces", dict[str, DynamicSpace | str], {}),
+            ("spaces", dict[str, DynamicSpace | str | list[str]], {}),
             ("commands", dict[str, DynamicCmd | str], {}),
             ("base", DynamicBaseConf, msgspec.field(default_factory=DynamicBaseConf)),
             ("plugins", DynamicPlugins, msgspec.field(default_factory=DynamicPlugins)),

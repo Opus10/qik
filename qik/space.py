@@ -53,7 +53,7 @@ class Space(msgspec.Struct, frozen=True, dict=True):
 
     @qik.func.cached_property
     def venv(self) -> qik.venv.Venv:
-        if isinstance(self.conf.venv, str):
+        if isinstance(self.conf.venv, str | list):
             conf = qik.conf.default_venv_type()(reqs=self.conf.venv)
         else:
             conf = self.conf.venv
