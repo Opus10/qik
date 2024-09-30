@@ -85,12 +85,22 @@ nav:
   - Home: index.md
   - Guide:
     - Intro: guide.md
+    - Spaces: spaces.md
     - Commands: commands.md
     - Context: context.md
     - Caching: caching.md
-    - CI/CD: ci.md
-    - Troubleshooting: errors.md
-  - Cookbook: cookbook.md
+    - Plugins:
+      - Intro: plugin_intro.md
+      - Pygraph: plugin_pygraph.md
+      - UV: plugin_uv.md
+      - S3: plugin_s3.md
+    - Help:
+      - Resources: resources.md
+      - Troubleshooting: errors.md
+  - Cookbook:
+    - Commands: cookbook_commands.md
+    - CLI: cookbook_cli.md
+    - CI/CD: cookbook_cicd.md
   - Blog: blog/index.md
   - Roadmap: roadmap.md
   - Release Notes: release_notes.md

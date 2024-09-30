@@ -1,72 +1,13 @@
----
-hide:
-  - navigation
----
-
-# Cookbook
-
-Qik CLI examples, common command definitions, and useful snippets.
-
-## CLI Examples
-
-#### Watch Repo-Cached Commands
-
-```bash
-qik --cache repo --watch
-```
-
-#### Run All Commands Serially
-
-```bash
-qik -n 1
-```
-
-#### Check for Warm Cache for Specific Commands
-
-```bash
-qik command_one command_two --cache-status warm --ls
-```
-
-#### Fail if Commands have Cold Cache
-
-```bash
-qik --cache-status cold --ls --fail
-```
-
-#### Run Commands Since `main` Branch
-
-```bash
-qik --since main
-```
-
-#### Show Output of Successful and Failed Commands
-
-```bash
-qik -v 2
-```
-
-#### Cache All Finished Commands
-
-```bash
-qik --cache-when finished
-```
-
-#### Set the Default Cache
-
-```bash
-qik --cache remote_cache_name
-```
-
-## Common Command Definitions
+# Command Examples
 
 Below are common command definitions. Note that we only provide basic dependencies in the examples. We also recommend to:
 
 - Depend on your requirements file or the tool's PyPI distribution. See [depending on distributions](commands.md#distributions).
 - Create a [global dependency](commands.md#global) on the Python version.
 
-### Linting, Formatting, and Type Checking
+## Linting, Formatting, and Type Checking
 
-#### Pyright Type Checking
+### Pyright Type Checking
 
 ```toml
 [commands.check-types]
@@ -75,7 +16,7 @@ deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]
 cache = "repo"
 ```
 
-#### Black Formatting
+### Black Formatting
 
 ```toml
 [commands.format]
@@ -84,7 +25,7 @@ deps = ["{module.dir}/**.py"]
 cache = "repo"
 ```
 
-#### Flake8 Linting
+### Flake8 Linting
 
 ```toml
 [commands.lint]
@@ -93,7 +34,7 @@ deps = ["{module.dir}/**.py"]
 cache = "repo"
 ```
 
-#### Ruff Formatting and Linting
+### Ruff Formatting and Linting
 
 ```toml
 [commands.format]
@@ -109,9 +50,9 @@ deps = [
 ]
 ```
 
-### Locking Environments
+## Locking Environments
 
-#### Pip Tools
+### Pip Tools
 
 ```toml
 [commands.lock]
@@ -120,7 +61,7 @@ deps = ["requirements.in"]
 artifacts = ["requirements.txt"]
 ```
 
-#### Poetry
+### Poetry
 
 ```toml
 [commands.lock]
@@ -129,9 +70,9 @@ deps = ["pyproject.toml"]
 artifacts = ["poetry.lock"]
 ```
 
-### Building Documentation
+## Building Documentation
 
-#### MkDocs
+### MkDocs
 
 ```toml
 [commands.build-docs]
@@ -140,7 +81,7 @@ deps = ["docs/**", "mkdocs.yml"]
 artifacts = ["site/**"]
 ```
 
-#### Sphinx
+### Sphinx
 
 ```toml
 [commands.build-docs]
@@ -149,9 +90,9 @@ deps = ["docs/**"]
 artifacts = ["docs/build/**"]
 ```
 
-### Unit Tests
+## Unit Tests
 
-#### Pytest
+### Pytest
 
 ```toml
 [commands.test]
@@ -159,7 +100,7 @@ exec = "pytest {module.dir}"
 deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]
 ```
 
-#### Pytest with Coverage
+### Pytest with Coverage
 
 ```toml
 [commands.test]
@@ -168,7 +109,7 @@ deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]
 artifacts = ["{module.name}-coverage.xml"]
 ```
 
-#### Pytest with Django
+### Pytest with Django
 
 In `settings.py`:
 
@@ -192,9 +133,9 @@ exec = "pytest {module.dir}"
 deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]
 ```
 
-### Generating API Clients
+## Generating API Clients
 
-#### Orval
+### Orval
 
 ```toml
 [commands.generate-api-client]
@@ -203,9 +144,9 @@ deps = ["backend/**/api/**.py"]
 cache = "repo"
 ```
 
-### Database Schemas
+## Database Schemas
 
-#### Cache Migrated Django Postgres Database
+### Cache Migrated Django Postgres Database
 
 ```toml
 [commands.migrate-db]

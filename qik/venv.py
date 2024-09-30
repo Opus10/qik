@@ -186,7 +186,7 @@ class Venv(msgspec.Struct, frozen=True, dict=True):
 
     @qik.func.cached_property
     def glob_deps(self) -> set[str]:
-        return {self.lock} if self.lock else set()
+        return {self.lock} if self.lock else set(self.reqs)
 
     @qik.func.cached_property
     def const_deps(self) -> set[str]:

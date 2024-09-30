@@ -21,7 +21,7 @@ pip install "qik[dev]"
 
 Qik is compatible with Python 3.10 - 3.12, Linux, OSX, and WSL. It requires [git](https://git-scm.com) for command caching.
 
-## Quick Start
+## Getting Started
 
 ### Commands
 
@@ -212,9 +212,28 @@ fence = [{type = "space", name = "first"}]
 
 Running `qik pygraph.check -s second` will ensure the `second` space can import both it's modules and the `first` space's modules.
 
+### Context
+
+Set context variables and use them in your configuration. Below we create a context variable for the bundle cache:
+
+```toml
+ctx = [{name = "bundle_cache", default = "local"}]
+
+[command.build-bundle]
+exec = "npm run build"
+artifacts = ["js-build/*"]
+cache = "{ctx.bundle_cache}"
+```
+
+Context variables can be supplied in the environment:
+
+```bash
+BUNDLE_CACHE=remote qik build-bundle
+```
+
 ### Command Line Interface
 
-The core CLI functionality is as follows:
+The core `qik` CLI functionality is as follows:
 
 - `qik` to run all commands.
 - `qik <cmd_name> <cmd_name>` to select commands by name.
@@ -226,20 +245,42 @@ The core CLI functionality is as follows:
 - `-n` to set the number of workers.
 - `--ls` to list commands instead of running them.
 
-See [the command runner section](commands.md#runner) for other advanced options, such as selecting commands based on cache status and setting the default [context profile](context.md).
+See [the command runner section](commands.md#runner) for other advanced options, such as selecting commands based on cache status.
+
+The `qikx` utility is also available for running commands in spaces:
+
+```bash
+# Run in the default space
+qikx my_command --args val
+
+# Run in a specific space
+qikx my_command@space_name --args val
+```
 
 ## Next Steps
 
 Read the following guide to become a qik expert:
 
-- [Commands](commands.md): Configuring and running commands. Learn about all the dependencies, selectors, and runtime behavior.
-- [Context](context.md): Using environment-based context and runtime profiles.
-- [Caching](caching.md): How caching works and how to configure all cache types, including S3.
+- [Spaces](spaces.md): How spaces work, their functionality, and how commands and plugins leverage them.
+- [Commands](commands.md): Configuring and running commands. Learn the dependencies, selectors, and runtime behavior.
+- [Context](context.md): Using environment-based runtime context.
+- [Caching](caching.md): How caching works and how to configure different cache types.
+
+Learn more about plugins:
+
+- [Intro](plugin_intro.md): How to configure and create plugins.
+- [Pygraph](plugin_pygraph.md): Using the `qik.pygraph` plugin for import-based dependencies and import linting.
+- [UV](plugin_uv.md): How to leverage and configure the `qik.uv` plugin for virtualenvs, including constraint files, custom PyPI indices, and more.
+- [S3](plugin_s3.md): Configuring the `qik.s3` plugin for a remote S3 cache.
+
+Read the cookbook for more examples and guides:
+
+- [Commands](cookbook_commands.md): Common command definition examples.
+- [CLI Usage](cookbook_cli.md): Command line interface snippets.
 - [CI/CD](ci.md): Patterns for optimizing CI/CD time.
 
-After this, read the:
+Finish by checking out:
 
-- [Cookbook](cookbook.md) for command and CLI snippets.
 - [Roadmap](roadmap.md) for all the exciting upcoming features.
 - [Blog](blog/index.md) for updates, how-tos, and other articles.
 
