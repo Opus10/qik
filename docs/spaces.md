@@ -1,50 +1,80 @@
 # Spaces
 
-Qik *spaces* form the foundation of command isolation and parametrization. We discuss these concepts here and describe how commands and plugins leverage spaces.
+Qik *spaces* form the foundation of command isolation and parametrization. We discuss these concepts at a high level and describe how commands and plugins leverage them.
 
-We assume the reader is familiar with virtual environments. Here we are specifically referring to [Python virtualenvs]() for now, although the concept can extend to any virtualenv manager ([conda](), [npm](), etc).
+## Defining a Space
 
-## The Default Space
+A space consists of the following optional attributes:
 
-Qik always uses a space when executing a command. If a space isn't specified, the *default* space is used, which defaults to the active virtualenv and environment variables unless overridden in `qik.toml`.
+- A virtual environment (or *virtualenv*) for isolating tools and libraries.
+- Dotenv files for configuring environment variables.
+- Modules for parametrizing commands.
+- A fence for isolating a section of the monorepo.
+- A root for defining the working directory.
 
-Some features of qik, such as the `--since` flag, may require you to configure the default space to have requirements. The default space can be overridden like so:
+Spaces can be configured in `qik.toml` by just a virtualenv requirements file:
+
+```toml
+[spaces]
+my-space = "requirements.txt"
+```
+
+Or more verbosely configured:
+
+```toml
+[spaces.my-space]
+venv = {type = "active", reqs = "requirements.txt"}
+dotenv = ["my_dotenv.env", "my_other_dotenv.env"]
+modules = ["my/nested/module"]
+fence = ["other/path"]
+root = "my/space"
+```
+
+!!! note
+
+    If spaces aren't configured, qik uses the *default* space, which is your active environment. In other words, all executables available in your shell can be ran as qik commands.
+
+## Virtual Environments
+
+### How it Works
+
+By default, qik does not manage or activate virtual environments when running commands. Plugins like [UV](plugin_uv.md) enable this functionality.
+
+Some features of qik, such as the `--since` flag, may still require you to configure a requirements file for the default space if not using a virtualenv plugin:
 
 ```toml
 [spaces.default]
 venv = "requirements.txt"
 ```
 
-## Virtual Environments
+When doing this, the requirements file is added as a dependency for every command in the space, ensuring caches are busted when the requirements change.
 
-### Default Behavior
-
-By default, qik does not manage or activate a virtualenv. Commands are executed in whichever virtualenv is active. This holds true even when one overrides the requirements file as show above.
-
-Adding a requirements file, however, does cause this file to be a dependency for commands, ensuring caches are broken if the requirements change.
+This same pattern holds true when using a plugin - commands to lock and install the virtualenv are added as dependencies to every command in the space. Unlike the default behavior, plugins like [UV](plugin_uv.md) actually execute commands in the separate virtualenv.
 
 ### Configuration
 
-Configure a virtualenv directly with just its requirements file. An entire space can be configured with just a requirements file too:
+See the [UV plugin docs](plugin_uv.md) for in-depth examples of configuring virtualenvs. We cover a few basics for all virtualenv plugins here.
 
-```toml
-[spaces]
-my-space = "my_space_requirements.txt"
-```
-
-All virtualenvs have these core properties:
+First, all have these core properties:
 
 - `reqs`: A file (or files) of requirements.
 - `lock`: An optional lock file.
 
-The more verbose configuration of the above example looks like this:
+Virtualenvs can be configured directly with just the requirements file:
 
 ```toml
 [spaces.my-space]
-venv = {type = "active", reqs = "my_space_requirements.txt"}
+venv = "my_space_requirements.txt"
 ```
 
-Virtualenvs can be inherited when using multiple spaces:
+The type of virtualenv defaults to the active virtualenv plugin. This attribute still must be specified directly for verbose configuration:
+
+```toml
+[spaces.my-space]
+venv = {type = "uv", reqs = "my_space_requirements.txt"}
+```
+
+Finally, virtualenvs can be inherited from other spaces:
 
 ```toml
 [spaces.default]
@@ -54,20 +84,10 @@ venv = "requirements.txt"
 venv = [{type = "space", name = "default"}]
 ```
 
-### Locking and Installation
-
-Qik leaves locking and installation to virtualenv plugins. When using one, keep the following in mind:
-
-- The type of virtualenv will default to what's provided by the plugin. One must verbosely configure the `type` to pick the `active` virtualenv.
-- Plugins often dynamically introduce dependencies to commands. For example, the [UV plugin](plugin_uv.md) adds the lock file and the locking/installation commands as dependencies for any command that runs in a UV virtualenv.
-
-### Advanced Configuration
-
-See the [UV docs](plugin_uv.md) for examples on how to manage the Python version and apply global dependency constraints across all virtualenvs using [UV](https://github.com/astral-sh/uv).
 
 ## Dotenv Files
 
-Spaces also support dotenv files using the `dotenv` attribute:
+Spaces support [dotenv files](https://hexdocs.pm/dotenvy/dotenv-file-format.html) using the `dotenv` attribute:
 
 ```toml
 [spaces.my-space]
@@ -82,33 +102,21 @@ When using a `dotenv` file or files, keep the following hierarchy in mind:
 
 ## Modules and Command Parametrization
 
-Spaces can configure a list of `modules`, for example:
+Spaces can configure a list of `modules`, which are paths relative to `qik.toml`. For example:
 
 ```toml
 [spaces.my-space]
-modules = ["my_module", "my_other_module"]
+modules = ["my_module", "my/nested/module"]
 ```
 
-Modules may be directly used to parametrize commands:
+The `dir` and `pyimport` attributes of modules can be used to parametrize commands:
 
 ```toml
 [commands.parametrized-command]
 exec = "pytest {module.dir}"
 ```
 
-Parametrized commands are executed across all modules in all spaces unless a space is specified in the command definition. We touch more on module parametrization in the [commands](commands.md) docs.
-
-Modules have the following attributes:
-
-- `dir`: The file system directory of the module.
-- `pyimport`: The dotted Python import path.
-
-Remember, modules are paths. A nested module looks like this:
-
-```toml
-[spaces.my-space]
-modules = ["my/nested/module"]
-```
+We touch more on module parametrization in the [commands](commands.md) docs.
 
 Modules can be re-named, which affects their namespace and other behavior in qik:
 
@@ -123,9 +131,9 @@ modules = [{name = "module_name", path = "my/nested/module"}]
 
 ## Fences
 
-Plugins such as [Pygraph](plugin_pygraph.md) leverage the `fence` of a space. A fence is an internal boundary for this space.
+Plugins such as [Pygraph](plugin_pygraph.md) leverage the `fence` of a space, which is an enclosure of paths in a project.
 
-By default, the `fence` is turned off, ensuring plugins don't do fence-specific commands on the space. To use the default fence of just the modules, do `fence = true`:
+By default, the `fence` is disabled. Use `fence = true` to enclose modules:
 
 ```toml
 [spaces.my-space]
@@ -133,7 +141,7 @@ modules = ["path/to/module_one"]
 fence = true
 ```
 
-To extend the fence around the modules, add globs:
+Extend this fence with globs:
 
 ```toml
 [spaces.my-space]
@@ -156,26 +164,28 @@ The fence of `my-space` includes `path/to/module_one`, `other/path`, and `primar
 
 To recap, fences help plugins understand the boundary of a space. See the [Pygraph plugin docs](plugin_pygraph.md) for a practical example of how fences are used for import linting.
 
-Other plugins can build on this concept, for example, creating an optimized docker container for a space in a monorepo.
+Other plugins can build on this concept, for example, creating an optimized docker container based on files in a project.
 
 ## Roots
 
-Specify a `root` in a space to enhance other aspects of qik:
+Specify a `root` to set a working directory for a space:
 
 ```toml
 [spaces.my-space]
 root = "my/space"
 ```
 
-When a root is configured like above, changing into any directory under `my/space` will alter the behavior of `qik`, ensuring only commands in this space are selected. Similarly, `qikx` uses the working space as the default.
+Changing into any directory under `my/space` will alter the behavior of `qik`, ensuring only commands in this space are selected. Similarly, `qikx` uses the working space as the default.
 
-Remember, roots cannot be children of others. Roots are best when working across a flat hierarchy of a large project that may have separate web apps, modules, frontends, backends, etc.
+!!! remember
+
+    Roots cannot be children of others and are intended to separate a project into a flat hierarchy.
 
 ## Command Line Interaction
 
-Keep the following in mind when using the `qik` command line tool:
+When using the `qik` command line tool:
 
-- Use `-s` to select commands based on spaces. The argument can be used repeatedly to specify multiple spaces.
+- Use `-s` to select commands based on a space or multiple spaces.
 - The `-s` flag defaults to the current working space if a `root` is defined.
 
 The `qikx` utility has the following behavior:
