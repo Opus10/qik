@@ -80,7 +80,7 @@ Keep the following in mind:
 Use `--since <base branch>` to select commands that need to be re-executed since a base branch (e.g. in a pull request). Remember to keep the following in mind:
 
 - If you rely on artifacts such as coverage reports on every CI run, these may not be produced if you don't run those commands.
-- Qik is still in beta. It's good to occasionally break the whole cache by [adding a const dependency](commands.md#const) as a [global dependency](commands.md#global).
+- Qik is still in beta. It's good to occasionally break the whole cache by [adding a const dependency](commands.md#const) as a [base dependency](commands.md#base).
 
 !!! warning
 

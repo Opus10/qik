@@ -49,7 +49,7 @@ venv = "requirements.txt"
 
 When doing this, the requirements file is added as a dependency for every command in the space, ensuring caches are busted when the requirements change.
 
-This same pattern holds true when using a plugin - commands to lock and install the virtualenv are added as dependencies to every command in the space. Unlike the default behavior, plugins like [UV](plugin_uv.md) actually execute commands in the separate virtualenv.
+Plugins like [UV](plugin_uv.md) also inject dependencies to ensure the virtualenv is installed before running the command inside it.
 
 ### Configuration
 
@@ -100,6 +100,8 @@ When using a `dotenv` file or files, keep the following hierarchy in mind:
 - The virtual env changes, such as the `PATH`, are applied next.
 - Environment variables from any `dotenv` file are applied in order of configuration.
 
+<a id="modules"></a>
+
 ## Modules and Command Parametrization
 
 Spaces can configure a list of `modules`, which are paths relative to `qik.toml`. For example:
@@ -116,7 +118,7 @@ The `dir` and `pyimport` attributes of modules can be used to parametrize comman
 exec = "pytest {module.dir}"
 ```
 
-We touch more on module parametrization in the [commands](commands.md) docs.
+We touch more on module parametrization in the [command docs](commands.md).
 
 Modules can be re-named, which affects their namespace and other behavior in qik:
 
