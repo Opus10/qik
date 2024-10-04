@@ -242,9 +242,7 @@ class Space(Base, frozen=True):
 
 class Pydist(Base, frozen=True):
     versions: dict[str, str] = {}
-    modules: dict[str, str] = {}
     ignore_missing: bool = False
-    ignore_missing_modules: bool = False
 
 
 class PluginsMixin:

@@ -13,8 +13,6 @@ class PygraphDepConf(qik.conf.Dep, tag="pygraph", frozen=True):
 class PygraphPluginConf(qik.conf.PluginConf, frozen=True, dict=True, tag="qik.pygraph"):
     ignore_type_checking: bool = False
     ignore_pydists: bool = False
-    ignore_missing_module_pydists: bool = False
-    module_pydists: dict[str, str] = {}
     cache: str | qik.unset.UnsetType = qik.unset.UNSET
     build_cache: str | qik.unset.UnsetType = qik.unset.UNSET
     lock_cache: str | qik.unset.UnsetType = qik.unset.UNSET

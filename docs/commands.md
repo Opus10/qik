@@ -227,7 +227,7 @@ Select commands that have a warm or cold cache with `--cache-status warm` or `--
 
 ## Advanced Configuration
 
-Some aspects of the command runner and runnable graph have advanced configuration parameters that we discuss here.
+Some aspects of commands, the runner, and dependencies have advanced configuration parameters that we discuss here.
 
 <a id="command"></a>
 
@@ -255,9 +255,59 @@ Commands and dependencies can utilize environment variables and machine-specific
 
 See the [qik context section](context.md) for a deep dive on how to do this.
 
+### Custom Python Paths
+
+Some projects may have a non-standard Python path. For example, having a root path for a Python backend:
+
+```
+qik.toml
+frontend/...
+backend/...
+```
+
+The default Python path is always where the root `qik.toml` presides. Override the default python path like so:
+
+```toml
+[defaults]
+python-path = "backend"
+```
+
+Keep the following in mind:
+
+- Paths to modules, such as `[spaces.modules]` are still relative to the root `qik.toml`, i.e. `backend/my/module`.
+- Python import paths are relative to the python path, i.e. `my.module`.
+
+### Pydist Dependencies
+
+Sometimes a `pydist` type of dependency may not be available in your virtual environment. You have two configuration options at your disposal:
+
+1. Set `[pydist.versions]` in your `qik.toml`:
+
+    ```toml
+    [pydist.versions]
+    dist-name = "0.1.0"
+    ```
+
+2. Ignore missing pydists with `[pydist.ignore_missing]`:
+
+    ```toml
+    [pydist]
+    ignore_missing = true
+    ```
+
+Keep in mind that both of these are global settings that will apply if a pydist version cannot be found in the virtual environment.
+
+!!! note
+
+    Toml syntax requires `kebab` casing. For example, a pydist of `my_dist` would still need to be named `my-dist`. This is not impactful because of how dist names are normalized.
+
+### Pygraph Dependencies
+
+Dependencies on Python import graphs can be configured and overridden in a number of ways. See the [Pygraph plugin docs](plugin_pygraph.md) for a comprehensive overview.
+
 ### Module Commands
 
-Commands can be defined in [space modules](spaces.md#modules). Command names are prefixed by the module name.
+Commands can be defined in a [space module's qik.toml file](spaces.md#modules). Command names are prefixed by the module name.
 
 For example, in `my/module/path/qik.toml`:
 

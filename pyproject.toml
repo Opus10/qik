@@ -59,7 +59,7 @@ watchdog = { version = ">=4", optional = true }
 grimp = { version = ">=3.4.1", optional = true }
 rustworkx = { version = ">=0.15.1", optional = true }
 boto3 = { version = ">=1", optional = true }
-uv = { optional = true }
+uv = { version = ">=0.4.18", optional = true }
 
 [tool.poetry.extras]
 watch = ["watchdog"]
