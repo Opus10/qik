@@ -131,6 +131,8 @@ modules = [{name = "module_name", path = "my/nested/module"}]
 
     Modules are owned by spaces and cannot be shared.
 
+<a id="fences">
+
 ## Fences
 
 Plugins such as [Pygraph](plugin_pygraph.md) leverage the `fence` of a space, which is an enclosure of paths in a project.

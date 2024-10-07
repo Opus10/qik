@@ -138,6 +138,8 @@ Above we ensure `qik lint` runs ruff formatting in `my-space`. We use the [UV pl
 
     Use `qik -s my-space` to only select commands in the `my-space` space.
 
+<a id="parametrized-commands"></a>
+
 ### Parametrizing Commands
 
 Provide a `{module}` string in your executable to parametrize commands over [space modules](spaces.md#modules):

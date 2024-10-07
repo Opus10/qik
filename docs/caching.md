@@ -83,6 +83,8 @@ Cache files are automatically added to the git index with `git add -N`. The `.gi
 
 Updates to the repo cache can be a source git merge conflicts. Qik automatically installs a custom merge strategy in `.gitattributes` and the local git config to ensure that your cache changes always take precedence over remote branches. Keep in mind that providers like Github cannot use these strategies, so rebases and automatic merge conflicts must still be resolved locally.
 
+<a id="remote"></a>
+
 ## Remote Caches
 
 Remote caches store all runs in a remote shared cache. They use the `local` cache as hot storage.
