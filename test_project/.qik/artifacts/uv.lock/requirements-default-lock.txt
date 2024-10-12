@@ -2,7 +2,7 @@
 #    uv pip compile --universal requirements.in -o .qik/artifacts/uv.lock/requirements-default-lock.txt --constraint constraint.in
 asgiref==3.8.1
     # via django
-build==1.2.2
+build==1.2.2.post1
     # via
     #   pip-tools
     #   poetry
@@ -14,7 +14,7 @@ cffi==1.17.1 ; (platform_python_implementation != 'PyPy' and sys_platform == 'li
     # via
     #   cryptography
     #   xattr
-charset-normalizer==3.3.2
+charset-normalizer==3.4.0
     # via requests
 cleo==2.1.0
     # via poetry
@@ -30,9 +30,9 @@ crashtest==0.4.1
     #   poetry
 cryptography==43.0.1 ; sys_platform == 'linux'
     # via secretstorage
-distlib==0.3.8
+distlib==0.3.9
     # via virtualenv
-django==5.1.1
+django==5.1.2
     # via
     #   -r requirements.in
     #   django-pghistory
@@ -81,7 +81,7 @@ pip==24.2
     #   pip-tools
 pip-tools==7.4.1
     # via -r requirements.in
-pkginfo==1.11.1
+pkginfo==1.11.2
     # via poetry
 platformdirs==4.3.6
     # via
@@ -127,7 +127,7 @@ sqlparse==0.5.1
     # via django
 tomlkit==0.13.2
     # via poetry
-trove-classifiers==2024.9.12
+trove-classifiers==2024.10.12
     # via poetry
 tzdata==2024.2 ; sys_platform == 'win32'
     # via django

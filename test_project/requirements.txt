@@ -6,7 +6,7 @@
 #
 asgiref==3.8.1
     # via django
-build==1.2.2
+build==1.2.2.post1
     # via
     #   pip-tools
     #   poetry
@@ -16,7 +16,7 @@ certifi==2024.8.30
     # via requests
 cffi==1.17.1
     # via xattr
-charset-normalizer==3.3.2
+charset-normalizer==3.4.0
     # via requests
 cleo==2.1.0
     # via poetry
@@ -26,9 +26,9 @@ crashtest==0.4.1
     # via
     #   cleo
     #   poetry
-distlib==0.3.8
+distlib==0.3.9
     # via virtualenv
-django==5.1.1
+django==5.1.2
     # via
     #   -r requirements.in
     #   django-pghistory
@@ -67,7 +67,7 @@ pexpect==4.9.0
     # via poetry
 pip-tools==7.4.1
     # via -r requirements.in
-pkginfo==1.11.1
+pkginfo==1.11.2
     # via poetry
 platformdirs==4.3.6
     # via
@@ -107,7 +107,7 @@ sqlparse==0.5.1
     # via django
 tomlkit==0.13.2
     # via poetry
-trove-classifiers==2024.9.12
+trove-classifiers==2024.10.12
     # via poetry
 urllib3==2.2.3
     # via
