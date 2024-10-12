@@ -83,9 +83,10 @@ deps = [
 
 ### Parametrizing Modules
 
-Define modules for your project and parametrize commands over them:
+Define modules for your project's space and parametrize commands over them:
 
 ```toml
+[spaces.default]
 modules = ["my/module/a", "my/module/b"]
 
 [commands.lint]
@@ -100,8 +101,11 @@ Qik runs commands in parallel by default. Use `-m` to specify individual modules
 Commands such as type checkers or test runners need to re-run when the import graph changes:
 
 ```toml
+[plugins]
+pygraph = "qik.pygraph"
+
+[spaces.default]
 modules = ["my/module/a", "my/module/b"]
-plugins = ["qik.pygraph"]
 
 [commands.check-types]
 exec = "pyright {module.dir}"

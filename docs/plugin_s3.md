@@ -19,10 +19,10 @@ s3 = "qik.s3"
 
 ## Configuration
 
-After installation, define a custom cache in `qik.toml`:
+After installation, define a custom cache in `qik.toml` by leveraging the `type = "s3"` cache provided by the plugin:
 
 ```toml
-[caches.my_remote_cache]
+[caches.my-remote-cache]
 type = "s3"
 bucket = "my-cache-bucket"
 ```
@@ -37,8 +37,8 @@ ctx = ["aws_access_key_id", "aws_secret_access_key"]
 [caches.my-remote-cache]
 type = "s3"
 bucket = "my-cache-bucket"
-aws-access-key-id = "{ctx.project.aws_access_key_id}"
-aws-secret-access-key = "{ctx.project.aws_secret_access_key}"
+aws-access-key-id = "{ctx.aws_access_key_id}"
+aws-secret-access-key = "{ctx.aws_secret_access_key}"
 ```
 
 You can also configure `region-name` and `aws-session-token`.

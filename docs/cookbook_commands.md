@@ -1,9 +1,6 @@
 # Command Examples
 
-Below are common command definitions. Note that we only provide basic dependencies in the examples. We also recommend to:
-
-- Depend on your requirements file or the tool's PyPI distribution. See [depending on distributions](commands.md#distributions).
-- Create a [base dependency](commands.md#base) on the Python version.
+Below are common command definitions. Note that we only provide basic dependencies in the examples. Some examples that depend on the Python import graph assume the [Pygraph plugin](plugin_pygraph.md) is installed.
 
 ## Linting, Formatting, and Type Checking
 

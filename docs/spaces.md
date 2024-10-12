@@ -84,7 +84,6 @@ venv = "requirements.txt"
 venv = [{type = "space", name = "default"}]
 ```
 
-
 ## Dotenv Files
 
 Spaces support [dotenv files](https://hexdocs.pm/dotenvy/dotenv-file-format.html) using the `dotenv` attribute:
@@ -169,6 +168,17 @@ The fence of `my-space` includes `path/to/module_one`, `other/path`, and `primar
 To recap, fences help plugins understand the boundary of a space. See the [Pygraph plugin docs](plugin_pygraph.md) for a practical example of how fences are used for import linting.
 
 Other plugins can build on this concept, for example, creating an optimized docker container based on files in a project.
+
+## Freeform Commands with `qikx`
+
+The `qikx` utility can be used to run freeform commands with dynamic arguments in a space. For example, say we have the following space:
+
+```toml
+[spaces.my-space]
+venv = "requirements.txt"
+```
+
+`qikx pytest@my-space arg1 arg2 --flag` will run `pytest arg1 arg2 --flag` in the virtualenv of `my-space`. One can specify the `root` of the space as shown below to avoid specifying a non-default space name.
 
 ## Roots
 

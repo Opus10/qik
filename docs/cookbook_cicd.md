@@ -35,7 +35,7 @@ With these commamnds, you now have a fast way to ensure your repo cache is in sy
 
 ### Basics
 
-If repo-based caching isn't acceptable or you have architecture-specific commands, use a [remote cache](caching.md). Just remember to configure `artifacts` for your commands. For example, let's run [pytest](https://docs.pytest.org/en/stable/) over modules and collect coverage reports:
+If repo-based caching isn't acceptable or you have architecture-specific commands, use a [remote cache](caching.md#remote). Just remember to configure `artifacts` for your commands. For example, let's run [pytest](https://docs.pytest.org/en/stable/) over modules and collect coverage reports:
 
 ```toml
 [commands.pytest]
