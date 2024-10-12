@@ -147,7 +147,7 @@ Remember the following when using the import linting command:
 - Use `-s` to specify a space or multiple spaces, e.g. `qik pygraph.check -s foo -s bar`.
 - You must configure a virtualenv plugin to use import linting for a non-active virtualenv. The [UV plugin](plugin_uv.md) is recommended for this.
 - When adding a space to a fence, the virtualenv of that space is not included in the fence. Be sure that the virtualenv of the parent space includes the necessary dependencies for all child spaces.
-- The `pygraph.build` command is a dependency of `pygraph.check`. Importing linting runs from the local cache by default. To speed up CI/CD or remote environments, consider configuring a non-local cache. More on this in the next section.
+- The `pygraph.build` command is a dependency of `pygraph.check`. Import linting runs from the local cache by default. To speed up CI/CD or remote environments, consider configuring a non-local cache. More on this in the next section.
 
 ## Caching
 
