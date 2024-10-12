@@ -4,7 +4,7 @@ The UV plugin provides [UV virtual environments](https://github.com/astral-sh/uv
 
 ## Installation
 
-The UV plugin requires additional dependencies. `pip install "qik[dev]"` to get all dev dependencies including pygraph. Otherwise, `pip install "qik[uv]"`.
+The UV plugin requires additional dependencies. `pip install "qik[dev]"` to get all dev dependencies including uv. Otherwise, `pip install "qik[uv]"`.
 
 !!! note
 
