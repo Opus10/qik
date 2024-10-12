@@ -34,7 +34,7 @@ You can also supply authentication information via [context](context.md):
 ```toml
 ctx = ["aws_access_key_id", "aws_secret_access_key"]
 
-[caches.my_remote_cache]
+[caches.my-remote-cache]
 type = "s3"
 bucket = "my-cache-bucket"
 aws-access-key-id = "{ctx.project.aws_access_key_id}"
@@ -44,6 +44,14 @@ aws-secret-access-key = "{ctx.project.aws_secret_access_key}"
 You can also configure `region-name` and `aws-session-token`.
 
 ## Usage
+
+After configuring an S3 cache, it can be used like any other cache:
+
+```toml
+[commands.my-command]
+exec = "echo hi"
+cache = "my-remote-cache"
+```
 
 When using an S3 cache, all command results and artifacts are stored. We recommend configuring a [lifecycle policy](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html) on your bucket to delete old entries.
 
