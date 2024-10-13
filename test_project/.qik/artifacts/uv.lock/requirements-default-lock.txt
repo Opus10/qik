@@ -127,7 +127,7 @@ sqlparse==0.5.1
     # via django
 tomlkit==0.13.2
     # via poetry
-trove-classifiers==2024.10.12
+trove-classifiers==2024.10.13
     # via poetry
 tzdata==2024.2 ; sys_platform == 'win32'
     # via django
