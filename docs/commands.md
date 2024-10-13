@@ -219,7 +219,7 @@ Use `--ls` with any `qik ...` command to see which runnables are selected withou
 
 ### Selecting Based on Cache Properties
 
-Use `--cache` to select commands based on the cache, such as `local`, `repo`, or a [custom remote cache you've defined](caching.md#s3).
+Use `--cache` to select commands based on the cache, such as `local`, `repo`, or a [custom remote cache you've defined](caching.md#remote).
 
 Select commands that have a warm or cold cache with `--cache-status warm` or `--cache-status cold`.
 

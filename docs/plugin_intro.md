@@ -64,7 +64,7 @@ Next we're going to go over some examples of writing plugins.
 
 ## Writing a Cache Plugin
 
-Here we overview how the [S3 plugin](plugin_s3.py) is written. This is the entire `qikplugin.py` file:
+Here we overview how the [S3 plugin](plugin_s3.md) is written. This is the entire `qikplugin.py` file:
 
 ```python
 import qik.conf

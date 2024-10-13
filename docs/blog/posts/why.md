@@ -134,7 +134,7 @@ qik command_one command_two --watch
 Qik's command selection and remote caching can help optimize your CI/CD flow:
 
 - Use the `--cache-status` selector to immediately run warm commands and dynamically schedule the rest (if your CI provider allows it, like [CircleCI dynamic configs](https://circleci.com/docs/dynamic-config/))
-- Use a [remote cache like S3](../../caching.md#s3) with your existing CI config to replay commands that haven't changed, for example, extracting coverage artifacts from a test run
+- Use a [remote cache like S3](../../caching.md#remote) with your existing CI config to replay commands that haven't changed, for example, extracting coverage artifacts from a test run
 - Use a [repo cache](../../caching.md#repo) to store command hashes and artifacts directly in the repo, such as lock files, type checking and linting results, auto-generated or formatted code, etc. Qik replaces the need to write custom CI checks to ensure auto-generated files are up to date.
 
 There's a [CI/CD guide in the docs](../../cookbook_cicd.md) for more tips and tricks.

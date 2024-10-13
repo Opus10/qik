@@ -9,7 +9,7 @@ authors:
 
 As a monorepo grows, so does the number of dependencies, environments, and the complexity of keeping modules isolated from one another.
 
-Qik [spaces](spaces.md) provide the foundation for isolation, both in command execution and code imports. Spaces enable virtual environments, dotenv files, and fencing of files in a monorepo. Plugins like [Pygraph](plugin_pygraph.md) use these constructs for import linting. Future plugins can use spaces for creating optimized docker containers and much more.
+Qik [spaces](../../spaces.md) provide the foundation for isolation, both in command execution and code imports. Spaces enable virtual environments, dotenv files, and fencing of files in a monorepo. Plugins like [Pygraph](../../plugin_pygraph.md) use these constructs for import linting. Future plugins can use spaces for creating optimized docker containers and much more.
 
 Let's dive in to the many use cases of spaces.
 
@@ -17,7 +17,7 @@ Let's dive in to the many use cases of spaces.
 
 ## Virtual Environments
 
-Spaces can be used to execute commands in isolated virtual environments. Qik plugins such as the [UV plugin](plugin_uv.md) add integration with virtualenv providers like [UV](https://github.com/astral-sh/uv):
+Spaces can be used to execute commands in isolated virtual environments. Qik plugins such as the [UV plugin](../../plugin_uv.md) add integration with virtualenv providers like [UV](https://github.com/astral-sh/uv):
 
 ```bash
 pip install "qik[uv]"
@@ -79,7 +79,7 @@ space = "ruff"
 
 When running all commands with `qik`, the `ruff` command will execute in the `ruff` space while `pytest` will execute in the `default` space.
 
-See the [UV plugin](plugin_uv.md) docs for more ways to configure UV virtual environments in spaces.
+See the [UV plugin](../../plugin_uv.md) docs for more ways to configure UV virtual environments in spaces.
 
 ## Dotenv Files
 
@@ -125,7 +125,7 @@ fence = ["module_one"]
 fence = ["module_two"]
 ```
 
-Above, we've specified fences that encapsulate the files of two spaces. Plugins like [Pygraph](plugin_pygraph.md) can use this metadata for import linting. For example, installing Pygraph and running `qik pygraph.check` will ensure `module_two` and `module_one` are standalone modules in a monorepo.
+Above, we've specified fences that encapsulate the files of two spaces. Plugins like [Pygraph](../../plugin_pygraph.md) can use this metadata for import linting. For example, installing Pygraph and running `qik pygraph.check` will ensure `module_two` and `module_one` are standalone modules in a monorepo.
 
 If `module_two` needs to import `module_one`, it can be added to the fence:
 
@@ -147,7 +147,7 @@ fence = ["module_one"]
 fence = ["module_two", {type = "space", name = "module-one"}]
 ```
 
-See the [Pygraph import linting docs](plugin_pygraph.md#import-linting) for more examples of how to set up fences for import linting, which inclues the ability to lint external dependencies too.
+See the [Pygraph import linting docs](../../plugin_pygraph.md#import-linting) for more examples of how to set up fences for import linting, which inclues the ability to lint external dependencies too.
 
 ## Roots
 
@@ -182,6 +182,6 @@ Changing into the root of the space removes the need to do `@my-space` in the co
 
 ## Final Thoughts
 
-[Spaces](spaces.md) add a powerful abstraction to `qik`, whether using the standard cached command runner or the dynamic `qikx` utility. This introducion of spaces also includes a new [plugin system](plugin.md) as well that features [virtual environments with UV](plugin_uv.md) and [import linting with Pygraph](plugin_pygraph.md). We intend to make more plugins for space-related use cases in the future, such as optimized dockerfile creation from spaces.
+[Spaces](../../spaces.md) add a powerful abstraction to `qik`, whether using the standard cached command runner or the dynamic `qikx` utility. This introducion of spaces also includes a new [plugin system](../../plugin_intro.md) as well that features [virtual environments with UV](../../plugin_uv.md) and [import linting with Pygraph](../../plugin_pygraph.md). We intend to make more plugins for space-related use cases in the future, such as optimized dockerfile creation from spaces.
 
 Enjoy!

@@ -95,6 +95,7 @@ Qik only discovers `import` statements, even if they are nested in function. Qik
 
     Dynamic imports that use variables to determine the import path are not supported.
 
+<a id="troubleshooting"></a>
 ### Troubleshooting External Distributions
 
 Optional distributions that aren't installed in the virtual environment may lead to mapping and version resolution errors. Instead of globally turning off distributions, see the troubleshooting section on [mapping modules to distributions](errors.md#graph0) and [overriding distribution versions](errors.md#dep0) for ways around this.

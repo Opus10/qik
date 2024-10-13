@@ -55,13 +55,13 @@ We recommend making a CI profile to specify the default cache:
 cache = "my_remote_cache_name"
 ```
 
-Use either `-p ci` or set `QIK__PROFILE=ci` in your environment to use the default CI configuration. If using the [S3 cache](caching.md#s3), remember to set AWS authentication environment variables.
+Use either `-p ci` or set `QIK__PROFILE=ci` in your environment to use the default CI configuration. If using the [S3 cache](plugin_s3.md), remember to set AWS authentication environment variables.
 
 ## Isolated Execution
 
 If commands have other [command dependencies](commands.md#command), these will also be selected even if trying to run a single command with `qik <command_name>`. This is normally harmless since upstream commands are usually cached, however it can be undesirable if using a slower remote cache.
 
-To bypass this, use `--isolated` when running the command. Remember, using [import graph dependencies](commands.md#pygraph) will automatically insert dependent commands, so be sure to either validate the repo cache or run upstream commands elsewhere in your CI/CD flow.
+To bypass this, use `--isolated` when running the command. Remember, using [import graph dependencies](plugin_pygraph.md) will automatically insert dependent commands, so be sure to either validate the repo cache or run upstream commands elsewhere in your CI/CD flow.
 
 ## Dynamic CI/CD Config Generation
 
