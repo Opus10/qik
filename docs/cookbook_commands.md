@@ -1,6 +1,10 @@
 # Command Examples
 
-Below are common command definitions. Note that we only provide basic dependencies in the examples. Some examples that depend on the Python import graph assume the [Pygraph plugin](plugin_pygraph.md) is installed.
+Below are common command definitions. Note that we only provide basic dependencies in the examples.
+
+Some examples that depend on the Python import graph assume the [Pygraph plugin](plugin_pygraph.md) is installed and also [parametrize the command across modules](spaces.md#modules).
+
+Pair these commands with a [space](spaces.md) to run them in an isolated environment.
 
 ## Linting, Formatting, and Type Checking
 
@@ -125,6 +129,9 @@ DATABASES = {
 ```
 
 ```toml
+[plugins]
+pygraph = "qik.pygraph"
+
 [commands.test]
 exec = "pytest {module.dir}"
 deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]

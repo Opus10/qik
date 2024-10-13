@@ -4,6 +4,10 @@ Qik's plugin system allows for third-party commands, virtual env types, cache ty
 
 We briefly overview how to make a plugin here and how some existing plugins integrate with qik. To read about existing qik plugins, see the [UV plugin](plugin_uv.md), [Pygraph plugin](plugin_pygraph.md) and [S3 plugin](plugin_s3.md).
 
+!!! warning
+
+    The plugin system is very much in beta, and the examples below are not thorough. Open a [discussion](https://github.com/Opus10/qik/discussions) if you'd like a head start in creating a qik plugin.
+
 ## How it Works
 
 Qik plugins can alter the following behavior of the qik command runner:
@@ -333,4 +337,4 @@ qik.conf.register_conf(PygraphPluginConf)
 
 Unlike other object types, configuration objects don't need a factory. When a configuration type is registered, users can include configuration under `[pluigns.plugin-name]` in `qik.toml`.
 
-Plugin authors should use `qik.conf.plugin("dotted.plugin.path")` to object the structured configuration for a plugin.
+Plugin authors should use `qik.conf.plugin("dotted.plugin.path")` to get configuration for a plugin.

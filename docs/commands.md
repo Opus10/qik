@@ -26,7 +26,7 @@ Running `qik lock` will cache results of this command in your git repo. The cach
 
 !!! tip
 
-    Dependencies must be tracked indexed in your repo to break the cache. See the [caching guide](caching.md) for an in-depth overview of how caching works. Similarly, see the [CI/CD cookbook](cookbook_cicd.md) for patterns on using caching in continuous integration.
+    Dependency files must be indexed in your git repo to break the cache. See the [caching guide](caching.md) for an in-depth overview of how caching works. Similarly, see the [CI/CD cookbook](cookbook_cicd.md) for patterns on using caching in continuous integration.
 
 ## Dependencies
 
@@ -285,17 +285,13 @@ Sometimes a `pydist` type of dependency may not be available in your virtual env
 
 1. Set `[pydist.versions]` in your `qik.toml`:
 
-    ```toml
-    [pydist.versions]
-    dist-name = "0.1.0"
-    ```
+        [pydist.versions]
+        dist-name = "0.1.0"
 
 2. Ignore missing pydists with `[pydist.ignore_missing]`:
 
-    ```toml
-    [pydist]
-    ignore_missing = true
-    ```
+        [pydist]
+        ignore_missing = true
 
 Keep in mind that both of these are global settings that will apply if a pydist version cannot be found in the virtual environment.
 
@@ -309,7 +305,7 @@ Dependencies on Python import graphs can be configured and overridden in a numbe
 
 ### Module Commands
 
-Commands can be defined in a [space module's qik.toml file](spaces.md#modules). Command names are prefixed by the module name.
+Commands can be defined in a [module's qik.toml file](spaces.md#modules). Command names are prefixed by the module name.
 
 For example, in `my/module/path/qik.toml`:
 

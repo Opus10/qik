@@ -40,6 +40,7 @@ markdown_extensions:
       pygments_lang_class: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
+  - pymdownx.superfences
   - tables
   - pymdownx.tabbed:
       alternate_style: true
@@ -63,6 +64,7 @@ theme:
     - search.highlight
     - toc.follow
     - content.code.copy
+    - content.code.annotate
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -98,6 +100,8 @@ nav:
       - Resources: resources.md
       - Troubleshooting: errors.md
   - Cookbook:
+    - Intro: cookbook_intro.md
+    - Spaces: cookbook_spaces.md
     - Commands: cookbook_commands.md
     - CLI: cookbook_cli.md
     - CI/CD: cookbook_cicd.md

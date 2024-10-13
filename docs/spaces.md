@@ -84,6 +84,11 @@ venv = "requirements.txt"
 venv = [{type = "space", name = "default"}]
 ```
 
+!!! tip
+
+    See the [last section on default configuration](#default-configuration) to set a default virtualenv for all spaces.
+
+<a id="dotenv"></a>
 ## Dotenv Files
 
 Spaces support [dotenv files](https://hexdocs.pm/dotenvy/dotenv-file-format.html) using the `dotenv` attribute:
@@ -136,7 +141,7 @@ modules = [{name = "module_name", path = "my/nested/module"}]
 
 Plugins such as [Pygraph](plugin_pygraph.md) leverage the `fence` of a space, which is an enclosure of directories in a project.
 
-By default, the `fence` is disabled. Use `fence = true` to enclose modules:
+By default, the `fence` is disabled. Use `fence = true` to enclose only the modules:
 
 ```toml
 [spaces.my-space]
@@ -144,7 +149,7 @@ modules = ["path/to/module_one"]
 fence = true
 ```
 
-Extend this fence with directories:
+Extend this fence with additional directories:
 
 ```toml
 [spaces.my-space]
@@ -152,7 +157,7 @@ modules = ["path/to/module_one"]
 fence = ["other/path"]
 ```
 
-Fences can also be extended to other spaces:
+Fences can recursively include other spaces:
 
 ```toml
 [spaces.default]
@@ -171,14 +176,18 @@ Other plugins can build on this concept, for example, creating an optimized dock
 
 ## Freeform Commands with `qikx`
 
-The `qikx` utility can be used to run freeform commands with dynamic arguments in a space. For example, say we have the following space:
+The `qikx` utility can be used to run arbitrary executables in a space. For example, say we have the following space:
 
 ```toml
 [spaces.my-space]
 venv = "requirements.txt"
 ```
 
-`qikx pytest@my-space arg1 arg2 --flag` will run `pytest arg1 arg2 --flag` in the virtualenv of `my-space`. One can specify the `root` of the space as shown below to avoid specifying a non-default space name.
+`qikx pytest@my-space arg1 arg2 --flag` will run `pytest arg1 arg2 --flag` in the virtualenv of `my-space`. One can specify the `root` of the space as shown below to avoid the `@` syntax.
+
+!!! tip
+
+    Use `qikx --install` to sync all virtualenvs, which are not installed by default.
 
 ## Roots
 
@@ -189,7 +198,7 @@ Specify a `root` to set a working directory for a space:
 root = "my/space"
 ```
 
-Changing into any directory under `my/space` will alter the behavior of `qik`, ensuring only commands in this space are selected. Similarly, `qikx` uses the working space as the default.
+Changing into any directory under `my/space` will alter the behavior of `qik`, ensuring only commands in this space are selected. Similarly, `qikx` uses the space with the closest `root` as the default.
 
 !!! remember
 

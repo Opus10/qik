@@ -94,7 +94,7 @@ In this example, all commands in the default space will be executed within the e
 
 ## Modular Parametrization
 
-Spaces can own "modules" of a monorepo, which allows for command parametrization:
+Spaces can own *modules* of a monorepo, which allows for command parametrization:
 
 ```toml
 [spaces.default]
@@ -112,6 +112,18 @@ test = "pytest {module.dir}"
 ```
 
 Above, the `test` command will run across every module of every space in parallel. If spaces have different virtualenvs, those will be used during execution.
+
+Want to cache this command result and only re-run when the import graph changes? Add a [Pygraph](../../plugin_pygraph.md) dependency:
+
+```toml
+[plugins]
+pygraph = "qik.pygraph"
+
+[commands]
+test = "pytest {module.dir}"
+deps = [{type = "pygraph", pyimport = "{module.pyimport}"]
+```
+
 
 ## Fences
 
@@ -137,7 +149,7 @@ fence = ["module_one"]
 fence = ["module_two", "module_one"]
 ```
 
-Fences are just glob patterns in the monorepo. It can be more convenient to add a space to a fence so that all globs of that space are included:
+Fences are just directories in the monorepo. Add a space to the fence to recursively include it:
 
 ```toml
 [spaces.module-one]

@@ -45,12 +45,9 @@ Running a command within the space will lock and install the virtual environment
 
 ### Lock Files
 
-Lock file artifacts are stored in the repo cache by default, i.e. `.qik/artifacts`. Override this a few ways:
+Lock file artifacts are stored in the repo cache by default, i.e. `.qik/artifacts`. Override this by setting `[plugins.uv.cache]` to a different one.
 
-- Set `[defaults.cache]` to a different cache, such as `local`.
-- Set `[plugins.uv.cache]` to a different cache.
-
-The lock file can be directly specified regardless of cache by setting it in the virtualenv config:
+The lock file path can be directly specified:
 
 ```toml
 [spaces.default]
@@ -120,10 +117,14 @@ venv = "requirements.txt"
 venv = {type = "space", name = "default"}
 ```
 
+!!! remember
+
+    You can also set the default virtualenv for every space with `[defaults.venv]`.
+
 ## Virtual Environment Storage
 
 Virtual environments are stored in `._qik/venv` of the project. They cannot be cached in a qik cache at the moment.
 
 ## Additional Configuration
 
-UV can be configured by setting the `UV_*` environment variables. See [these docs](https://docs.astral.sh/uv/configuration/environment/).
+UV can be configured by setting the `UV_*` environment variables. See [the UV docs](https://docs.astral.sh/uv/configuration/environment/).

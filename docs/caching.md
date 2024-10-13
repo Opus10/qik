@@ -81,7 +81,11 @@ The `repo` cache stores the most recent result in `.qik/cache`. It's useful for 
 
 Cache files are automatically added to the git index with `git add -N`. The `.gitattributes` file is also updated to ensure `.qik` files are ignored in Github diffs. [See these docs](https://docs.github.com/en/repositories/working-with-files/managing-files/customizing-how-changed-files-appear-on-github) for more information.
 
-Updates to the repo cache can be a source git merge conflicts. Qik automatically installs a custom merge strategy in `.gitattributes` and the local git config to ensure that your cache changes always take precedence over remote branches. Keep in mind that providers like Github cannot use these strategies, so rebases and automatic merge conflicts must still be resolved locally.
+Updates to the repo cache can be a source git merge conflicts. Qik automatically installs a custom merge strategy in `.gitattributes` and the local git config to ensure that your cache changes always take precedence over remote branches.
+
+!!! warning
+
+    Keep in mind that providers like Github cannot use these strategies, so rebases and automatic merge conflicts must still be resolved locally.
 
 <a id="remote"></a>
 

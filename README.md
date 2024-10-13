@@ -212,7 +212,7 @@ modules = ["d", "e", "f"]
 fence = [{type = "space", name = "first"}]
 ```
 
-Running `qik pygraph.check -s second` will ensure the `second` space can import both it's modules and the `first` space's modules.
+Running `qik pygraph.check -s second` will ensure the `second` space can import its modules and the `first` space's modules.
 
 ### Context
 
@@ -277,6 +277,7 @@ Learn more about plugins:
 
 Read the cookbook for more examples and guides:
 
+- [Spaces](https://qik.build/en/stable/cookbook_spaces/): More examples of leveraging spaces.
 - [Commands](https://qik.build/en/stable/cookbook_commands/): Common command definition examples.
 - [CLI Usage](https://qik.build/en/stable/cookbook_cli/): Command line interface snippets.
 - [CI/CD](https://qik.build/en/stable/ookbook_cicd/): Patterns for optimizing CI/CD time.
@@ -286,8 +287,10 @@ Finish by checking out:
 - [Roadmap](https://qik.build/en/stable/roadmap/) for all the exciting upcoming features.
 - [Blog](https://qik.build/en/stable/blog/index/) for updates, how-tos, and other articles.
 
+Questions or thoughts? Open a [discussion](https://github.com/Opus10/qik/discussions). Report bugs [here](https://github.com/Opus10/qik/issues).
+
 ## Disclaimer
 
 Qik is currently in beta. Bumping the minor version (e.g. `0.1.0` to `0.2.0`) will indicate an API break until we release version `1.0.0`.
 
-Be diligent when using qik in your CI/CD. We recommend including a [base dependency](https://qik.build/en/stable/commands/#base) in your commands to regularly break the cache. We also recommend [understanding how the import graph is built](https://qik.build/en/stable/plugin_pygraph/#how-it-works) when using pygraph dependencies.
+Be diligent when using qik in your CI/CD. We recommend including a [base dependency](https://qik.build/en/stable/commands/#base) in your commands to regularly break the cache. We also recommend [understanding how the import graph is built](https://qik.build/en/stable/plugin_pygraph/#building-graph) when using pygraph dependencies.

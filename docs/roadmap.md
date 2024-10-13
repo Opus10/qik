@@ -21,6 +21,7 @@ Some distributions in a project may be optional and not installed, causing the g
 
 We intend to allow users to explicitly disable certain distributions from the graph.
 
+<a id="ignoring-specific-patterns"></a>
 #### Adding and Removing Import Links
 
 Users must [manually import modules](plugin_pygraph.md) in a Python file if those imports are dynamic. We are planning to allow for more explicit control over this, along with removing imports from the graph. For example, one will be able to remove imports from their migration files.
