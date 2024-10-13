@@ -1,0 +1,7 @@
+[commands.lock]
+factory = "qik.uv.cmd.lock_cmd_factory"
+hidden = true
+
+[commands.install]
+factory = "qik.uv.cmd.install_cmd_factory"
+hidden = true

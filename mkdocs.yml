@@ -40,14 +40,10 @@ markdown_extensions:
       pygments_lang_class: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
+  - pymdownx.superfences
   - tables
   - pymdownx.tabbed:
       alternate_style: true
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
   - attr_list
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
@@ -68,6 +64,7 @@ theme:
     - search.highlight
     - toc.follow
     - content.code.copy
+    - content.code.annotate
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -90,12 +87,24 @@ nav:
   - Home: index.md
   - Guide:
     - Intro: guide.md
+    - Spaces: spaces.md
     - Commands: commands.md
     - Context: context.md
     - Caching: caching.md
-    - CI/CD: ci.md
-    - Troubleshooting: errors.md
-  - Cookbook: cookbook.md
+    - Plugins:
+      - Intro: plugin_intro.md
+      - Pygraph: plugin_pygraph.md
+      - UV: plugin_uv.md
+      - S3: plugin_s3.md
+    - Help:
+      - Resources: resources.md
+      - Troubleshooting: errors.md
+  - Cookbook:
+    - Intro: cookbook_intro.md
+    - Spaces: cookbook_spaces.md
+    - Commands: cookbook_commands.md
+    - CLI: cookbook_cli.md
+    - CI/CD: cookbook_cicd.md
   - Blog: blog/index.md
   - Roadmap: roadmap.md
   - Release Notes: release_notes.md

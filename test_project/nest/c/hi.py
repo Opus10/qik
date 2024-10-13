@@ -1,2 +1,5 @@
+import bs4
+
+
 def hello():
-    pass
+    assert bs4

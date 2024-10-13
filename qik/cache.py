@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import base64
-import functools
 import pathlib
+import pkgutil
 import threading
 from typing import TYPE_CHECKING, Iterator
 
@@ -12,7 +12,7 @@ import qik.conf
 import qik.ctx
 import qik.errors
 import qik.file
-import qik.s3
+import qik.func
 import qik.shell
 
 if TYPE_CHECKING:
@@ -136,16 +136,26 @@ class Uncached(Cache):
         pass
 
 
-@functools.cache
+@qik.func.cache
+def _install_custom_merge_driver():
+    """Install qik's custom git merge driver."""
+    script_path = pathlib.Path(__file__).parent / "merge.sh"
+    custom_merge_driver_install = f'git config merge.qik.driver "sh {script_path} %O %A %B"'
+    qik.shell.exec(custom_merge_driver_install)
+
+
+@qik.func.cache
 def _add_cache_dir_to_git_attributes():
     """Add .qik to .gitattributes so that it appears differently in diff.
 
     https://docs.github.com/en/repositories/working-with-files/managing-files/customizing-how-changed-files-appear-on-github
     """
-    git_root_dir = pathlib.Path(qik.shell.exec("git rev-parse --git-dir").stdout.strip()).parent
+    git_root_dir = pathlib.Path(
+        qik.shell.exec("git rev-parse --absolute-git-dir").stdout.strip()
+    ).parent
     attrs_path = git_root_dir / ".gitattributes"
     ignore_glob = qik.conf.root().relative_to(git_root_dir) / ".qik/**/*"
-    attrs_line = f"{ignore_glob} linguist-generated=true\n"
+    attrs_line = f"{ignore_glob} linguist-generated=true merge=qik\n"
     try:
         gitattributes = attrs_path.read_text()
         if attrs_line not in gitattributes:
@@ -174,13 +184,14 @@ class Repo(Cache):
         with _LOCK:
             qik.shell.exec(f"git add -N {git_add_files}")
             _add_cache_dir_to_git_attributes()
+            _install_custom_merge_driver()
 
 
 class Local(Cache):
-    """A local cache in the .qik directory."""
+    """A local cache in the ._qik directory."""
 
     def base_path(self, *, runnable: Runnable, hash: str) -> pathlib.Path:
-        return qik.conf.priv_work_dir() / "cache" / f"{runnable.slug}-{hash}"
+        return qik.conf.priv_work_dir() / "cache" / runnable.cmd
 
     def restore_artifacts(self, *, runnable: Runnable, hash: str, artifacts: list[str]) -> None:
         base_path = self.base_path(runnable=runnable, hash=hash)
@@ -198,77 +209,20 @@ class Local(Cache):
         return artifacts
 
 
-class S3(msgspec.Struct, Local, frozen=True, dict=True):
-    """A custom cache using the S3 backend"""
-
-    bucket: str
-    prefix: str = ""
-    aws_access_key_id: str | None = None
-    aws_secret_access_key: str | None = None
-    aws_session_token: str | None = None
-    region_name: str | None = None
-    endpoint_url: str | None = None
-
-    @functools.cached_property
-    def client(self) -> qik.s3.Client:
-        return qik.s3.Client(
-            aws_access_key_id=self.aws_access_key_id,
-            aws_secret_access_key=self.aws_secret_access_key,
-            aws_session_token=self.aws_session_token,
-            region_name=self.region_name,
-            endpoint_url=self.endpoint_url,
-        )
-
-    def on_miss(self, *, runnable: Runnable, hash: str) -> None:
-        super().pre_get(runnable=runnable, hash=hash)
-        base_path = self.base_path(runnable=runnable, hash=hash)
-        self.client.download_dir(
-            bucket_name=self.bucket,
-            prefix=pathlib.Path(self.prefix) / base_path.name,
-            dir=base_path,
-        )
-
-    def post_set(self, *, runnable: Runnable, hash: str, manifest: Manifest) -> None:
-        super().post_set(runnable=runnable, hash=hash, manifest=manifest)
-        base_path = self.base_path(runnable=runnable, hash=hash)
-        self.client.upload_dir(
-            bucket_name=self.bucket,
-            prefix=pathlib.Path(self.prefix) / base_path.name,
-            dir=base_path,
-        )
-
-
-def factory(conf: qik.conf.Cache) -> Cache:
-    match conf:
-        case qik.conf.S3Cache():
-            endpoint_url = qik.ctx.format(conf.endpoint_url)
-            endpoint_url = None if endpoint_url == "None" else endpoint_url
-            return S3(
-                bucket=qik.ctx.format(conf.bucket),
-                prefix=qik.ctx.format(conf.prefix),
-                aws_access_key_id=qik.ctx.format(conf.aws_access_key_id),
-                aws_secret_access_key=qik.ctx.format(conf.aws_secret_access_key),
-                aws_session_token=qik.ctx.format(conf.aws_session_token),
-                region_name=qik.ctx.format(conf.region_name),
-                endpoint_url=endpoint_url,
-            )
-        case other:
-            raise qik.errors.InvalidCacheType(f'Invalid cache type - "{other}".')
-
-
-@functools.cache
-def load(backend: str | None) -> Cache:
+@qik.func.cache
+def load(name: str) -> Cache:
     proj = qik.conf.project()
 
-    match backend:
+    match name:
         case "repo":
             return Repo()
         case "local":
             return Local()
-        case "none" | None:
+        case "none":
             return Uncached()
         case custom:
             if conf := proj.caches.get(custom):
-                return factory(conf)
+                factory = qik.conf.get_type_factory(conf)
+                return pkgutil.resolve_name(factory)(name, conf)
             else:
                 raise qik.errors.UnconfiguredCache(f'Unconfigured cache - "{custom}"')

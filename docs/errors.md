@@ -66,9 +66,7 @@ exec = 'echo "two"'
 deps = [{type = "command", name = "one"}]
 ```
 
-## Caching
-
-<a id="cache0"></a>
+<a id="conf9"></a>
 
 #### Unconfigured Cache
 
@@ -80,7 +78,7 @@ type = "s3"
 ...
 ```
 
-<a id="cache1"></a>
+<a id="conf10"></a>
 
 #### Invalid Cache Type
 
@@ -91,6 +89,64 @@ type = "s3"
 type = "invalid"
 ...
 ```
+
+<a id="conf11"></a>
+
+#### Invalid Dep Type
+
+`Invalid dep type - "{name}"` means the dep type is not supported by qik or a plugin. For example:
+
+```toml
+[commands.cmd_name]
+deps = [{type = "invalid", name = "dep_name"}]
+...
+```
+
+<a id="conf12"></a>
+
+#### Invalid Venv Type
+
+`Invalid venv type - "{name}"` means the venv type is not supported by qik or a plugin. For example:
+
+```toml
+[spaces.default]
+venv = {type = "invalid", name = "name"}
+...
+```
+
+<a id="conf13"></a>
+
+#### Circlar Venv
+
+The configuration has a circular venv definition, for example:
+
+```toml
+[spaces.default]
+venv = {type = "space", name = "other"}
+...
+
+[spaces.other]
+venv = {type = "space", name = "default"}
+...
+```
+
+<a id="conf14"></a>
+
+#### Circlar Fence
+
+The configuration has a circular fence definition, for example:
+
+```toml
+[spaces.default]
+fence = ["some/module", {type = "space", name = "default"}]
+...
+
+[spaces.other]
+fence = ["path/to/module", {type = "space", name = "other"}]
+...
+```
+
+
 
 ## Context
 

@@ -1,5 +1,3 @@
-vars = ["hmm", {name = "happy"}]
-
 [commands.modular_command]
 exec = "echo 'hello world'"
 deps = ["**.py"]

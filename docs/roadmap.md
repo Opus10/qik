@@ -15,19 +15,20 @@ One must configure a module in the `qik.toml` modules list in order to use it as
 
 #### Auto-Ignoring Missing Distributions &nbsp; :white_check_mark:<code>v0.1.6</code>
 
-Some distributions in a project may be optional and not installed, causing the graph builder to fail. Currently one can [globally disable external distributions from the graph](commands.md#pygraph), however, we plan for better control over this.
+Some distributions in a project may be optional and not installed, causing the graph builder to fail. Currently one can [globally disable external distributions from the graph](plugin_pygraph.md#troubleshooting), however, we plan for better control over this.
 
 #### Ignoring Specific Distributions &nbsp; :white_check_mark:<code>v0.1.6</code>
 
 We intend to allow users to explicitly disable certain distributions from the graph.
 
+<a id="ignoring-specific-patterns"></a>
 #### Adding and Removing Import Links
 
-Users must [manually import modules](commands.md#pygraph) in a Python file if those imports are dynamic. We are planning to allow for more explicit control over this, along with removing imports from the graph. For example, one will be able to remove imports from their migration files.
+Users must [manually import modules](plugin_pygraph.md) in a Python file if those imports are dynamic. We are planning to allow for more explicit control over this, along with removing imports from the graph. For example, one will be able to remove imports from their migration files.
 
 ## Better Virtual Environment (Venv) Support
 
-#### Run Commands in Venvs
+#### Run Commands in Venvs &nbsp; :white_check_mark:<code>v0.2.0</code>
 
 Qik requires an activated venv to run commands. We plan to remove this requirement.
 
@@ -35,11 +36,11 @@ Qik requires an activated venv to run commands. We plan to remove this requireme
 
 Venvs must be installed to find a distribution version. We will enable lock files as a back-up source of truth, alleviating the need to install tools for repo-cached commands.
 
-#### Multiple Venvs
+#### Multiple Venvs &nbsp; :white_check_mark:<code>v0.2.0</code>
 
 We're adding support for running commands in multiple venvs
 
-#### Building Venvs
+#### Building Venvs &nbsp; :white_check_mark:<code>v0.2.0</code>
 
 We will support building virtual environments with various backends such as [pip-tools](https://github.com/jazzband/pip-tools), [poetry](https://python-poetry.org), and [uv](https://github.com/astral-sh/uv).
 
@@ -51,7 +52,7 @@ We also intend to support [Conda-enabled virtual environments](https://conda.io)
 
 <a id="spaces"></a>
 
-#### Spaces
+#### Spaces &nbsp; :white_check_mark:<code>v0.2.0</code>
 
 We are planning for qik *spaces*, the ability to isolate areas of your monorepo and apply default configuration for the command runner.
 
@@ -86,15 +87,15 @@ We are planning the ability to better link into [git hooks](https://git-scm.com/
 
 ## Plugins
 
-#### A More Extensible Plugin System
+#### A More Extensible Plugin System &nbsp; :white_check_mark:<code>v0.2.0</code>
 
-Our plugin system is not very extensible at the moment. We will be allowing for third party plugins to better define custom caches, custon commands, and much more.
+Our plugin system is not very extensible at the moment. We will be allowing for third party plugins to better define custom caches, custom commands, and much more.
 
 #### More Remote Caches
 
 We plan to support more remote caches. We'll likely implement the primary object storage systems at first such as [Google Cloud Storage](https://cloud.google.com/storage).
 
-#### Importing Linting
+#### Importing Linting &nbsp; :white_check_mark:<code>v0.2.0</code>
 
 We're planning for an import linting plugin with [spaces](#spaces).
 
@@ -102,7 +103,7 @@ We're planning for an import linting plugin with [spaces](#spaces).
 
 We're planning a plugin to generate Dockerfiles based on [spaces](#spaces) and commands.
 
-#### Dot Env Files
+#### Dot Env Files &nbsp; :white_check_mark:<code>v0.2.0</code>
 
 We plan to support [dotenv](https://www.npmjs.com/package/dotenv) files being attached to [qik contexts](context.md) or [spaces](#spaces), making it easier to associate environment variables with commands.
 

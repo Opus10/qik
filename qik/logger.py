@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import collections
 import contextlib
-import functools
+import os
+import pathlib
 from typing import IO, TYPE_CHECKING, Iterator, Literal, TypeAlias
 
 import msgspec
@@ -11,10 +12,9 @@ import qik.conf
 import qik.console
 import qik.ctx
 import qik.file
+import qik.func
 
 if TYPE_CHECKING:
-    import pathlib
-
     import rich.live as rich_live
     import rich.progress as rich_progress
     import rich.table as rich_table
@@ -39,9 +39,10 @@ else:
 RunStatus: TypeAlias = Literal["success", "failed", "skipped", "pending"]
 
 
-@functools.cache
+@qik.func.cache
 def out_dir() -> pathlib.Path:
-    return qik.conf.priv_work_dir(relative=True) / "out"
+    # Note, relative_to(walk_up=True) is supported in python 3.12.
+    return pathlib.Path(os.path.relpath(qik.conf.priv_work_dir() / "out", os.getcwd()))
 
 
 class Manifest(msgspec.Struct):
@@ -123,6 +124,7 @@ class Stats:
 class Logger:
     def __init__(self):
         self._reset_state()
+        self.num_runs = 0
 
     def _reset_state(self) -> None:
         self.graph = None
@@ -175,7 +177,8 @@ class Logger:
     ) -> None:
         if runnable:
             if event == "output":
-                self._get_log_file(runnable).write(msg)
+                if msg := msg.strip():
+                    self._get_log_file(runnable).write(msg)
             elif event == "start":
                 self.stats.start(runnable)
             elif event == "finish":
@@ -192,7 +195,10 @@ class Logger:
         )
 
     def handle_run_started(self) -> None:
-        pass
+        if self.num_runs and self.graph:
+            qik.console.rule(color="white")
+
+        self.num_runs += 1
 
     def handle_run_finished(self) -> None:
         pass
@@ -213,16 +219,6 @@ class Logger:
 class Stdout(Logger):
     """Logs command results to stdout."""
 
-    def __init__(self):
-        super().__init__()
-        self.num_runs = 0
-
-    def handle_run_started(self) -> None:
-        if self.num_runs and self.graph:
-            qik.console.rule()
-
-        self.num_runs += 1
-
     def handle_output(
         self,
         msg: str,
@@ -235,11 +231,13 @@ class Stdout(Logger):
     ) -> None:
         """Print output from a runnable."""
         if event == "output":
-            qik.console.print(msg, emoji=emoji, color=color, end="", highlight=False, style=None)
+            if msg := msg.strip():
+                qik.console.print(msg, emoji=emoji, color=color, style=None)
         elif event == "start" or (event == "finish" and not result):
             qik.console.rule(msg, emoji=emoji, color=color)
         else:
-            qik.console.print(msg, emoji=emoji, color=color)
+            kwargs = {"overflow": "ellipsis", "no_wrap": True} if event == "finish" else {}
+            qik.console.print(msg, emoji=emoji, color=color, **kwargs)
 
         if event == "exception":
             qik.console.print_exception()
@@ -295,6 +293,8 @@ class Progress(Logger):
         return table
 
     def handle_run_started(self) -> None:
+        super().handle_run_started()
+
         self.status = "pending"
         self.progress = rich_progress.Progress(
             rich_progress.TextColumn("{task.description}"),
@@ -366,7 +366,7 @@ class Progress(Logger):
         self.live.update(self.generate_table())
         self.live.stop()
 
-        verbosity = qik.ctx.module("qik").verbosity
+        verbosity = qik.ctx.by_namespace("qik").verbosity
         if verbosity:
             cached_runnables = self.stats.cached_runnables
 
@@ -380,23 +380,23 @@ class Progress(Logger):
                         )
                         color = "green"
                         show = True if verbosity > 1 else False
-                        output = "".join(self.captured[name])
+                        output = "\n".join(line.strip() for line in self.captured[name])
                     case "failed":
                         emoji = (
                             "fast-forward_button" if name in cached_runnables else "broken_heart"
                         )
                         color = "red"
                         show = True if verbosity > 0 else False
-                        output = "".join(self.captured[name])
+                        output = "\n".join(line.strip() for line in self.captured[name])
                     case _:
                         emoji = "heavy_minus_sign"
                         color = "yellow"
                         show = True if verbosity > 1 else False
-                        output = "[dim][italic]Skipped\n"
+                        output = "[dim][italic]Skipped"
 
                 if show:
-                    qik.console.rule(f":{emoji}-emoji: [{color}]{name}", style=color)
+                    qik.console.rule(f":{emoji}-emoji: [{color}]{name}", color=color)
                     output = output or "[dim][italic]No output"
-                    qik.console.print(output.strip())
+                    qik.console.print(output)
 
         qik.console.print(self.get_status_text())

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0 (2024-10-13)
+
+#### API Break
+
+- Add qik *spaces* for isolated command execution.
+- Create an extensible plugin system and three initial plugins: pygraph, UV, and S3.
+
+Plus many more improvements. See [the blog post on spaces](https://qik.build/en/stable/blog/2024/10/12/introducing-spaces/) for more details.
+
 ## 0.1.6 (2024-08-20)
 
 #### Trivial

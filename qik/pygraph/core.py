@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import functools
 import importlib.machinery
 import importlib.util
 import pkgutil
@@ -13,6 +12,10 @@ import msgspec
 from typing_extensions import Self
 
 import qik.conf
+import qik.ctx
+import qik.dep
+import qik.func
+import qik.pygraph.conf
 import qik.shell
 
 if TYPE_CHECKING:
@@ -29,7 +32,7 @@ class Module(msgspec.Struct, array_like=True, omit_defaults=True, frozen=True, d
     imp: str
     is_internal: bool = True
 
-    @functools.cached_property
+    @qik.func.cached_property
     def path(self) -> str:
         return self.imp.replace(".", "/")
 
@@ -52,7 +55,7 @@ class Graph(msgspec.Struct, frozen=True, dict=True):
 
         return self.__dict__["_rx"]
 
-    @functools.cached_property
+    @qik.func.cached_property
     def modules_idx(self) -> dict[str, int]:
         return {module.imp: i for i, module in enumerate(self.modules)}
 
@@ -63,6 +66,9 @@ class Graph(msgspec.Struct, frozen=True, dict=True):
     def upstream_imports(
         self, imp: str, /, *, idx: Literal[False]
     ) -> list[tuple[Module, Module]]: ...
+
+    @overload
+    def upstream_imports(self, imp: str, /) -> list[tuple[Module, Module]]: ...
 
     @overload
     def upstream_imports(
@@ -91,22 +97,23 @@ class Graph(msgspec.Struct, frozen=True, dict=True):
 
 def build() -> Graph:
     """Build the import graph from the current codebase."""
-    internal_path = str(qik.conf.root())
+    python_path = str(qik.conf.abs_python_path())
     internal_modules = {
         module.name
         for module in pkgutil.iter_modules()
         if module.ispkg
         and isinstance(module.module_finder, importlib.machinery.FileFinder)
-        and module.module_finder.path == internal_path
+        and module.module_finder.path == python_path
     }
+    # TODO: Raise a runtime error if no internalmodules were found. Suggest to configure the python path.
     stdlib_modules = sys.stdlib_module_names | set(sys.builtin_module_names)
 
     # Parse the codebase with grimp
-    proj = qik.conf.project()
+    pygraph_conf = qik.pygraph.conf.get()
     grimp_g = grimp.build_graph(
         *internal_modules,
-        include_external_packages=not proj.pygraph.ignore_pydists,
-        exclude_type_checking_imports=proj.pygraph.ignore_type_checking,
+        include_external_packages=not pygraph_conf.ignore_pydists,
+        exclude_type_checking_imports=pygraph_conf.ignore_type_checking,
         cache_dir=str(qik.conf.priv_work_dir() / ".grimp"),
     )
     graph_modules_imps = [(imp.split(".", 1)[0], imp) for imp in sorted(grimp_g.modules)]

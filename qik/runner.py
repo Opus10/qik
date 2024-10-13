@@ -3,7 +3,6 @@ from __future__ import annotations
 import collections
 import concurrent.futures
 import copy
-import functools
 import pathlib
 import sys
 from typing import TYPE_CHECKING, Iterable, Iterator, Literal, TypeAlias
@@ -16,11 +15,11 @@ import qik.console
 import qik.ctx
 import qik.dep
 import qik.errors
+import qik.func
 import qik.logger
 import qik.runnable
 import qik.shell
 import qik.unset
-import qik.venv
 import qik.watcher
 
 if TYPE_CHECKING:
@@ -50,9 +49,12 @@ class DAGPool:
         results: dict[str, Result | None] = {}
         failed: set[str] = set()
         futures: dict[str, concurrent.futures.Future] = {}
+        exception: Exception | None = None
 
         def _skip(name: str):
-            del in_degree[name]
+            if name in in_degree:
+                del in_degree[name]
+
             failed.add(name)
             results[name] = None
             self.logger.print(
@@ -64,13 +66,14 @@ class DAGPool:
                 result=None,
             )
 
-        def _finish(future: concurrent.futures.Future):
+        def _finish(future: concurrent.futures.Future) -> Exception | None:
             name = next(name for name, val in futures.items() if val == future)
+            exception: Exception | None = None
             try:
-                result: Result = future.result()
-            except Exception:
-                failed.add(name)
-                raise
+                result = future.result()
+            except Exception as exc:
+                result = qik.runnable.Result(log=str(exc), code=1, hash="")
+                exception = exc
 
             results[name] = result
             if result.code != 0:
@@ -79,10 +82,13 @@ class DAGPool:
                     _skip(dep)
             else:
                 for dep in self.downstream[name]:
-                    in_degree[dep] -= 1
+                    if dep in in_degree:
+                        in_degree[dep] -= 1
 
             del in_degree[name]
             del futures[name]
+
+            return exception
 
         while in_degree:
             ready_tasks = (name for name, degree in in_degree.items() if degree == 0)
@@ -100,11 +106,14 @@ class DAGPool:
                 break
 
             for future in finished:
-                _finish(future)
+                exception = _finish(future) or exception
 
         for name, future in futures.items():
             future.cancel()
             results[name] = None
+
+        if exception:
+            raise exception
 
         return results
 
@@ -119,17 +128,27 @@ class DAGPool:
 class Graph:
     """A graph of runnables."""
 
-    def __init__(self, cmds: Iterable[str], modules: Iterable[str]):
+    def __init__(
+        self,
+        cmds: Iterable[str],
+        *,
+        modules: Iterable[str] | None = None,
+        spaces: Iterable[str] | None = None,
+    ):
         self.cmds = cmds
         self._view = None
-        modules = frozenset(modules)
+        modules = frozenset(modules or [])
+        spaces = frozenset(spaces or [])
 
         # Construct the graph
         self._nodes: dict[str, Runnable] = {
-            name: runnable
+            runnable.name: runnable
             for cmd in cmds
-            for name, runnable in qik.cmd.load(cmd).runnables.items()
-            if not modules or not runnable.module or runnable.module in modules
+            for runnable in qik.cmd.runnables(cmd)
+            if (
+                (not modules or runnable.module in modules)
+                and (not spaces or runnable.space in spaces)
+            )
         }
         self._graph = {
             "up": collections.defaultdict(set[str]),
@@ -141,8 +160,8 @@ class Graph:
             for dep in runnable.deps_collection.runnables.values():
                 isolated = (
                     dep.isolated
-                    if dep.isolated is not qik.unset.UNSET
-                    else qik.ctx.module("qik").isolated
+                    if not isinstance(dep.isolated, qik.unset.UnsetType)
+                    else qik.ctx.by_namespace("qik").isolated
                 )
                 if not isolated or dep.obj.name in self._nodes:
                     yield (runnable, dep.obj, "up")
@@ -169,11 +188,11 @@ class Graph:
 
         return set(_dfs_trav(start_node))
 
-    @functools.cached_property
+    @qik.func.cached_property
     def _upstream(self) -> Edges:
         return {name: self._dfs(name, "up") for name in self.nodes}
 
-    @functools.cached_property
+    @qik.func.cached_property
     def _downstream(self) -> Edges:
         return {name: self._dfs(name, "down") for name in self.nodes}
 
@@ -181,11 +200,12 @@ class Graph:
     # Filtering methods and filtered properties
     ###
 
-    def filter_cache_types(self, cache_types: list[str]) -> Self:
-        """Filter the graph by the type of cache."""
-        cache_types_set = frozenset(c_type.lower() for c_type in cache_types)
+    def filter_caches(self, caches: list[str]) -> Self:
+        """Filter the graph by the cache."""
+        caches_set = frozenset(c.lower() for c in caches)
         return self.filter(
-            runnable for runnable in self if runnable.get_cache_backend().type in cache_types_set
+            (runnable for runnable in self if runnable.cache.lower() in caches_set),
+            neighbors=False,
         )
 
     def filter_cache_status(self, cache_status: qik.conf.CacheStatus) -> Self:
@@ -195,9 +215,15 @@ class Graph:
             return bool(entry) if cache_status == "warm" else not bool(entry)
 
         return self.filter(
-            runnable
-            for runnable in self
-            if _matches_cache_status(runnable.get_cache_entry(artifacts=False))
+            (
+                runnable
+                for runnable in self
+                if (
+                    runnable.get_cache_backend().type != "none"
+                    and _matches_cache_status(runnable.get_cache_entry(artifacts=False))
+                )
+            ),
+            neighbors=False,
         )
 
     def filter_since(self, git_sha: str) -> Self:
@@ -218,7 +244,7 @@ class Graph:
         return self.filter_changes(changes, strategy="since")
 
     def filter_changes(
-        self, deps: Iterable[qik.dep.BaseDep], strategy: qik.runnable.FilterStrategy
+        self, deps: Iterable[qik.dep.Dep], strategy: qik.runnable.FilterStrategy
     ) -> Self:
         """Filter the graph by a list of changed dependencies."""
         runnables: dict[str, Runnable] = {}
@@ -240,19 +266,14 @@ class Graph:
 
         return self.filter(runnables.values())
 
-    def filter_modules(self, modules: list[str]) -> Self:
-        """Filter the graph by a list of modules."""
-        modules_set = frozenset(modules)
-        return self.filter(
-            runnable for runnable in self if not runnable.module or runnable.module in modules_set
-        )
-
-    def filter(self, runnables: Iterable[Runnable]) -> Self:
-        """Return a filtered graph. Include upstream and downstream runnables."""
+    def filter(self, runnables: Iterable[Runnable], neighbors: bool = True) -> Self:
+        """Return a filtered graph. Include upstream and downstream runnables by default."""
+        runnables = list(runnables)
         clone = copy.copy(self)
         clone._view = {runnable.name for runnable in runnables if runnable.name in self._nodes}
-        clone._view |= {dep for runnable in clone._view for dep in self._upstream[runnable]}
-        clone._view |= {dep for runnable in clone._view for dep in self._downstream[runnable]}
+        if neighbors:
+            clone._view |= {dep for runnable in clone._view for dep in self._upstream[runnable]}
+            clone._view |= {dep for runnable in clone._view for dep in self._downstream[runnable]}
 
         if "nodes" in clone.__dict__:
             del clone.__dict__["nodes"]
@@ -262,7 +283,7 @@ class Graph:
 
         return clone
 
-    @functools.cached_property
+    @qik.func.cached_property
     def upstream(self) -> Edges:
         return {
             name: {dep for dep in deps if self._view is None or dep in self._view}
@@ -270,7 +291,7 @@ class Graph:
             if self._view is None or name in self._view
         }
 
-    @functools.cached_property
+    @qik.func.cached_property
     def nodes(self) -> dict[str, Runnable]:
         return {
             name: runnable
@@ -292,24 +313,27 @@ class Runner:
     def __init__(self, graph: Graph) -> None:
         self.graph = graph
         self.pool = concurrent.futures.ThreadPoolExecutor(
-            max_workers=qik.ctx.module("qik").workers
+            max_workers=qik.ctx.by_namespace("qik").workers
         )
-        qik_ctx = qik.ctx.module("qik")
+        qik_ctx = qik.ctx.by_namespace("qik")
         self.logger = (
             qik.logger.Stdout()
             if len(graph) == 1 or qik_ctx.workers == 1
             else qik.logger.Progress()
         )
 
-    def exec(self, *, changes: Iterable[qik.dep.BaseDep] | None = None) -> int:
+    def exec(self, *, changes: Iterable[qik.dep.Dep] | None = None) -> int:
         """Exec the runner, optionally providing a list of changed dependencies."""
-        orig_graph = self.graph
-        self.graph = (
-            self.graph.filter_changes(changes, strategy="watch") if changes else self.graph
-        )
-        results = DAGPool(graph=self.graph).exec()
-        self.graph = orig_graph
-        return max((result.code for result in results.values() if result), default=0)
+        try:
+            orig_graph = self.graph
+            self.graph = (
+                self.graph.filter_changes(changes, strategy="watch") if changes else self.graph
+            )
+            results = DAGPool(graph=self.graph).exec()
+            self.graph = orig_graph
+            return max((result.code for result in results.values() if result), default=0)
+        finally:
+            qik.func.clear_per_run_cache()
 
     def watch(self) -> None:
         self.logger.print("Watching for changes...", emoji="eyes", color="cyan")
@@ -318,20 +342,19 @@ class Runner:
 
 def _get_graph() -> Graph:
     """Get a filtered graph."""
-    qik_ctx = qik.ctx.module("qik")
+    qik_ctx = qik.ctx.by_namespace("qik")
     cmds = qik_ctx.commands
-    modules = qik_ctx.modules
 
     if not cmds:
         cmds = list(qik.cmd.ls())
 
     try:
-        graph = Graph(cmds, modules=modules)
+        graph = Graph(cmds, modules=qik_ctx.modules, spaces=qik_ctx.spaces)
     except RecursionError as exc:
         raise qik.errors.GraphCycle("Cycle detected in DAG.") from exc
 
-    if qik_ctx.cache_types:
-        graph = graph.filter_cache_types(qik_ctx.cache_types)
+    if qik_ctx.caches:
+        graph = graph.filter_caches(qik_ctx.caches)
 
     if qik_ctx.cache_status:
         graph = graph.filter_cache_status(qik_ctx.cache_status)
@@ -345,7 +368,7 @@ def _get_graph() -> Graph:
 def exec() -> Graph:
     """Run commands based on the current qik context."""
     try:
-        qik_ctx = qik.ctx.module("qik")
+        qik_ctx = qik.ctx.by_namespace("qik")
         graph = _get_graph()
 
         if not qik_ctx.ls and not qik_ctx.fail:
@@ -360,5 +383,5 @@ def exec() -> Graph:
 
         return graph
     except Exception as exc:
-        qik.errors.print(exc)
+        qik.errors.print(exc, prefix="Runtime error - ")
         sys.exit(1)

@@ -27,8 +27,8 @@ packages = [
 exclude = [
   "*/tests/"
 ]
-version = "0.1.6"
-description = "Run cached commands in your modular monorepo."
+version = "0.2.0"
+description = "Tame your monorepo. Make CI fast again."
 authors = ["Wes Kendall"]
 classifiers = [
   "Intended Audience :: Developers",
@@ -46,7 +46,8 @@ repository = "https://github.com/Opus10/qik"
 documentation = "https://qik.readthedocs.io"
 
 [tool.poetry.scripts]
-qik = "qik.cli:main"
+qik = "qik.cli:qik_entry"
+qikx = "qik.cli:qikx_entry"
 
 [tool.poetry.dependencies]
 python = ">=3.10.0,<4"
@@ -58,11 +59,13 @@ watchdog = { version = ">=4", optional = true }
 grimp = { version = ">=3.4.1", optional = true }
 rustworkx = { version = ">=0.15.1", optional = true }
 boto3 = { version = ">=1", optional = true }
+uv = { version = ">=0.4.18", optional = true }
 
 [tool.poetry.extras]
 watch = ["watchdog"]
 pygraph = ["grimp", "rustworkx"]
-dev = ["watchdog", "grimp", "rustworkx"]
+uv = ["uv"]
+dev = ["watchdog", "grimp", "rustworkx", "uv"]
 s3 = ["boto3"]
 
 [tool.poetry.dev-dependencies]
@@ -70,7 +73,6 @@ pytest = "8.3.2"
 pytest-cov = "5.0.0"
 pytest-dotenv = "0.5.2"
 pytest-mock = "3.14.0"
-pip-tools = "7.4.1"
 moto = {extras = ["s3", "server"], version = "5.0.12"}
 tox = "4.18.0"
 ruff = "0.6.2"
@@ -79,6 +81,7 @@ mkdocs = "1.6.0"
 black = "24.8.0"
 mkdocs-material = "9.5.33"
 mkdocstrings-python = "1.10.8"
+pymdown-extensions = "10.11.1"
 footing = "*"
 setuptools = "*"
 poetry-core = "*"

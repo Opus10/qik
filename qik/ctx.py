@@ -4,16 +4,16 @@ from __future__ import annotations
 
 import contextlib
 import contextvars
-import functools
 import os
 import threading
-from typing import TYPE_CHECKING, Any, Iterator, Literal, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Iterator, TypeVar, overload
 
 import msgspec
 
 import qik.arch
 import qik.conf
 import qik.errors
+import qik.func as qik_func
 import qik.unset
 
 if TYPE_CHECKING:
@@ -22,7 +22,6 @@ if TYPE_CHECKING:
 
 
 _RUNNER: Runner | None = None
-_PROFILE: str = "default"
 _RUNNABLE: contextvars.ContextVar[Runnable | None] = contextvars.ContextVar(
     "_RUNNABLE", default=None
 )
@@ -30,24 +29,6 @@ _CURR_WORKER_ID: int = 0
 _WORKER_IDS: dict[int, int] = {}
 _WORKER_LOCK = threading.Lock()
 _WORKER_ID: contextvars.ContextVar[int | None] = contextvars.ContextVar("_WORKER_ID", default=None)
-
-
-def profile() -> str:
-    """Get which profile we're using."""
-    return _PROFILE
-
-
-@contextlib.contextmanager
-def set_profile(name: str) -> Iterator[None]:
-    """Set which profile we're using."""
-    global _PROFILE
-    old_profile = _PROFILE
-    _PROFILE = name
-
-    try:
-        yield
-    finally:
-        _PROFILE = old_profile
 
 
 def runner() -> Runner:
@@ -119,88 +100,61 @@ class QikCtx(msgspec.Struct, forbid_unknown_fields=True, rename="kebab", dict=Tr
     # Runtime behavior
     isolated: bool = False
     watch: bool = False
-    cache: str | None = None
     force: bool = False
     ls: bool = False
     workers: int = msgspec.field(default_factory=lambda: os.cpu_count() or 1)
     fail: bool = False
-    cache_when: qik.conf.CacheWhen = "success"
     verbosity: int = 1
 
     # Selectors
     since: str | None = None
     commands: list[str] = []
     modules: list[str] = []
+    spaces: list[str] = []
     cache_status: qik.conf.CacheStatus | None = None
-    cache_types: list[str] = []
+    caches: list[str] = []
 
-    @functools.cached_property
+    @qik_func.cached_property
     def arch(self) -> qik.arch.ArchType:
         return qik.arch.get()
 
 
-@functools.cache
-def _var_struct(
-    namespace: qik.conf.CtxNamespace, module_name: str | None = None
-) -> type[msgspec.Struct]:
+@qik_func.cache
+def _var_struct(namespace: qik.conf.CtxNamespace | None = None) -> type[msgspec.Struct]:
     """Get a struct of vars for a module."""
     if namespace == "qik":
         return QikCtx
     else:
-        conf = qik.conf.get(module_name)
+        proj = qik.conf.project()
         return msgspec.defstruct(
             "VarStruct",
-            [(v.name, v.py_type, v.default) for v in conf.vars_dict.values()],
+            [(v.name, v.pytype, v.default) for v in proj.ctx_vars.values()],  # type: ignore
             forbid_unknown_fields=True,
             rename="kebab",
         )
 
 
 @overload
-def module(namespace: Literal["qik"], /) -> QikCtx: ...
+def by_namespace(name: qik.conf.CtxNamespace, /) -> QikCtx: ...
 
 
 @overload
-def module(namespace: qik.conf.CtxNamespace, name: str | None = ..., /) -> msgspec.Struct: ...
+def by_namespace(name: None, /) -> msgspec.Struct: ...
 
 
-def module(
-    namespace: qik.conf.CtxNamespace, name: str | None = None, /
-) -> QikCtx | msgspec.Struct:
-    return _module(namespace, name, profile=_PROFILE)
+def by_namespace(name: qik.conf.CtxNamespace | None, /) -> QikCtx | msgspec.Struct:
+    return _by_namespace(name)
 
 
-@functools.cache
-def _module(
-    namespace: qik.conf.CtxNamespace, name: str | None = None, /, profile: str = "default"
-) -> QikCtx | msgspec.Struct:
-    """Get context for a module."""
-    module_name = name
-    proj = qik.conf.project()
-    module_prefix = "" if not module_name else f"{module_name}."
-    env_prefix = f"{namespace}__" if not module_name else f"{namespace}__{module_name}__"
-    var_struct = _var_struct(namespace, module_name)
+@qik_func.cache
+def _by_namespace(name: qik.conf.CtxNamespace | None) -> QikCtx | msgspec.Struct:
+    """Get context for a namesapce."""
+    env_prefix = f"{name}__" if name else ""
+    namespace_prefix = f"{name}." if name else ""
+    var_struct = _var_struct(name)
+    parsed = msgspec.convert({}, type=var_struct)
 
-    proj_ctx = {"default": {}, "ci": {}} | proj.ctx
-    if profile not in proj_ctx:
-        raise qik.errors.CtxProfileNotFound(f'Context profile "{profile}" is not configured.')
-
-    ctx = proj_ctx[profile].get(namespace, {})
-    if module_name is None:
-        ctx = {k: v for k, v in ctx.items() if not isinstance(v, dict)}
-    else:
-        parts = module_name.split(".")
-        for part in parts:
-            if isinstance(ctx.get(part), dict):
-                ctx: dict[str, Any] = ctx[part]
-            else:
-                break
-
-    parsed = msgspec.convert(ctx, type=var_struct)
-
-    def _get_val(
-        var_name: str, type_val: str | type
-    ) -> qik.conf.VarType | list[str] | qik.unset.UnsetType:
+    def _get_val(var_name: str, type_val: str | type) -> qik.conf.VarType | qik.unset.UnsetType:
         str_type = type_val.__name__ if isinstance(type_val, type) else str(type_val)
         env_key = f"{env_prefix}{var_name}".upper()
         env_setting = os.environ.get(env_key)
@@ -231,9 +185,9 @@ def _module(
 
     for var_name, var_type in var_struct.__annotations__.items():
         setattr(parsed, var_name, _get_val(var_name, var_type))
-        if getattr(parsed, var_name) is qik.unset.UNSET:
+        if isinstance(getattr(parsed, var_name), qik.unset.UnsetType):
             raise qik.errors.CtxValueNotFound(
-                f'No value supplied for "{namespace}.{module_prefix}{var_name}" ctx.'
+                f'No value supplied for "{namespace_prefix}{var_name}" ctx.'
             )
 
     return parsed
@@ -242,13 +196,12 @@ def _module(
 @contextlib.contextmanager
 def set_vars(
     namespace: qik.conf.CtxNamespace,
-    module_name: str | None = None,
     **vars: qik.conf.VarType | qik.unset.UnsetType,
 ) -> Iterator[None]:
-    curr_vars = module(namespace, module_name)
+    curr_vars = by_namespace(namespace)
     old_vars = msgspec.structs.replace(curr_vars)
     for name, val in vars.items():
-        if val is not qik.unset.UNSET:
+        if not isinstance(val, qik.unset.UnsetType):
             setattr(curr_vars, name, val)
 
     try:
@@ -258,41 +211,22 @@ def set_vars(
             setattr(curr_vars, name, getattr(old_vars, name))
 
 
-class _ModuleCtx:
-    """A utility class for accessing module context as an object."""
+class _NamespaceCtx:
+    """A utility class for accessing namespaced context as an object."""
 
-    def __init__(self, namespace: qik.conf.CtxNamespace, module_name: str | None):
-        self._namespace: qik.conf.CtxNamespace = namespace
-        self._module_name = module_name
+    def __init__(self, namespace: qik.conf.CtxNamespace | None):
+        self._namespace: qik.conf.CtxNamespace | None = namespace
+        self._prefix = f"{namespace}." if namespace else ""
 
-    @functools.cached_property
-    def _prefix(self) -> str:
-        mod_name = f".{self._module_name}" if self._module_name else ""
-        return f"{self._namespace}{mod_name}"
-
-    @functools.cached_property
-    def _module_ctx(self) -> msgspec.Struct | QikCtx:
-        return module(self._namespace, self._module_name)
+    @qik_func.cached_property
+    def _namespace_ctx(self) -> msgspec.Struct | QikCtx:
+        return by_namespace(self._namespace)
 
     def __getattr__(self, key: str) -> qik.conf.VarType:
         try:
-            return getattr(self._module_ctx, key)
+            return getattr(self._namespace_ctx, key)
         except AttributeError as exc:
-            raise qik.errors.UnconfiguredCtx(f'Ctx "{self._prefix}.{key}" not configured') from exc
-
-
-class _ModulesCtx:
-    """A utility class for accessing modules/plugins context as an object."""
-
-    def __init__(self, namespace: qik.conf.CtxNamespace):
-        self._namespace: qik.conf.CtxNamespace = namespace
-        self._cache: dict[str, _ModuleCtx] = {}
-
-    def __getattr__(self, module_name: str) -> _ModuleCtx:
-        if module_name not in self._cache:
-            self._cache[module_name] = _ModuleCtx(self._namespace, module_name)
-
-        return self._cache[module_name]
+            raise qik.errors.UnconfiguredCtx(f'Ctx "{self._prefix}{key}" not configured') from exc
 
 
 class Ctx:
@@ -308,26 +242,16 @@ class Ctx:
     def __getattribute__(self, name: str) -> Any:
         try:
             return super().__getattribute__(name)
-        except AttributeError as exc:
-            raise qik.errors.InvalidCtxNamespace(
-                f'Ctx namespace "{name}" is invalid. Use project, qik, modules, or plugins.'
-            ) from exc
+        except AttributeError:
+            return getattr(self.project, name)
 
-    @functools.cached_property
-    def project(self) -> _ModuleCtx:
-        return _ModuleCtx("project", None)
+    @qik_func.cached_property
+    def project(self) -> _NamespaceCtx:
+        return _NamespaceCtx(None)
 
-    @functools.cached_property
-    def qik(self) -> _ModuleCtx:
-        return _ModuleCtx("qik", None)
-
-    @functools.cached_property
-    def modules(self) -> _ModulesCtx:
-        return _ModulesCtx("modules")
-
-    @functools.cached_property
-    def plugins(self) -> _ModulesCtx:
-        return _ModulesCtx("plugins")
+    @qik_func.cached_property
+    def qik(self) -> _NamespaceCtx:
+        return _NamespaceCtx("qik")
 
 
 _CTX = Ctx()

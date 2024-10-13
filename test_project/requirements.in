@@ -1,2 +1,7 @@
 poetry
 django
+django-pghistory
+pip
+msgspec
+pip-tools
+

@@ -16,7 +16,6 @@ import subprocess
 import sys
 from typing import IO, Any, TypeAlias, Union
 
-
 File: TypeAlias = Union[IO[Any], int, None]
 
 
@@ -51,7 +50,7 @@ def deploy() -> None:
 
     _publish_to_pypi()
 
-    print(f"Deployment complete.")
+    print("Deployment complete.")
 
 
 if __name__ == "__main__":

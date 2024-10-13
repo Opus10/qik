@@ -3,6 +3,7 @@ import pathlib
 import qik.errors
 import qik.hash
 import qik.shell
+import qik.venv
 
 
 def test_globs(tmpdir, mocker):
@@ -48,8 +49,11 @@ def test_globs(tmpdir, mocker):
 
 
 def test_pydists():
-    assert qik.hash.pydists("pytest") == "b57d851a0617e17d0a9cb1d93fe9099a"
-    assert qik.hash.pydists("pytest", "pytest-cov") == "705e4096c5edbeda860aa1745170bff1"
+    venv = qik.venv.active()
+    assert qik.hash.pydists("pytest", venv=venv) == "b57d851a0617e17d0a9cb1d93fe9099a"
+    assert (
+        qik.hash.pydists("pytest", "pytest-cov", venv=venv) == "705e4096c5edbeda860aa1745170bff1"
+    )
 
 
 def test_strs():
