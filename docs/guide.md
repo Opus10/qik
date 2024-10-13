@@ -19,7 +19,7 @@ For local development, we recommend installing most optional dependencies with:
 pip install "qik[dev]"
 ```
 
-Qik is compatible with Python 3.10 - 3.12, Linux, OSX, and WSL. It requires [git](https://git-scm.com) for command caching.
+Qik is compatible with Python 3.10 - 3.13, Linux, OSX, and WSL. It requires [git](https://git-scm.com) for command caching.
 
 ## Getting Started
 
