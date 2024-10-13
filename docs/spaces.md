@@ -134,7 +134,7 @@ modules = [{name = "module_name", path = "my/nested/module"}]
 
 ## Fences
 
-Plugins such as [Pygraph](plugin_pygraph.md) leverage the `fence` of a space, which is an enclosure of paths in a project.
+Plugins such as [Pygraph](plugin_pygraph.md) leverage the `fence` of a space, which is an enclosure of directories in a project.
 
 By default, the `fence` is disabled. Use `fence = true` to enclose modules:
 
@@ -144,7 +144,7 @@ modules = ["path/to/module_one"]
 fence = true
 ```
 
-Extend this fence with globs:
+Extend this fence with directories:
 
 ```toml
 [spaces.my-space]
@@ -206,3 +206,13 @@ The `qikx` utility has the following behavior:
 
 - Use `qikx command@space_name --arg1 value1 --arg2 value2` to run an arbitrary executable in a space.
 - Similar to `qik`, the current working space is used if a `root` is defined.
+
+## Default Configuration
+
+Qik supports configuring a default virtualenv and dotenv that will be applied to all spaces if not overridden:
+
+```toml
+[defaults]
+venv = "requirements.txt"
+dotenv = ["my_dotenv.env", "my_other_dotenv.env"]
+```
