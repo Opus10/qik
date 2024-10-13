@@ -226,7 +226,7 @@ class Space(Base, frozen=True):
     modules: list[str | ModuleLocator] = []
     fence: list[str | SpaceLocator] | bool = []
     venv: Venv | str | list[str] | None = None
-    dotenv: str | list[str] = []
+    dotenv: str | list[str] | None = None
 
     @qik.func.cached_property
     def modules_by_name(self) -> dict[str, ModuleLocator]:
@@ -286,6 +286,9 @@ class Defaults(Base, frozen=True):
     cache: str | qik.unset.UnsetType = qik.unset.UNSET
     cache_when: CacheWhen | qik.unset.UnsetType = qik.unset.UNSET
     python_path: str = "."
+    # Note: "None" is the sentinel value for these. We can't mix UNSET with a list.
+    venv: Venv | str | list[str] | None = None
+    dotenv: str | list[str] | None = None
 
 
 class Project(ModuleOrPlugin, PluginsMixin, frozen=True):
@@ -404,6 +407,13 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
         frozen=True,
     )
 
+    DynamicDefaults = msgspec.defstruct(
+        "DynamicDefaults",
+        [("venv", DynamicVenvTypes | str | list[str] | None, None)],  # type: ignore
+        bases=(Defaults,),
+        frozen=True,
+    )
+
     # Must register as part of the global namespace in order for msgspec to
     # recognize dynamic nested type.
     globals()["DynamicSpace"] = DynamicSpace
@@ -412,6 +422,7 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
     globals()["DynamicDeps"] = DynamicDeps
     globals()["DynamicBaseConf"] = DynamicBaseConf
     globals()["DynamicPlugins"] = DynamicPlugins
+    globals()["DynamicDefaults"] = DynamicDefaults
 
     DynamicProject = msgspec.defstruct(
         "DynamicProject",
@@ -421,6 +432,7 @@ def _parse_project_config(contents: bytes, plugins_conf: Plugins) -> Project:
             ("spaces", dict[str, DynamicSpace | str | list[str]], {}),
             ("commands", dict[str, DynamicCmd | str], {}),
             ("base", DynamicBaseConf, msgspec.field(default_factory=DynamicBaseConf)),
+            ("defaults", DynamicDefaults, msgspec.field(default_factory=DynamicDefaults)),
             ("plugins", DynamicPlugins, msgspec.field(default_factory=DynamicPlugins)),
         ],
         bases=(Project,),

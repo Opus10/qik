@@ -26,7 +26,6 @@ class PygraphPluginConf(qik.conf.PluginConf, frozen=True, dict=True, tag="qik.py
                 self.cache,
                 qik.conf.project().defaults.cache,
                 default="local",
-                type=str,
             )
         )
 
@@ -38,7 +37,6 @@ class PygraphPluginConf(qik.conf.PluginConf, frozen=True, dict=True, tag="qik.py
                 self.cache,
                 qik.conf.project().defaults.cache,
                 default="local",
-                type=str,
             )
         )
 
@@ -50,7 +48,6 @@ class PygraphPluginConf(qik.conf.PluginConf, frozen=True, dict=True, tag="qik.py
                 self.cache,
                 qik.conf.project().defaults.cache,
                 default="local",
-                type=str,
             )
         )
 

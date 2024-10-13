@@ -6,6 +6,7 @@ import msgspec
 import qik.conf
 import qik.errors
 import qik.func
+import qik.unset
 import qik.venv
 
 
@@ -69,10 +70,10 @@ class Space(msgspec.Struct, frozen=True, dict=True):
 
     @qik.func.cached_property
     def venv(self) -> qik.venv.Venv:
-        if isinstance(self.conf.venv, str | list):
-            conf = qik.conf.default_venv_type()(reqs=self.conf.venv)
-        else:
-            conf = self.conf.venv
+        conf = qik.unset.coalesce(self.conf.venv, qik.conf.project().defaults.venv, default=None)
+
+        if isinstance(conf, str | list):
+            conf = qik.conf.default_venv_type()(reqs=conf)
 
         try:
             if conf is None or isinstance(conf, qik.conf.ActiveVenv):
@@ -90,7 +91,10 @@ class Space(msgspec.Struct, frozen=True, dict=True):
 
     @property
     def dotenvs(self) -> list[str]:
-        return [self.conf.dotenv] if isinstance(self.conf.dotenv, str) else self.conf.dotenv
+        dotenv_val = qik.unset.coalesce(
+            self.conf.dotenv, qik.conf.project().defaults.dotenv, default=[]
+        )
+        return [dotenv_val] if isinstance(dotenv_val, str) else dotenv_val
 
     @qik.func.cached_property
     def environ(self) -> dict[str, str]:

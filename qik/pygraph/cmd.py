@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Iterable, Iterator
+from typing import TYPE_CHECKING, Iterator
 
 import msgspec
 
@@ -96,10 +96,10 @@ def lock_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
     return 0, ""
 
 
-def _generate_fence_regex(imps: Iterable[str]) -> re.Pattern:
-    escaped_substrings = (re.escape(s) for s in imps)
-    pattern = "|".join(escaped_substrings)
-    return re.compile(f"^(?!({pattern})).*$", re.MULTILINE)
+def _generate_fence_regex(valid_imports) -> re.Pattern:
+    valid_paths = "|".join(re.escape(imp) + r"(?:\.[^:]+)?" for imp in valid_imports)
+    pattern = rf"^({valid_paths}):(?!({valid_paths})(?:\.|$)).*$"
+    return re.compile(pattern, re.MULTILINE)
 
 
 def check_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
@@ -110,25 +110,27 @@ def check_cmd(runnable: qik.runnable.Runnable) -> tuple[int, str]:
         *(graph.upstream_imports(imp) for imp in fence_pyimports)
     )
 
-    internal_imps = "\n".join(
-        f"{dest.imp} imported from {src.imp}" for src, dest in imps if dest.is_internal
-    )
+    def _fmt_violation(imp: str) -> str:
+        """Create a human readable violation message."""
+        src, dest = imp.split(":")
+        return f"{src} imports {dest}"
+
+    internal_imps = "\n".join(f"{src.imp}:{dest.imp}" for src, dest in imps if dest.is_internal)
     internal_fence_re = _generate_fence_regex(fence_pyimports)
     internal_violations = [
-        violation.group() for violation in re.finditer(internal_fence_re, internal_imps)
+        _fmt_violation(violation.group())
+        for violation in re.finditer(internal_fence_re, internal_imps)
     ]
 
     external_imps = "\n".join(
-        f"{dest.imp} imported from {src.imp}" for src, dest in imps if not dest.is_internal
+        f"{src.imp}:{dest.imp}" for src, dest in imps if not dest.is_internal
     )
     external_fence_re = _generate_fence_regex(
-        (
-            external_imp
-            for external_imp, _ in runnable.resolved_venv.packages_distributions().items()
-        )
+        (*fence_pyimports, *runnable.resolved_venv.packages_distributions())
     )
     external_violations = [
-        violation.group() for violation in re.finditer(external_fence_re, external_imps)
+        _fmt_violation(violation.group())
+        for violation in re.finditer(external_fence_re, external_imps)
     ]
 
     ret_code = 0 if not internal_violations and not external_violations else 1

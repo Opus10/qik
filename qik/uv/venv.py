@@ -40,9 +40,7 @@ class UVVenv(qik.venv.Venv, frozen=True, dict=True):
 
     @qik.func.cached_property
     def python(self) -> str | None:
-        return qik.unset.coalesce(
-            self.conf.python, qik.uv.conf.get().python, default=None, type=str | None
-        )
+        return qik.unset.coalesce(self.conf.python, qik.uv.conf.get().python, default=None)
 
     @qik.func.cached_property
     def constraint(self) -> str | None:
@@ -51,7 +49,6 @@ class UVVenv(qik.venv.Venv, frozen=True, dict=True):
                 _resolve_constraint(self.conf.constraint),
                 _resolve_constraint(qik.uv.conf.get().constraint),
                 default=None,
-                type=str | None,
             )
         except RecursionError as e:
             raise qik.errors.CircularConstraint("Circular constraint detected.") from e

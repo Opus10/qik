@@ -153,16 +153,11 @@ def _make_runnable(
         module=module.name if module else None,
         artifacts=[qik.ctx.format(artifact) for artifact in conf.artifacts],
         cache=qik.ctx.format(
-            qik.unset.coalesce(
-                initial_cache, qik.conf.project().defaults.cache, default="local", type=str
-            )
+            qik.unset.coalesce(initial_cache, qik.conf.project().defaults.cache, default="local")
         ),
         cache_when=qik.ctx.format(
             qik.unset.coalesce(
-                conf.cache_when,
-                qik.conf.project().defaults.cache_when,
-                default="success",
-                type=str,
+                conf.cache_when, qik.conf.project().defaults.cache_when, default="success"
             )
         ),  # type: ignore
         space=space,

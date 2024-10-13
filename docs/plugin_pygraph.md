@@ -61,6 +61,7 @@ deps = [{type = "pygraph", pyimport = "{module.pyimport}"}]
 
 Above we are running `pyright` over the directory of each module. We use the python import path of the modules as an argument to the `pygraph` dependency type.
 
+<a id="how-it-works"></a>
 ### How it Works
 
 When using the `pygraph` dependency type, qik adds dependent commands to build and lock the import graph. The generated lock files contain all dependent glob patterns and distributions of the module, including imports in `TYPE_CHECKING` blocks.

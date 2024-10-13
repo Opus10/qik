@@ -290,4 +290,4 @@ Finish by checking out:
 
 Qik is currently in beta. Bumping the minor version (e.g. `0.1.0` to `0.2.0`) will indicate an API break until we release version `1.0.0`.
 
-Be diligent when using qik in your CI/CD. We recommend including a [base dependency](https://qik.build/en/stable/commands/#base) in your commands to regularly break the cache. We also recommend [understanding how the import graph is built](https://qik.build/en/stable/commands/#pygraph) when using pygraph dependencies.
+Be diligent when using qik in your CI/CD. We recommend including a [base dependency](https://qik.build/en/stable/commands/#base) in your commands to regularly break the cache. We also recommend [understanding how the import graph is built](https://qik.build/en/stable/plugin_pygraph/#how-it-works) when using pygraph dependencies.
